@@ -72,7 +72,6 @@ export const kampf = {
     if (vb.art === 'spieler' && vb.schutz_bis > this.t) return `${vb.name} steht noch unter Neulingsschutz.`;
     if (!this.imKrieg(a, b)) return `Du bist nicht im Krieg mit ${vb.name}.`;
     if (vb.art === 'spieler' && !this.angreifbar(b)) return `${vb.name} ist offline: Es herrscht Waffenruhe, bis ${vb.name} wieder online ist (danach 10 Minuten Schonfrist).`;
-    if (va.art === 'spieler' && !this.angreifbar(a)) return 'Waffenruhe.';
     return null;
   },
 

@@ -16,13 +16,13 @@ export const SPALTEN_ZEITALTER = [0, 6, 11, 17, 23, 30, 37];
 /** Basisdauer in Sekunden je Spalte. */
 export const DAUER_JE_SPALTE = [
   4 * MIN, 10 * MIN, 16 * MIN, 25 * MIN, 38 * MIN, 55 * MIN, // Antike: 3 min bis 1 h
-  70 * MIN, 90 * MIN, 115 * MIN, 140 * MIN, 170 * MIN, // Klassik: 1 bis 3 h
-  3.2 * STD, 3.75 * STD, 4.3 * STD, 5.25 * STD, 6.25 * STD, 7.5 * STD, // Mittelalter: 3 bis 8 h
+  65 * MIN, 80 * MIN, 100 * MIN, 125 * MIN, 155 * MIN, // Klassik: 1 bis 3 h
+  3.3 * STD, 4.2 * STD, 5 * STD, 5.9 * STD, 6.8 * STD, 7.8 * STD, // Mittelalter: 3 bis 8 h
   8 * STD, 9 * STD, 10.5 * STD, 12 * STD, 14 * STD, 15.5 * STD, // Renaissance: 6 bis 16 h
   16 * STD, 17.5 * STD, 19 * STD, 21 * STD, 23 * STD, 26 * STD, 29 * STD, // Industrie: 12 bis 30 h
-  30 * STD, 34 * STD, 39 * STD, 44 * STD, 50 * STD, 58 * STD, 66 * STD, // Moderne: 1 bis 3 Tage
-  70 * STD, 74 * STD, 78 * STD, 82 * STD, 86 * STD, 90 * STD, 94 * STD, // Atomzeit: 2 bis 4 Tage
-  96 * STD, // Zukunftstechnologien
+  30 * STD, 33 * STD, 37 * STD, 41 * STD, 45 * STD, 49 * STD, 53 * STD, // Moderne: 1 bis 3 Tage (per Balance-Simulation eingestellt)
+  55 * STD, 57 * STD, 59 * STD, 61 * STD, 63 * STD, 65 * STD, 67 * STD, // Atomzeit: 2 bis 4 Tage (per Balance-Simulation eingestellt)
+  70 * STD, // Zukunftstechnologien
 ];
 
 /** Schlüsselforschung je Zeitalter 1..6 (eröffnet den Zeitalter-Aufstieg). */

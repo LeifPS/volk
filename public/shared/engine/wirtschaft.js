@@ -5,7 +5,7 @@ import { GELAENDE } from '../daten/gelaende.js';
 import { ROHSTOFFE, LAGERGUETER, LAGER_NAMEN } from '../daten/rohstoffe.js';
 import { GEB, WUNDER_NACH_ID, FORSCHUNG, ROHSTOFF, VERBESSERUNG, STADTSTAATEN } from '../daten/index.js';
 import {
-  STD, MIN, ERTRAG_FAKTOR as F, NAHRUNG_PRO_EINWOHNER, BAUSTOFFE, STRATEGISCH, LAGER_BASIS_BAU, LAGER_BASIS_STRATEGISCH,
+  STD, MIN, ERTRAG_FAKTOR as F, GOLD_FAKTOR, WISSEN_JE_EINWOHNER, NAHRUNG_PRO_EINWOHNER, BAUSTOFFE, STRATEGISCH, LAGER_BASIS_BAU, LAGER_BASIS_STRATEGISCH,
   STADT_RADIUS_ARBEIT, STADT_RADIUS_GRENZE_MAX, wachstumsBedarf, grenzKosten, zufriedenheitsFaktor, stadtUnzufriedenheit,
   freieEinheiten, freierGebaeudeUnterhalt, forschungsTempo, FORSCHUNGSABKOMMEN, HANDEL, STADTSTAAT,
 } from '../regeln.js';
@@ -179,7 +179,7 @@ export const wirtschaft = {
       for (const [m, x] of Object.entries(fe.material)) r.material[m] = (r.material[m] || 0) + x;
     }
     // Einwohner: Grundwissen und -kultur
-    r.w += s.bev * 0.5; r.k += 1;
+    r.w += s.bev * WISSEN_JE_EINWOHNER; r.k += 1;
     const pz = { n: b.nahrung_prozent, p: b.produktion_prozent, g: b.gold_prozent, w: b.wissenschaft_prozent, k: b.kultur_prozent };
     let zuf = 3 + luxAnzahl + b.zufriedenheit - stadtUnzufriedenheit(s.bev, anzahlStaedte);
     for (const gid of Object.keys(s.gebaeude || {})) {
@@ -203,7 +203,7 @@ export const wirtschaft = {
     const m = (x, p) => x * (1 + p / 100);
     r.n = m(r.n, pz.n) * F;
     r.p = m(r.p, pz.p) * zf;
-    r.g = m(r.g, pz.g) * zf * F;
+    r.g = m(r.g, pz.g) * zf * GOLD_FAKTOR;
     r.w = m(r.w, pz.w) * zf;
     r.k = m(r.k, pz.k) * zf * F;
     for (const x of Object.keys(r.material)) r.material[x] *= F;
@@ -538,7 +538,7 @@ export const wirtschaft = {
     const d = abstand(von.feld, nach.feld);
     let w = HANDEL.grundGold + d * HANDEL.jeFeld + (von.bev + nach.bev) * 0.3;
     if (von.volk !== nach.volk) w *= HANDEL.fremdBonus;
-    return Math.round(w * F * 10) / 10;
+    return Math.round(w * GOLD_FAKTOR * 10) / 10;
   },
 
   /** Bevölkerungsumkreis für neue Städte (Startgebiet Radius 1). */

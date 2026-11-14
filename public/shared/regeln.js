@@ -5,6 +5,10 @@ export const MIN = 60 * 1000, STD = 60 * MIN, TAG = 24 * STD;
 // --- Wirtschaft ---
 /** Nahrung, Gold, Kultur und Baustoffe (Holz, Stein, Marmor, Lehm, Salz) werden mit diesem Faktor pro Stunde ausgeschüttet. */
 export const ERTRAG_FAKTOR = 6;
+/** Gold wird schwächer skaliert, damit Gold knapp genug bleibt, um wertvoll zu sein. */
+export const GOLD_FAKTOR = 3;
+/** Grundwissen je Einwohner (Punkte). */
+export const WISSEN_JE_EINWOHNER = 1;
 export const BAUSTOFFE = ['holz', 'stein', 'marmor', 'lehm', 'salz'];
 export const STRATEGISCH = ['kupfer', 'zinn', 'eisen', 'pferde', 'salpeter', 'kohle', 'oel', 'aluminium', 'uran', 'elefanten'];
 export const NAHRUNG_PRO_EINWOHNER = 2;
@@ -54,7 +58,7 @@ export function freierGebaeudeUnterhalt(bev) { return 3 + bev * 0.5; }
 
 // --- Bewegung ---
 /** Sekunden pro Bewegungskosten-Einheit bei Tempo 2. */
-export const SCHRITT_BASIS_S = 300;
+export const SCHRITT_BASIS_S = 360;
 export const EINGESCHIFFT_TEMPO = 2;
 
 /** Dauer eines Schritts in ms. kosten: Geländekosten (oder Wegkosten), tempo: Bewegungspunkte der Einheit, bonusProzent: schneller. */
@@ -92,7 +96,7 @@ export function schaden(a, d, z) {
 /** Erwarteter Schaden (Mitte des Zufallsbereichs) für die Vorschau. */
 export function erwarteterSchaden(a, d) { return Math.round(KAMPF.basisSchaden * Math.pow(KAMPF.faktor, a - d)); }
 /** Stärke-Malus durch Verwundung (Civ 6: -1 je 10 fehlende HP). */
-export function verwundungsMalus(hp) { return -Math.floor((100 - Math.max(0, Math.min(100, hp))) / 10); }
+export function verwundungsMalus(hp) { return 0 - Math.floor((100 - Math.max(0, Math.min(100, hp))) / 10); }
 
 /** Stadt: Grundstärke und Lebenspunkte. */
 export function stadtGrundStaerke(zeitalter, bev) { return 14 + 9 * zeitalter + Math.min(10, Math.floor(bev / 3)); }

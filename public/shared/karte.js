@@ -115,10 +115,15 @@ function erzeuge() {
     else gel[i] = hoehe[i] - schwelle < 0.08 ? G.sumpf : G.dschungel;
   }
 
+  // Binnenseen: einige Senken weit weg vom Meer
+  for (const i of landListe) {
+    if (wasserAbstand[i] < 4 || gel[i] === G.gebirge || gel[i] === G.schnee || hash01(i, 71) > 0.006) continue;
+    for (const j of [i, ...nachbarn(i)]) if (land[j] && gel[j] !== G.gebirge && (j === i || hash01(j, 72) < 0.6)) { land[j] = 0; gel[j] = G.see; }
+  }
   // Seen: kleine, abgeschlossene Wasserflächen
   const besucht = new Uint8Array(ANZAHL);
   for (let i = 0; i < ANZAHL; i++) {
-    if (land[i] || besucht[i]) continue;
+    if (land[i] || besucht[i] || gel[i] === G.see) continue;
     const komp = [i]; besucht[i] = 1;
     let randBerührt = false;
     for (let k = 0; k < komp.length; k++) {

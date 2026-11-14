@@ -28,7 +28,7 @@ export const akteure = {
   kiDenken(vid) {
     const v = this.z.voelker[vid];
     const ki = v.ki;
-    const intervall = (this.spielerOnline() ? 35 : 150) * MIN;
+    const intervall = (v.ki.bot ? 30 : this.spielerOnline() ? 35 : 150) * MIN;
     ki.denken_um = this.t + intervall + Math.floor(this.zufall() * 10 * MIN);
     this.markiere('v' + vid);
     try {
@@ -36,6 +36,7 @@ export const akteure = {
       for (const s of this.staedteVon(vid)) this.kiStadt(v, s);
       this.kiEinheiten(v);
       if (v.art === 'ki') this.kiDiplomatie(v);
+      if (v.ki.bot) this.botExtras?.(v);
     } catch (e) {
       if (!(e instanceof SpielFehler)) this.fehlerProtokoll('KI ' + v.name + ': ' + (e.stack || e));
     }
@@ -43,7 +44,7 @@ export const akteure = {
 
   kiForschung(v) {
     if (v.forschung.aktiv) return;
-    const max = v.art === 'stadtstaat' ? 4 : KI_MAX_ZEITALTER;
+    const max = v.ki.maxZeitalter ?? (v.art === 'stadtstaat' ? 4 : KI_MAX_ZEITALTER);
     const kand = FORSCHUNGEN.filter((f) => !f.wiederholbar && f.zeitalter <= max && this.forschungMoeglich(v, f.id));
     if (!kand.length) return;
     kand.sort((a, b) => a.dauer - b.dauer || a.spalte - b.spalte || (a.id < b.id ? -1 : 1));
@@ -62,17 +63,18 @@ export const akteure = {
     const hier = mil.filter((e) => abstand(e.feld, s.feld) <= 2).length;
     if (hier < garnisonSoll) wunsch.push(['einheit', this.kiBesteEinheit(v, s, 'nahkampf')]);
     if (krieg && mil.length < this.staedteVon(v.id).length * 3) wunsch.push(['einheit', this.kiBesteEinheit(v, s, this.zufall() < 0.5 ? 'fernkampf' : 'nahkampf')]);
-    if (v.art === 'ki') {
+    if (v.art === 'ki' || v.ki.bot) {
       const arbeiter = eigene.filter((e) => EINHEIT[e.typ].faehigkeiten?.includes('arbeiten')).length;
       if (arbeiter < Math.min(4, this.staedteVon(v.id).length)) wunsch.push(['einheit', 'arbeiter']);
       const siedler = eigene.filter((e) => EINHEIT[e.typ].faehigkeiten?.includes('gruenden')).length;
-      if (!siedler && s.bev >= 3 && this.staedteVon(v.id).length < (KI_MAX_STAEDTE[pers] || 5) && this.t - (v.ki.letzter_siedler || 0) > 20 * STD) wunsch.push(['einheit', 'siedler']);
+      if (!siedler && s.bev >= 3 && this.staedteVon(v.id).length < (v.ki.maxStaedte || KI_MAX_STAEDTE[pers] || 5) && this.t - (v.ki.letzter_siedler || 0) > (v.ki.siedlerAbstand || 20 * STD)) wunsch.push(['einheit', 'siedler']);
     }
     // Gebäude nach Persönlichkeit
     const kat = PERSOENLICHKEIT_KATEGORIEN[v.art === 'stadtstaat' ? 'stadtstaat' : pers] || PERSOENLICHKEIT_KATEGORIEN.bauer;
     const geb = GEBAEUDE.filter((g) => !this.bauHindernis(s, 'gebaeude', g.id))
       .sort((a, b) => (kat.indexOf(a.kategorie) + 1 || 99) * 2 + a.kosten.zeit / 3600 - ((kat.indexOf(b.kategorie) + 1 || 99) * 2 + b.kosten.zeit / 3600));
-    if (geb.length) wunsch.push(['gebaeude', geb[0].id]);
+    const bezahlbar = geb.find((g) => this.kannBezahlen(v, g.kosten).ok);
+    if (bezahlbar) wunsch.push(['gebaeude', bezahlbar.id]);
     for (const [art, id] of wunsch) {
       if (!id || this.bauHindernis(s, art, id)) continue;
       const kosten = this.bauKosten(s, art, id);
