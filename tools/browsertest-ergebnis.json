@@ -1,5 +1,5 @@
 {
- "zeit": "2026-11-14T23:05:54.397Z",
+ "zeit": "2026-11-14T23:08:39.130Z",
  "ergebnisse": [
   {
    "name": "Startseite lädt (Anmeldemaske)",
@@ -18,7 +18,7 @@
   },
   {
    "name": "Tutorial erscheint für neue Spieler",
-   "ok": false,
+   "ok": true,
    "info": ""
   },
   {

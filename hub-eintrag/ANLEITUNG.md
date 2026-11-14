@@ -10,7 +10,7 @@ Alles in diesem Ordner ist fertig vorbereitet. Ausnahme: das Banner (siehe Schri
 Im Hub-Repo (`LeifPS/Leif-Game-Hub`):
 - `hub-eintrag/volk-icon.webp` → `public/screens/volk-icon.webp`
 - `hub-eintrag/volk-wallpaper.webp` → `public/screens/volk-wallpaper.webp`
-- `hub-eintrag/shots/1.webp … 8.webp` → `public/screens/shots/volk/1.webp … 8.webp` (Ordner `volk` anlegen)
+- `hub-eintrag/shots/1.webp … 10.webp` → `public/screens/shots/volk/1.webp … 10.webp` (Ordner `volk` anlegen)
 
 Beispiel (von diesem Repo aus, Hub-Repo liegt daneben):
 ```
