@@ -43,6 +43,7 @@ export function oeffneRangliste() {
   stil();
   let daten = null, stand = null, ziel;
   const f = fenster(R().titel, (innen) => { ziel = innen; }, { breite: 'mittel', fuss: true, symbol: symbol('ui', 'rangliste', { px: 22 }) });
+  f.element.style.maxWidth = '940px';
   const standEl = el('span.klein', { style: { marginRight: 'auto', alignSelf: 'center' } });
   const laden = async () => {
     try { daten = await frage({ art: 'rangliste' }); stand = new Date(); zeichne(); }

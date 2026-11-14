@@ -498,7 +498,7 @@ T.einst = {
 
 T.tut = {
   titel: 'Tutorial', weiter: 'Weiter', fertig: 'Fertig!', ueberspringen: 'Überspringen', zurueck: 'Zurück', schritt: (n, m) => `${n}/${m}`,
-  geschafft: 'Geschafft!', zeigMir: 'Zeig es mir', ueberspringenFrage: 'Tutorial beenden? Du kannst es jederzeit über „Was soll ich tun?“ (H) neu starten.',
+  geschafft: 'Geschafft!', zeigMir: 'Zeig es mir', schutzRest: (rest) => `Dein Schutz gilt noch ${rest}.`, ueberspringenFrage: 'Tutorial beenden? Du kannst es jederzeit über „Was soll ich tun?“ (H) neu starten.',
   schritte: {
     willkommen: { titel: 'Willkommen bei Volk!', text: 'Du führst dein eigenes Volk. Gründe Städte, erforsche Neues, erkunde die Welt und handle mit anderen. Es gibt keine Runden: Alles läuft in echter Zeit weiter – auch wenn du nicht da bist. Ich zeige dir die ersten Schritte.' },
     karte: { titel: 'Die Karte bewegen', text: 'Ziehe die Karte mit gedrückter Maustaste (Tablet: mit dem Finger). Zoomen geht mit dem Mausrad (Tablet: zwei Finger). Probier es aus!', ok: 'Gut gemacht!' },
@@ -630,7 +630,7 @@ T.stadt = {
   bauKurz: 'Bauaufträge', keinBau: 'Kein Bauauftrag! Wähle im Reiter "Bauen" etwas aus.', inSchlange: (n) => `${n} weitere(r) Auftrag/Aufträge in der Warteschlange`, zumBauen: 'Zum Bauen',
   // Bauen
   bauplaetze: (b, n) => `Bauplätze (${b} von ${n} belegt)`, platzFrei: 'Freier Bauplatz – wähle rechts etwas aus', platzWartet: 'Frei – wartet auf Material',
-  abbrechen: 'Abbrechen', abbrechenTip: 'Auftrag abbrechen (50 % der Kosten zurück)', abbrechenTitel: 'Bauauftrag abbrechen?',
+  abbrechen: 'Abbrechen', abbrechenTip: 'Auftrag abbrechen (50 % der Kosten zurück)', abbrechenTitel: 'Bauauftrag abbrechen?', abbrechenJa: 'Auftrag abbrechen', weiterbauen: 'Weiterbauen',
   abbrechenFrage: (n, p) => `"${n}" abbrechen? Du bekommst ${p} % der bezahlten Kosten zurück, der Fortschritt geht verloren.`,
   abbruchHinweis: (p) => `Abbrechen eines laufenden Auftrags erstattet ${p} % der Kosten.`,
   schlange: (n) => `Warteschlange (${n}/8)`, schlangeLeer: 'Leer. Weitere Aufträge landen hier und starten automatisch, sobald ein Bauplatz frei ist.',
@@ -688,7 +688,7 @@ T.reich = {
   spalten: { name: 'Stadt', bev: 'Einw.', nahrung: 'Nahrung', produktion: 'Prod.', gold: 'Gold', wissenschaft: 'Wiss.', zufriedenheit: 'Zufr.', bau: 'Aktueller Bau', typ: 'Einheit', ort: 'Ort', lp: 'LP', status: 'Status', unterhalt: 'Unterhalt' },
   nahrungTip: 'Nahrungsüberschuss pro Stunde (Wachstum)', keinBau: 'nichts im Bau!', wartet: 'wartet auf Material',
   staedteHinweis: 'Klicke auf eine Stadt, um sie zu öffnen. Klicke auf eine Spaltenüberschrift zum Sortieren.',
-  anzahlEinheiten: (n) => n === 1 ? '1 Einheit' : `${n} Einheiten`, freiKontingent: (f, b) => `${Math.min(f, b)} von ${f} kostenlosen Plätzen belegt`, unterhaltEinheiten: (u) => `Unterhalt −${u}/h`,
+  anzahlEinheiten: (n) => n === 1 ? '1 Einheit' : `${n} Einheiten`, freiKontingent: (f, b) => `${Math.min(f, b)} von ${f} kostenlosen Plätzen belegt`, unterhaltEinheiten: (u) => `Unterhalt ${u}/h`,
   einheitenHinweis: 'Klicke auf eine Einheit, um auf der Karte zu ihr zu springen. Die teuersten Einheiten fallen ins Freikontingent.',
   anBord: (t) => `an Bord (${t})`, inStadt: (n) => `in ${n}`, beiStadt: (d, n) => `${d} ${d === 1 ? 'Feld' : 'Felder'} von ${n}`, feld: (x, y) => `Feld ${x}, ${y}`,
   status: {
@@ -723,6 +723,6 @@ T.reich = {
   wunderT: {
     hinweis: 'Es gibt 8 Weltwunder – jedes nur einmal im ganzen Server. Wer es zuerst fertigstellt, bekommt es für immer.',
     deins: (s) => `Dein Wunder (in ${s})`, gebautVon: (v, s) => `Gebaut von ${v}` + (s ? ` in ${s}` : ''), unbekannt: 'einem unbekannten Volk',
-    imBau: 'Im Bau:', beiDir: (s, t) => `bei dir in ${s} – fertig in ${t}`, beiAnderen: (v) => `bei ${v}`, frei: 'Frei – noch hat es niemand gebaut',
+    imBau: 'Im Bau:', beiDir: (s, t) => `bei dir in ${s} – fertig in ${t}`, beiAnderen: (v) => `bei ${v}`, frei: 'Noch frei',
   },
 };

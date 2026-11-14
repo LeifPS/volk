@@ -71,7 +71,8 @@ function stil() {
 .diplo-chips { display: flex; flex-wrap: wrap; gap: 4px; }
 .diplo-chips .knopf { font-size: 13px; }
 .diplo-zeile { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.diplo-detail h3 { margin-top: 12px; }
+.diplo-detail h3, .diplo-tausch-seite h3 { margin-top: 12px; }
+.diplo-zusammen { flex: 1; min-width: 240px; font-size: 13px; align-self: center; }
 @media (max-width: 860px) {
   .diplo-wurzel { grid-template-columns: 250px 1fr; }
   .diplo-zwei { grid-template-columns: 1fr; }
@@ -427,7 +428,7 @@ async function kriegErklaeren(o) {
   if (dd.schutz_bis > jetzt()) teile.push(D().kriegSchutzWarnung(dauerText(dd.schutz_bis - jetzt())));
   if (diploMit(o.id).buendnis) teile.push(D().kriegBuendnisWarnung);
   if (o.art === 'spieler') teile.push(D().kriegSpielerHinweis);
-  if (!(await frageJaNein(D().kriegTitel, teile.join('\n\n'), D().knoepfe.kriegJa))) return;
+  if (!(await frageJaNein(D().kriegTitel, teile.join(' '), D().knoepfe.kriegJa))) return;
   sende({ art: 'krieg_erklaeren', volk: o.id, bestaetigt: true }, D().kriegErklaert(o.name));
 }
 
@@ -442,7 +443,7 @@ async function tributFordern(o) {
 function tauschEditor(o) {
   stil();
   const t = { gibt: { gold: 0, lager: {}, luxus: new Set(), karte: false }, will: { gold: 0, lager: {}, luxus: new Set(), karte: false } };
-  const zusammenfassung = el('div.diplo-box');
+  const zusammenfassung = el('div.diplo-zusammen');
   let senden;
   const aktualisiere = () => {
     const g = saeubern(t.gibt), w = saeubern(t.will);
@@ -455,15 +456,14 @@ function tauschEditor(o) {
   const f = fenster(D().tausch.titel(o.name), (innen) => {
     innen.append(
       el('p.klein', { style: { marginTop: 0 }, text: D().tausch.erklaerung }),
-      el('div.diplo-zwei', seite(t.gibt, true, o, aktualisiere), seite(t.will, false, o, aktualisiere)),
-      zusammenfassung);
+      el('div.diplo-zwei', seite(t.gibt, true, o, aktualisiere), seite(t.will, false, o, aktualisiere)));
   }, { fuss: true, symbol: symbol('ui', 'handel', { px: 22 }) });
   f.element.style.maxWidth = '1000px';
   senden = el('button.knopf.gold', { onclick: async () => {
     const r = await sende({ art: 'tausch_angebot', an: o.id, gibt: saeubern(t.gibt), will: saeubern(t.will) }, D().tausch.gesendet(o.name));
     if (r) f.schliessen();
   } }, symbol('ui', 'handel'), D().tausch.senden);
-  f.fuss.append(el('button.knopf', { text: T.abbrechen, onclick: () => f.schliessen() }), senden);
+  f.fuss.append(zusammenfassung, el('button.knopf', { text: T.abbrechen, onclick: () => f.schliessen() }), senden);
   aktualisiere();
 }
 

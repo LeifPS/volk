@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "wrangler dev --var ZEITFAKTOR_ERLAUBT:1",
     "deploy": "wrangler deploy",
-    "test": "node --test --test-concurrency=4 tests/",
+    "test": "node --test --test-concurrency=4 \"tests/*.test.mjs\"",
     "balance": "node tools/balance-sim.mjs",
     "browsertest": "node tools/browsertest.mjs"
   },

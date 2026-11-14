@@ -21,9 +21,12 @@ const CSS = `
 .hilfe-tipp .txt b { display: block; margin-bottom: 2px; font-size: 16px; }
 .hilfe-tipp .txt span { font-size: 13px; color: var(--text2); line-height: 1.35; display: block; }
 .hilfe-tipp .los { flex: none; white-space: nowrap; }
-.hilfe-tasten { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
-.hilfe-tasten table td { padding: 4px 6px; border-bottom: 1px solid #353d52; }
-.hilfe-tasten kbd { display: inline-block; font-family: var(--kopf); font-size: 12px; background: #3a4561; border: 2px solid var(--rand); box-shadow: inset 1px 1px 0 #56638a; padding: 2px 6px; white-space: nowrap; }
+.hilfe-tasten { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.hilfe-tasten > div { min-width: 0; }
+.hilfe-tasten table { width: 100%; border-collapse: collapse; }
+.hilfe-tasten table td { padding: 5px 6px; border-bottom: 1px solid #353d52; vertical-align: middle; }
+.hilfe-tasten table td:first-child { width: 42%; }
+.hilfe-tasten kbd { display: inline-block; font-family: var(--kopf); font-size: 11px; background: #3a4561; border: 2px solid var(--rand); box-shadow: inset 1px 1px 0 #56638a; padding: 3px 6px; line-height: 1.3; }
 @media (max-width: 560px) { .hilfe-tipp .los { display: none; } }`;
 function stil() { if (!document.getElementById('hilfe-stil')) document.head.append(el('style#hilfe-stil', { text: CSS })); }
 

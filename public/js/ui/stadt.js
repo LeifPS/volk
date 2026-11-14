@@ -424,7 +424,7 @@ function sortiere(l, art) {
 
 function listeZeichnen(s) {
   const z = offen; if (!z || !z.listeEl || !s) return;
-  const l = z.liste || [];
+  const l = (z.liste || []).filter((x) => !(x.art === 'gebaeude' && x.id === 'palast'));
   const teile = [];
   for (const art of ['gebaeude', 'einheit', 'wunder']) {
     if (z.filter !== 'alle' && z.filter !== art) continue;
@@ -503,7 +503,7 @@ function wunderDialog(x, s) {
   const d = WUNDER_NACH_ID[x.id];
   let geheim = false;
   const imBau = (Z.ansicht.welt?.im_bau || []).filter((w) => w.wunder === x.id && w.volk !== Z.volk);
-  const f = fenster(d.name, (i) => i.append(
+  const f = fenster(d.name, (i) => i.append(...[
     el('div', { style: { display: 'flex', gap: '12px', alignItems: 'flex-start' } }, symbol('wunder', x.id, { px: 96 }), el('div',
       el('div.klein', { text: ZEITALTER[d.zeitalter]?.name || '' }),
       el('p', { style: { margin: '4px 0' }, text: d.beschreibung }),
@@ -516,7 +516,7 @@ function wunderDialog(x, s) {
     x.fehlt ? el('p.gold-t', { text: S().fehltLang(fehltText(x.fehlt)) + ' ' + S().vormerkenText }) : null,
     el('label.st-chk', { tip: S().geheimTip }, el('input', { type: 'checkbox', onchange: (e) => { geheim = e.target.checked; } }), symbol('ui', 'auge_zu'), S().geheim),
     el('div.klein', { text: S().geheimText }),
-  ), { breite: 'schmal', fuss: true });
+  ].filter(Boolean)), { breite: 'schmal', fuss: true });
   f.fuss.append(el('button.knopf', { text: T.abbrechen, onclick: () => f.schliessen() }),
     el('button.knopf.gold', { onclick: async () => { f.schliessen(); await senden({ art: 'bauen', stadt: s.id, typ: 'wunder', id: x.id, geheim: geheim || undefined, vormerken: x.fehlt ? true : undefined }, d.name); } }, symbol('ui', x.fehlt ? 'uhr' : 'wunder'), x.fehlt ? S().vormerken : S().wunderBauen));
 }
@@ -531,7 +531,7 @@ function platzListe(s) {
       bauSymbol(b.art, b.id, 40),
       el('div.mitte', el('div.name', bauName(b), b.geheim ? el('span.lila-t.klein', { text: ' (' + S().geheimKurz + ')' }) : null), ...fortschritt(b.start, b.fertig_um)),
       el('button.knopf.klein.rot', { tip: S().abbrechenTip, 'aria-label': S().abbrechen, onclick: async () => {
-        if (!(await frageJaNein(S().abbrechenTitel, S().abbrechenFrage(bauName(b), Math.round(ABBRUCH_ERSTATTUNG * 100)), S().abbrechen))) return;
+        if (!(await frageJaNein(S().abbrechenTitel, S().abbrechenFrage(bauName(b), Math.round(ABBRUCH_ERSTATTUNG * 100)), S().abbrechenJa, S().weiterbauen))) return;
         const r = await befehl({ art: 'bau_abbrechen', stadt: s.id, liste: 'bau', nr: k });
         if (!r.ok) fehler(r.fehler); else { ton('klick'); if (offen) offen.liste = null; }
       } }, symbol('ui', 'kreuz')),
@@ -685,6 +685,7 @@ function felder(s, k) {
     const b = el('button.st-hex' + (nutzbar ? '' : '.tot') + (z.feld === i ? '.gewaehlt' : ''), {
       style: { left: Math.round((cx - WH / 2) * sk) + 'px', top: Math.round((cy - RH) * sk) + 'px', width: Math.round(WH * sk) + 'px', height: Math.round(2 * RH * sk) + 'px' },
       'aria-label': GELAENDE[kk.gelaende[i]].name,
+      'data-feld': i,
       tip: () => feldInfoEl(s, i),
       onclick: async () => {
         z.feld = i;

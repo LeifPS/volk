@@ -36,10 +36,14 @@ function stil() {
 .re-tab th.an { color: var(--akzent); }
 .re-tab td.z, .re-tab th.z { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .re-tab td .re-n { display: inline-flex; gap: 6px; align-items: center; }
-.re-raster { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 10px; align-items: start; }
+.re-raster { grid-auto-flow: dense; display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 10px; align-items: start; }
 .re-box { background: var(--panel2); border: 2px solid var(--rand); padding: 8px 10px; }
 .re-box > h2 { font-size: 14px; display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
 .re-box.breit { grid-column: 1 / -1; }
+.re-box.doppelt { grid-column: span 2; }
+@media (max-width: 1250px) { .re-box.doppelt { grid-column: auto; } }
+.re-boni { margin: 0; padding-left: 18px; column-width: 280px; column-gap: 24px; }
+.re-boni li { break-inside: avoid; margin: 1px 0; }
 .re-summe { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
 .re-summe span { display: inline-flex; gap: 5px; align-items: center; font-family: var(--kopf); font-size: 13px; }
 .re-wunder { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 8px; }
@@ -47,7 +51,7 @@ function stil() {
 .re-wunder .eintrag.mein { border-color: var(--akzent); background: #2e2a1c; }
 .re-wunder .eintrag.weg { opacity: .8; }
 .re-status { font-family: var(--kopf); font-size: 12px; margin: 3px 0; }
-.re-bar { width: 110px; display: inline-block; vertical-align: middle; }
+.re-bar { width: 90px; display: inline-block; vertical-align: middle; }
 .re-leer { color: var(--text2); padding: 10px 0; }
 ` }));
 }
@@ -164,7 +168,7 @@ function einheiten(k) {
   k.append(el('div.re-summe',
     el('span', symbol('ui', 'einheit'), R().anzahlEinheiten(l.length)),
     el('span', symbol('ui', 'haken'), R().freiKontingent(freieEinheiten(eigeneStaedte().length), bezahlt)),
-    el('span.rot-t', symbol('ui', 'gold'), R().unterhaltEinheiten(z1(r.unterhaltEinheiten))),
+    el('span', { class: r.unterhaltEinheiten > 0.05 ? 'rot-t' : 'gruen-t' }, symbol('ui', 'gold'), R().unterhaltEinheiten(r.unterhaltEinheiten > 0.05 ? '−' + z1(r.unterhaltEinheiten) : '0')),
   ));
   const sp = R().spalten;
   k.append(tabelle('einheiten', [
@@ -191,8 +195,8 @@ function wirtschaft(k) {
     el('table.tabelle.re-tab',
       zeile(W.staedte, '+' + z1(r.einnahmen - r.handel), 'gruen-t'),
       zeile(W.handel, vorzeichen(r.handel, 1), r.handel >= 0 ? 'gruen-t' : 'rot-t'),
-      zeile(W.unterhaltEinheiten, '−' + z1(r.unterhaltEinheiten), 'rot-t'),
-      zeile(W.unterhaltGebaeude, '−' + z1(r.unterhaltGebaeude), 'rot-t'),
+      zeile(W.unterhaltEinheiten, r.unterhaltEinheiten > 0.05 ? '−' + z1(r.unterhaltEinheiten) : '0', r.unterhaltEinheiten > 0.05 ? 'rot-t' : ''),
+      zeile(W.unterhaltGebaeude, r.unterhaltGebaeude > 0.05 ? '−' + z1(r.unterhaltGebaeude) : '0', r.unterhaltGebaeude > 0.05 ? 'rot-t' : ''),
       el('tr', el('td', el('b', { text: W.summe })), el('td.z', el('b', { class: r.gold >= 0 ? 'gruen-t' : 'rot-t', text: vorzeichen(r.gold, 1) + '/h' }))),
     ),
     r.gold < 0 ? el('p.rot-t.klein', { text: W.negativ(aktuellesGold() > 0 ? dauerText(aktuellesGold() / -r.gold * 3600000) : '0') }) : null,
@@ -234,7 +238,8 @@ function wirtschaft(k) {
   );
   // Boni
   const bl = boniListe(Object.fromEntries(Object.entries(r.boni || {}).filter(([, x]) => x)));
-  const boni = box('stern_voll', W.boni, bl.length ? el('ul', { style: { margin: 0, paddingLeft: '18px' } }, bl.map((t) => el('li', { text: t }))) : el('p.klein', { text: W.keineBoni }), el('p.klein', { text: W.boniHinweis }));
+  const boni = box('stern_voll', W.boni, bl.length ? el('ul.re-boni', bl.map((t) => el('li', { text: t }))) : el('p.klein', { text: W.keineBoni }), el('p.klein', { text: W.boniHinweis }));
+  lager.classList.add('doppelt'); boni.classList.add('breit');
   k.append(el('div.re-raster', einkommen, lager, luxBox, handel, boni));
 }
 
