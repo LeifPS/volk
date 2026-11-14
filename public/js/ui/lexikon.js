@@ -35,6 +35,7 @@ const CSS = `
 .lex-ref { color: #8cc4ff; cursor: pointer; text-decoration: underline; text-decoration-color: rgba(140,196,255,.4); text-underline-offset: 2px; }
 .lex-ref:hover { color: #c2e0ff; }
 .lex-kopf { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; }
+.lex-kopf h2 { overflow-wrap: anywhere; }
 .lex-bild { flex: none; width: 152px; height: 152px; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 60%, #2e3a52, #161a26); border: 3px solid var(--rand); box-shadow: inset 2px 2px 0 var(--hell), inset -2px -2px 0 #10131c; }
 .lex-bild canvas { image-rendering: pixelated; }
 .lex-kopf h2 { font-size: 24px; margin: 0 0 4px; }
@@ -532,7 +533,7 @@ function regelDetail(id) {
   const i = L.regeln.indexOf(r);
   const nachbarn = [L.regeln[i - 1], L.regeln[i + 1]].filter(Boolean);
   return el('div',
-    el('div.lex-kopf', el('div.lex-bild', { style: { width: '88px', height: '88px' } }, bild('regel', id, 64)), el('div', el('h2', { text: r.titel }), el('div.unter', { text: L.kategorien.regel }))),
+    el('div.lex-kopf', el('div.lex-bild', { style: { width: '88px', height: '88px' } }, bild('regel', id, 64)), el('div', { style: { flex: '1', minWidth: '0' } }, el('h2', { text: r.titel }), el('div.unter', { text: L.kategorien.regel }))),
     r.absaetze(R).map(absatz),
     el('div', { style: { display: 'flex', gap: '6px', marginTop: '16px', flexWrap: 'wrap' } }, nachbarn.map((n, k) => el('button.knopf', { onclick: () => gehe('regel', n.id) }, (k === 0 && i > 0 ? '← ' : '') + n.titel + (k === nachbarn.length - 1 && i < L.regeln.length - 1 ? ' →' : '')))),
   );

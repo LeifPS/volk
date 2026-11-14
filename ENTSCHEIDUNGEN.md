@@ -29,3 +29,18 @@ Leitsatz: "Was macht das Spiel für ein paar Freunde und die Familie am besten s
 - **Farben:** 16 gut unterscheidbare Vorschläge; eine Farbe muss einen Mindestabstand (wahrgenommene Distanz ≥ 100) zu allen anderen Völkern haben und darf nicht wie Gras/Wasser/Wald aussehen.
 - **Texte:** Die Oberflächentexte stehen zentral in `public/js/texte.js`; Spielinhalte (Namen/Beschreibungen) in `public/shared/daten/`, Meldungen des Servers in der Engine.
 - **Marschtempo:** 6 Minuten pro Bewegungspunkt bei Tempo 2 (Ebene); Späher (Tempo 3) 4 Minuten, auf Straßen deutlich schneller. Damit dauert die Querung der 192 Felder breiten Welt für Antike-Infanterie gut einen Tag (Test prüft 24–48 h). Leifs Beispiel "wenige Felder in 2 min 20" passt dazu nur auf Straßen bzw. mit schnellen Einheiten; beide Vorgaben gleichzeitig sind nicht erfüllbar, die Weltquerung hat Vorrang.
+- **Gold ist knapper skaliert** (`GOLD_FAKTOR = 3` statt 6), **Grundwissen 1 Punkt je Einwohner**: So wird Gold nicht wertlos und die Forschung trifft die Zielwerte (per Balance-Simulation eingestellt).
+- **Forschungsdauern Moderne/Atomzeit** wurden per Balance-Simulation etwas gesenkt (Moderne 30–53 h, Atomzeit 55–67 h Grundwert), damit ein guter Spieler den ganzen Baum in etwa 27 Tagen schafft (Ziel 2–4 Wochen). Die Grundwerte bleiben in den Richtbereichen (Moderne 1–3 Tage, Atomzeit 2–4 Tage).
+- **Nicht umgesetzt (bewusst):** Transportschiffe laden keine Einheiten ein; stattdessen schiffen sich Landeinheiten nach der passenden Forschung selbst ein (wie in Civ 5/6). Wegpunkt-Ketten gibt es nicht; dafür Auto-Erkunden, Auto-Arbeiten, Handelsrouten-Pendeln und "Angreifen nach Marsch".
+
+## Auslastung im Free-Plan (Abschätzung)
+
+Gemessen mit der Mehrspieler-Simulation (`tests/mehrspieler.test.mjs`: 4 aktive Spieler-Bots, 5 KI-Völker, 12 Stadtstaaten, Barbaren, Raubtiere, 14 simulierte Tage, nachts 2 Spieler offline):
+
+| Größe | gemessen pro Tag | Free-Limit pro Tag |
+|---|---|---|
+| Alarme (DO-Aufrufe durch Ereignisse) | ~2 300 | 100 000 Anfragen |
+| geschriebene Speicherzeilen | ~11 400 | 100 000 |
+| gespeicherte Zeilen insgesamt | ~175 | 5 GB |
+
+Dazu kommen echte Klicks: 5 Spieler × 2 Stunden × ~3 Befehle/Minute ≈ 1 800 WebSocket-Nachrichten pro Tag, die im Free-Plan mit 20:1 als Anfragen zählen (≈ 90) und je 2–5 Zeilen schreiben (≈ 7 000). Gelesen werden beim Aufwachen des Objekts ~175 Zeilen; selbst bei 3 000 Aufwach-Vorgängen sind das ~0,5 Mio. von 5 Mio. erlaubten gelesenen Zeilen. Die aktive Dauer bleibt dank WebSocket-Hibernation weit unter 13 000 GB-s. **Der Free-Plan reicht mit großem Abstand.**

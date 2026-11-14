@@ -161,7 +161,7 @@ export const ansicht = {
         const k = this.kannBezahlen(v, kosten);
         l.push({ art, id: d.id, grund, kosten, fehlt: k.ok ? null : k.fehlt, dauer: this.bauDauerMs(s, art, d.id) });
       };
-      for (const d of GEBAEUDE) add('gebaeude', d);
+      for (const d of GEBAEUDE) if (d.id !== 'palast') add('gebaeude', d);
       for (const d of EINHEITEN) add('einheit', d);
       for (const d of WUNDER) add('wunder', d);
       return { stadt: s.id, liste: l };

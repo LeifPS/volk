@@ -40,7 +40,7 @@ try {
   pruefe('Volk gegründet, Spielansicht aufgebaut', await s.isVisible('#ressourcen'));
   await s.screenshot({ path: path.join(shots, 'bt-1-start.png') });
   // Tutorial sichtbar?
-  const tutorial = await s.evaluate(() => !!document.querySelector('[class*="tut"]'));
+  const tutorial = await s.evaluate(() => !!document.querySelector('#tut-blase'));
   pruefe('Tutorial erscheint für neue Spieler', tutorial);
   // Siedler auswählen und Stadt gründen per Knopf
   await s.evaluate(async () => { const z = await import('/js/kern/zustand.js'); const h = await import('/js/ui/hud.js'); const e = z.eigeneEinheiten().find((x) => x.typ === 'siedler'); h.waehle({ art: 'einheit', id: e.id }); });
