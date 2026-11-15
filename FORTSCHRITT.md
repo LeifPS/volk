@@ -10,5 +10,5 @@
 - Doku: README, ENTSCHEIDUNGEN (inkl. Lastabschätzung), ABNAHME.
 
 ## Offen / nächste Schritte
-- Ergebnisse des Code-Reviews einarbeiten.
+- Code-Review eingearbeitet (14 Fehler behoben, Regressionstests). Tests 56/56, Browser 27/27.
 - Push nach GitHub ist in dieser Umgebung nicht erlaubt → Leif pusht von Hand.
