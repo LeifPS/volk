@@ -24,6 +24,8 @@ export const NEBEL_BYTES = Math.ceil(ANZAHL / 8);
 
 export const einheiten = {
   einheitDaten(e) { return EINHEIT[e.typ]; },
+  /** Tatsächlicher Ort (verladene Einheiten sind dort, wo ihr Träger ist). */
+  einheitOrt(e) { return e.in && this.z.einheiten[e.in] ? this.z.einheiten[e.in].feld : e.feld; },
   bereich(d) { return bereichVon(d); },
   schicht(d) { return schichtVon(d); },
 
@@ -145,11 +147,12 @@ export const einheiten = {
   },
 
   /** Kosten-Funktion für die Wegsuche einer konkreten Einheit (fremde Einheiten blockieren). */
-  kostenFunktion(e, ziel) {
+  kostenFunktion(e, ziel, sicht = null) {
     const d = EINHEIT[e.typ];
     return (von, nach) => {
       const c = this.bewegungsKostenRoh(e.volk, d, von, nach);
       if (c === Infinity) return c;
+      if (sicht && !sicht.has(nach)) return c;
       for (const u of this.einheitenAuf(nach)) {
         if (u.volk === e.volk) continue;
         if (this.verbuendet(e.volk, u.volk) && schichtVon(EINHEIT[u.typ]) !== schichtVon(d)) continue;
@@ -169,7 +172,7 @@ export const einheiten = {
   /** Plant einen Weg mit Ankunftszeiten je Schritt. */
   planeWeg(e, ziel, o = {}) {
     const d = EINHEIT[e.typ];
-    const w = sucheWeg(e.feld, ziel, this.kostenFunktion(e, ziel), { minKosten: 0.12, zielNachbarReicht: !!o.nachbar });
+    const w = sucheWeg(e.feld, ziel, this.kostenFunktion(e, ziel, o.sicht || null), { minKosten: 0.12, zielNachbarReicht: !!o.nachbar });
     if (!w) return null;
     const bonus = this.tempoBonus(e, d);
     let t = this.t;
@@ -277,6 +280,7 @@ export const einheiten = {
     const vorher = e.feld;
     e.feld = st.f;
     e.pfad.shift();
+    for (const x of this.alleEinheiten()) if (x.in === e.id) { x.feld = e.feld; this.markiere('e' + x.id); }
     if (tausch) { tausch.feld = vorher; this.hpAbrechnen(tausch); this.markiere('e' + tausch.id); }
     this.positionenNeu();
     this.markiere('e' + eid);

@@ -2,7 +2,7 @@
 
 Stand: Ende der ersten Fassung. Alle Ergebnisse unten sind tatsächlich gelaufen (macOS, Node 24, Chromium 134 über Playwright 1.51, `wrangler dev` 4.x lokal).
 
-## Automatische Tests (`npm test`): 48 von 48 bestanden
+## Automatische Tests (`npm test`): 56 von 56 bestanden
 
 | Datei | Was | Ergebnis |
 |---|---|---|
@@ -15,7 +15,12 @@ Stand: Ende der ersten Fassung. Alle Ergebnisse unten sind tatsächlich gelaufen
 | `tests/mehrspieler.test.mjs` | 4 Bot-Spieler über den echten Server-Code + KI + Stadtstaaten + Barbaren, 14 simulierte Tage, Alarme wie im Durable Object, nachts 2 Spieler offline: keine Engine-Fehler, Stapelregel nie verletzt, Besitz konsistent, keine negativen Bestände, Lastgrenzen | bestanden |
 | `tests/statisch.test.mjs` | Jede Einheit/Gebäude/Wunder/Rohstoff/Verbesserung/Gelände hat ein Sprite, alle benutzten UI-Symbole existieren, keine leeren Sprites, Stadt-Sprites je Zeitalter verschieden, keine zwei Einheiten identisch, alle Verweise in `index.html`, Vorlade-Skript vor dem Spielcode, `wrangler.jsonc` gültig, alle Importpfade existieren | bestanden |
 
+| `tests/regression.test.mjs` | Fehler aus dem unabhängigen Code-Review: Naturereignis übersteht Neustart, Waffenruhe in beide Richtungen, Prototyp-Schlüssel (`constructor`, `__proto__`) als Bau-ID/Kontoname harmlos, Schiffe im eroberten Hafen werden versenkt, automatischer Friedensvorschlag kommt nach Ablauf erneut, zwei Tabs zählen richtig, Stadtplatz-/Wegvorschau verraten nichts Unsichtbares, vorgemerkter Bau startet ohne Sekundentakt | bestanden |
+
 Zusätzlich: `npx wrangler deploy --dry-run` läuft durch (Bindings `WELT` und `ASSETS`).
+
+## Unabhängiges Code-Review
+Ein separater Prüf-Agent hat Engine und Server gelesen und 14 Fehler mit Skripten nachgestellt (u. a. ein kritischer: ein laufendes Naturereignis hätte die Welt nach einem Neustart blockiert). Alle 14 sind behoben; die wichtigsten sind als Regressionstests abgesichert, die übrigen wurden mit den Prüfskripten erneut kontrolliert.
 
 ## Balance-Simulation (`node tools/balance-sim.mjs 34`)
 Ein guter Bot-Spieler (forscht gezielt, baut Wissenschaft, bis 8 Städte) in voller Welt:

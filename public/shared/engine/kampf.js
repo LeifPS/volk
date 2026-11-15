@@ -71,6 +71,7 @@ export const kampf = {
     if (va.art === 'spieler' && va.schutz_bis > this.t) return 'Während deines Neulingsschutzes (24 Stunden) kannst du nicht angreifen. Erkläre einen Krieg, um ihn vorzeitig zu beenden.';
     if (vb.art === 'spieler' && vb.schutz_bis > this.t) return `${vb.name} steht noch unter Neulingsschutz.`;
     if (!this.imKrieg(a, b)) return `Du bist nicht im Krieg mit ${vb.name}.`;
+    if (va.art === 'spieler' && !this.angreifbar(a)) return 'Waffenruhe: Du warst zu lange offline.';
     if (vb.art === 'spieler' && !this.angreifbar(b)) return `${vb.name} ist offline: Es herrscht Waffenruhe, bis ${vb.name} wieder online ist (danach 10 Minuten Schonfrist).`;
     return null;
   },
@@ -428,7 +429,8 @@ export const kampf = {
     const g = this.garnison(s);
     if (g) this.einheitEntfernen(g.id);
     // Zivilisten in der Stadt werden gefangen
-    for (const z of this.einheitenAuf(s.feld)) if (z.volk === alt) { if (bereichVon(EINHEIT[z.typ]) === 'luft') this.einheitEntfernen(z.id); else this.zivilFangen(z, neu); }
+    for (const z of this.einheitenAuf(s.feld)) if (z.volk === alt) { if (istMilitaer(EINHEIT[z.typ]) || bereichVon(EINHEIT[z.typ]) === 'luft') this.einheitEntfernen(z.id); else this.zivilFangen(z, neu); }
+    for (const z of this.alleEinheiten()) if (z.in && !this.z.einheiten[z.in]) this.einheitEntfernen(z.id);
     for (const x of this.alleEinheiten()) if (x.route && (x.route.von === s.id || x.route.nach === s.id)) this.routeBeenden(x, 'Die Handelsroute endet, weil eine der Städte erobert wurde.');
     s.volk = neu;
     s.bev = Math.max(1, Math.round(s.bev * 0.4));
@@ -439,6 +441,7 @@ export const kampf = {
     for (const gid of ids) if (this.zufall() < 0.5) delete s.gebaeude[gid];
     s.bau = []; s.schlange = []; s.nahrung = 0; s.kultur = 0; s.manuell = false;
     s.zerstoert_bis = this.t + KAMPF.zerstoertDauer;
+    this.ablaufPlanen(neu, s.zerstoert_bis);
     s.hp = Math.round(this.stadtMaxHp(s) * 0.25); s.hp_um = this.t; s.angriff_um = this.t;
     for (const [wid, w] of Object.entries(this.z.wunder)) if (w.stadt === s.id) { w.volk = neu; this.markiere('w' + wid); }
     // fremde Einheiten im Gebiet nach Hause schicken
@@ -490,6 +493,7 @@ export const kampf = {
     pruefe(!h, h);
     this.aendern(bes); this.aendern(v.id);
     this.setzeFeld(e.feld, { pl: this.t + 12 * STD });
+    this.ablaufPlanen(bes, this.t + 12 * STD);
     v.gold += 30;
     e.ep = (e.ep || 0) + 2;
     this.kampfVermerken(v.id, bes);
@@ -506,7 +510,7 @@ export const kampf = {
     pruefe(!e.einsatz, 'Das Flugzeug ist noch im Einsatz.');
     pruefe(!(e.abkling_bis > this.t), `Das Flugzeug muss erst gewartet werden (bereit in ${Math.ceil((e.abkling_bis - this.t) / MIN)} min).`);
     const feld = b.ziel | 0;
-    const start = e.in ? this.z.einheiten[e.in]?.feld ?? e.feld : e.feld;
+    const start = this.einheitOrt(e);
     pruefe(abstand(start, feld) <= this.reichweite(e), `Das Ziel ist außerhalb des Einsatzradius (${this.reichweite(e)} Felder).`);
     const ziel = this.zielAuf(feld, v.id);
     pruefe(ziel && (ziel.einheit || ziel.stadt), 'Dort gibt es kein Ziel.');
@@ -542,11 +546,11 @@ export const kampf = {
     if (traeger) {
       pruefe(traeger.volk === v.id && EINHEIT[traeger.typ]?.faehigkeiten?.includes('traeger'), 'Das ist kein eigener Flugzeugträger.');
       pruefe(this.alleEinheiten().filter((x) => x.in === traeger.id).length < 3, 'Der Träger ist voll (3 Flugzeuge).');
-      pruefe(abstand(e.feld, traeger.feld) <= this.reichweite(e) * 2, 'Der Träger ist zu weit weg.');
+      pruefe(abstand(this.einheitOrt(e), traeger.feld) <= this.reichweite(e) * 2, 'Der Träger ist zu weit weg.');
       e.in = traeger.id; e.feld = traeger.feld;
     } else {
       pruefe(s && s.volk === v.id, 'Flugzeuge können nur in eigene Städte oder auf Träger verlegt werden.');
-      pruefe(abstand(e.feld, s.feld) <= this.reichweite(e) * 2, `Zu weit: höchstens ${this.reichweite(e) * 2} Felder.`);
+      pruefe(abstand(this.einheitOrt(e), s.feld) <= this.reichweite(e) * 2, `Zu weit: höchstens ${this.reichweite(e) * 2} Felder.`);
       pruefe(this.luftPlatzFrei(s), 'In dieser Stadt ist kein Platz (Flughafen bauen).');
       e.in = null; e.feld = s.feld;
     }
@@ -562,7 +566,7 @@ export const kampf = {
     pruefe(d.faehigkeiten?.includes('flaechenschaden'), 'Das ist keine Atomwaffe.');
     pruefe(this.hatOption(v, 'atomschlag'), `Dafür fehlt die Forschung "${this.forschungsName(FREIGESCHALTET_DURCH['option:atomschlag'])}".`);
     const feld = b.ziel | 0;
-    pruefe(abstand(e.feld, feld) <= this.reichweite(e), `Das Ziel ist außer Reichweite (${this.reichweite(e)} Felder).`);
+    pruefe(abstand(this.einheitOrt(e), feld) <= this.reichweite(e), `Das Ziel ist außer Reichweite (${this.reichweite(e)} Felder).`);
     const felder = umkreis(feld, 2);
     const betroffen = new Set();
     for (const i of felder) {
@@ -580,6 +584,7 @@ export const kampf = {
       const s = this.stadtAuf(i);
       if (s) { this.stadtHpAbrechnen(s); s.hp = Math.max(1, s.hp * 0.4); s.bev = Math.max(1, Math.round(s.bev * 0.5)); s.angriff_um = this.t; this.markiere('s' + s.id); }
       this.setzeFeld(i, { fo: this.t + 24 * STD, pl: this.z.felder[i]?.v ? this.t + 24 * STD : null });
+      this.ablaufPlanen(this.besitzer(i), this.t + 24 * STD);
     }
     for (const x of betroffen) { this.kampfVermerken(v.id, x); this.meldung(x, `${v.name} hat eine Atomwaffe eingesetzt! Der Fallout vergeht nach 24 Stunden.`, { art: 'kampf', feld, wichtig: true }); delete this._raten[x]; }
     for (const a of this.alleVoelker()) if (!betroffen.has(a.id) && a.id !== v.id) this.meldung(a.id, `${v.name} hat eine Atomwaffe eingesetzt.`, { art: 'kampf' });

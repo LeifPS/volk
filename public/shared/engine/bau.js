@@ -30,7 +30,11 @@ export const bau = {
   istKuestenstadt(s) { return nachbarn(s.feld).some((n) => GELAENDE[karte().gelaende[n]].wasser); },
   istFlussstadt(s) { const k = karte(); return !!k.fluss[s.feld] || nachbarn(s.feld).some((n) => k.fluss[n] || GELAENDE[k.gelaende[n]].suesswasser); },
 
-  bauDaten(art, id) { return art === 'gebaeude' ? GEB[id] : art === 'wunder' ? WUNDER_NACH_ID[id] : art === 'einheit' ? EINHEIT[id] : null; },
+  bauDaten(art, id) {
+    if (typeof id !== 'string') return null;
+    const t = art === 'gebaeude' ? GEB : art === 'wunder' ? WUNDER_NACH_ID : art === 'einheit' ? EINHEIT : null;
+    return t && Object.hasOwn(t, id) && id !== 'raubtier' ? t[id] : null;
+  },
 
   /** Grund, warum etwas nicht gebaut werden kann (oder null). Prüft keine Kosten. */
   bauHindernis(s, art, id) {
@@ -109,6 +113,7 @@ export const bau = {
   bauSchlangeWeiter(sid) {
     const s = this.z.staedte[sid]; if (!s) return;
     const v = this.z.voelker[s.volk];
+    this.abrechnen(v.id);
     s.bau = s.bau || []; s.schlange = s.schlange || [];
     s.warte_um = null;
     while (s.bau.length < this.bauplaetze(s) && s.schlange.length) {

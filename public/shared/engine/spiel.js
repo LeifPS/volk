@@ -156,6 +156,7 @@ export class Spiel {
     if (g.natur_um) k(g.natur_um, 'natur', () => this.naturZug(), () => { g.natur_um = this.t + 6 * STD; });
     if (g.jahreszeit_um) k(g.jahreszeit_um, 'jahreszeit', () => this.jahreszeitWechsel(), () => { g.jahreszeit_um = this.t + STD; });
     if (g.diplo_um) k(g.diplo_um, 'diplo', () => this.diplomatiePruefung(), () => { g.diplo_um = this.t + STD; });
+    if (g.ablaeufe && g.ablaeufe.length) k(Math.min(...g.ablaeufe.map((a) => a.t)), 'ablauf', () => this.ablaufFaellig(), () => { g.ablaeufe = []; });
     for (const ev of g.ereignisse || []) k(ev.aktiv ? ev.ende : ev.start, 'natur' + ev.id, () => this.naturSchritt(ev.id), () => { g.ereignisse = g.ereignisse.filter((x) => x !== ev); });
     return best;
   }
@@ -174,7 +175,7 @@ export class Spiel {
       pruefe(b && typeof b === 'object' && typeof b.art === 'string', 'Ungültiger Befehl.');
       const v = this.z.voelker[vid];
       pruefe(v, 'Unbekanntes Volk.');
-      if (v.art === 'spieler') { v.letzte_aktivitaet = this.t; }
+      if (v.art === 'spieler') { v.letzte_aktivitaet = this.t; this.markiere('v' + vid); }
       const h = this['befehl_' + b.art];
       pruefe(typeof h === 'function' && BEFEHLE.has(b.art), 'Unbekannter Befehl: ' + b.art);
       const erg = h.call(this, v, b) || {};

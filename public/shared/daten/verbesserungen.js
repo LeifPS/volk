@@ -75,7 +75,7 @@ export const VERBESSERUNGEN = [
   { id: 'autobahn', kette: 'strasse', stufe: 5, schicht: 'weg', name: 'Autobahn', beschreibung: 'Asphalt und Brücken. Bewegungskosten 0,12.', gelaende: LAND_ALLE, ertrag: { g: 1 }, bewegung: 0.12, bauzeit: 16 * 3600 },
 ];
 
-export const VERBESSERUNG_NACH_ID = Object.fromEntries(VERBESSERUNGEN.map((v, i) => [v.id, { ...v, nr: i + 1 }]));
+export const VERBESSERUNG_NACH_ID = Object.assign(Object.create(null), Object.fromEntries(VERBESSERUNGEN.map((v, i) => [v.id, { ...v, nr: i + 1 }])));
 /** Nummer 0 = keine Verbesserung. */
 export const VERBESSERUNG_NR = Object.fromEntries(VERBESSERUNGEN.map((v, i) => [v.id, i + 1]));
 export const KETTEN = [...new Set(VERBESSERUNGEN.map((v) => v.kette))];

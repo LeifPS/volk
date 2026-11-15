@@ -49,6 +49,7 @@ test('Neulingsschutz, Krieg nur gegen Online-Spieler, Waffenruhe offline, Schonf
   s.verbindung(B.v.id, true);
   assert.match(s.kampfHindernis(A.v.id, B.v.id), /Waffenruhe/);
   vorspulen(s, 11 * MIN);
+  A.v.letzte_aktivitaet = uhr.jetzt();
   assert.equal(s.kampfHindernis(A.v.id, B.v.id), null);
   // Frieden: Angebot ohne Forschung nicht möglich, mit Forschung Angebot + Annahme
   r = s.befehl(A.v.id, { art: 'diplomatie_angebot', an: B.v.id, typ: 'frieden' });

@@ -175,7 +175,7 @@ export const ansicht = {
     if (q.art === 'weg') {
       const e = this.z.einheiten[q.einheit];
       pruefe(e && e.volk === vid, 'Das ist nicht deine Einheit.');
-      const pfad = this.planeWeg(e, q.ziel | 0, { nachbar: !!q.nachbar });
+      const pfad = this.planeWeg(e, q.ziel | 0, { nachbar: !!q.nachbar, sicht: this.sichtbareFelder(vid) });
       return { pfad: pfad ? pfad.map((p) => p.f) : null, ankunft: pfad && pfad.length ? pfad[pfad.length - 1].t : null };
     }
     if (q.art === 'verbesserungen') {
@@ -189,7 +189,12 @@ export const ansicht = {
       }
       return { liste: l };
     }
-    if (q.art === 'stadtplatz') return { grund: this.stadtGruendenHindernis(vid, q.feld | 0) };
+    if (q.art === 'stadtplatz') {
+      const f = q.feld | 0;
+      pruefe(this.istErkundet(this.nebel(vid), f), 'Dieses Feld ist noch unerforscht.');
+      const g = this.stadtGruendenHindernis(vid, f);
+      return { grund: g && /^Zu nah an /.test(g) && !this.alleStaedte().some((s) => this.istErkundet(this.nebel(vid), s.feld) && g.includes(s.name)) ? 'Zu nah an einer anderen Stadt.' : g };
+    }
     pruefe(false, 'Unbekannte Anfrage.');
   },
 };

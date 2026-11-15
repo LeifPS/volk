@@ -65,7 +65,11 @@ export const diplomatie = {
       v.letzte_aktivitaet = this.t;
     } else {
       v.verbunden = Math.max(0, (v.verbunden || 0) - 1);
-      if (!v.verbunden) { v.getrennt_seit = this.t; v.zuletzt_gesehen = this.t; }
+      if (!v.verbunden) {
+        v.getrennt_seit = this.t; v.zuletzt_gesehen = this.t;
+        // Offline schützt: laufende Naturereignisse wirken nicht mehr auf dieses Volk
+        for (const ev of this.z.global.ereignisse || []) if (ev.aktiv && ev.betroffen?.includes(vid)) { this.aendern(vid); ev.betroffen = ev.betroffen.filter((x) => x !== vid); delete this._raten[vid]; this.markiere('g'); }
+      }
     }
     this.markiere('v' + vid);
   },
@@ -161,7 +165,10 @@ export const diplomatie = {
       if (ae) this.markiere('v' + ss.id);
     }
     // abgelaufene Angebote (7 Tage) und Handelsgüter
-    for (const [id, a] of Object.entries(this.z.angebote)) if (this.t - a.t > 7 * TAG) { delete this.z.angebote[id]; this.markiere('a' + id); }
+    for (const [id, a] of Object.entries(this.z.angebote)) if (this.t - a.t > 7 * TAG) {
+      if (a.auto && a.parteien) { const d = this.z.diplomatie[this.diploSchluessel(a.parteien[0], a.parteien[1])]; if (d) { d.auto_vorschlag = null; d.letzter_kampf = this.t; this.markiere('d' + this.diploSchluessel(a.parteien[0], a.parteien[1])); } }
+      delete this.z.angebote[id]; this.markiere('a' + id);
+    }
     for (const v of this.alleVoelker()) {
       const vor = (v.luxus_handel || []).length + (v.luxus_abgabe || []).length;
       if (!vor) continue;
@@ -314,7 +321,7 @@ export const diplomatie = {
     const uebertrage = (g, n, t) => {
       if (t.gold) { g.gold -= t.gold; n.gold += t.gold; }
       for (const [gut, x] of Object.entries(t.lager || {})) { g.lager[gut] -= x; n.lager[gut] = (n.lager[gut] || 0) + x; }
-      for (const l of t.luxus || []) { (g.luxus_abgabe ||= []).push({ id: l, bis: this.t + 2 * TAG }); (n.luxus_handel ||= []).push({ id: l, bis: this.t + 2 * TAG, von: g.id }); }
+      for (const l of t.luxus || []) { (g.luxus_abgabe ||= []).push({ id: l, bis: this.t + 2 * TAG }); (n.luxus_handel ||= []).push({ id: l, bis: this.t + 2 * TAG, von: g.id }); this.ablaufPlanen(g.id, this.t + 2 * TAG); this.ablaufPlanen(n.id, this.t + 2 * TAG); }
       if (t.karte) { const ng = this.nebel(g.id), nn = this.nebel(n.id); for (let i = 0; i < ng.length; i++) nn[i] |= ng[i]; this.z.nebel[n.id] = null; this.markiere('n' + n.id); (this._volleKarte ||= new Set()).add(n.id); }
     };
     uebertrage(von, an, a.gibt || {});
@@ -337,6 +344,7 @@ export const diplomatie = {
     const gold = Math.max(3, Math.round(this.raten(o.id).einnahmen * 0.2));
     this.aendern(v.id); this.aendern(o.id);
     (g.tribute ||= []).push({ von: o.id, an: v.id, gold, bis: this.t + TAG });
+    this.ablaufPlanen(o.id, this.t + TAG); this.ablaufPlanen(v.id, this.t + TAG);
     this.markiere('g');
     delete this._raten[v.id]; delete this._raten[o.id];
     this.meldung(v.id, `${o.name} zahlt dir 24 Stunden lang ${gold} Gold pro Stunde Tribut. Beliebt macht dich das nicht.`, { art: 'diplomatie' });

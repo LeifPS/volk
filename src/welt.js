@@ -21,7 +21,7 @@ export class Welt extends DurableObject {
         alle: () => ctx.getWebSockets(),
         sende: (ws, text) => { try { ws.send(text); } catch (e) { /* Verbindung schon zu */ } },
         info: (ws) => { try { return ws.deserializeAttachment(); } catch { return null; } },
-        setzeInfo: (ws, info) => ws.serializeAttachment(info),
+        setzeInfo: (ws, info) => { try { ws.serializeAttachment(info); } catch (e) { /* Socket schon zu */ } },
       };
       this.server = new WeltServer(speicher, env, sockets);
       await this.alarmSetzen();

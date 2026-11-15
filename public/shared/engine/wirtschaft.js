@@ -91,8 +91,10 @@ export const wirtschaft = {
     // Naturereignisse
     for (const ev of this.z.global.ereignisse || []) {
       if (!ev.aktiv || !ev.felder || !ev.betroffen?.includes(v?.id)) continue;
-      if (ev.felderSet === undefined) ev.felderSet = new Set(ev.felder);
-      if (ev.felderSet.has(i)) e.n = Math.max(0, e.n + (ev.nahrung || 0));
+      this._evSets ||= new Map();
+      let fs = this._evSets.get(ev.id);
+      if (!fs) { fs = new Set(ev.felder); this._evSets.set(ev.id, fs); }
+      if (fs.has(i)) e.n = Math.max(0, e.n + (ev.nahrung || 0));
     }
     return e;
   },
@@ -296,18 +298,21 @@ export const wirtschaft = {
     this.aendern(s.volk);
     const bedarf = wachstumsBedarf(s.bev);
     const r = this.raten(s.volk).staedte[sid];
-    if (r.ueberschuss > 0) {
+    if (r.ueberschuss > 0 && (s.nahrung || 0) >= bedarf - 0.01) {
       const behalt = Math.min(60, this.gebaeudeSumme(s, 'wachstum_behalt')) / 100;
       s.nahrung = bedarf * behalt;
       s.bev++;
       this.meldung(s.volk, `${s.name} ist auf ${s.bev} Einwohner gewachsen.`, { art: 'stadt', feld: s.feld });
-    } else if (r.ueberschuss < 0 && s.bev > 1) {
+    } else if (r.ueberschuss < 0 && s.bev > 1 && (s.nahrung || 0) <= 0.01) {
       s.bev--;
       s.nahrung = wachstumsBedarf(s.bev) * 0.5;
       this.meldung(s.volk, `In ${s.name} hungern die Menschen: Die Stadt ist auf ${s.bev} Einwohner geschrumpft.`, { art: 'warnung', feld: s.feld, wichtig: true });
     } else {
       s.nahrung = Math.min(s.nahrung || 0, bedarf);
+      delete this._raten[s.volk];
+      return;
     }
+    this.handelspartnerAendern(s.id);
     if (!s.manuell) this.autoBewirtschaften(s); else this.manuellPruefen(s);
     this.markiere('s' + sid);
     delete this._raten[s.volk];
@@ -326,6 +331,7 @@ export const wirtschaft = {
     const s = this.z.staedte[sid]; if (!s) return;
     this.aendern(s.volk);
     const kosten = grenzKosten(s.grenz_k || 0);
+    if ((s.kultur || 0) < kosten - 0.01) { delete this._raten[s.volk]; return; }
     const f = this.bestesGrenzfeld(s);
     if (f < 0) { s.grenze_voll = true; this.markiere('s' + sid); return; }
     s.kultur = Math.max(0, (s.kultur || 0) - kosten);
@@ -481,7 +487,7 @@ export const wirtschaft = {
       if (gut !== 'gold' && r.kapazitaet[gut] < x) return null;
       t = Math.max(t, (v.stand_um ?? this.t) + (x - hat) / rate * STD);
     }
-    return Math.ceil(t) + 1000;
+    return Math.max(Math.ceil(t) + 1000, this.t + 60 * 1000);
   },
 
   // ---------- Goldmangel ----------
@@ -530,6 +536,29 @@ export const wirtschaft = {
   einkommensZeile(vid) {
     const r = this.raten(vid);
     return { netto: r.gold, einnahmen: r.einnahmen, unterhalt: r.unterhalt.einheiten + r.unterhalt.gebaeude, einheiten: r.unterhalt.einheiten, gebaeude: r.unterhalt.gebaeude, handel: r.handel };
+  },
+
+  /** Volk-Raten neu berechnen, wenn sich eine Stadt mit Handelsrouten ändert (Routenwert hängt von den Einwohnern ab). */
+  handelspartnerAendern(sid) {
+    for (const e of this.alleEinheiten()) if (e.route && e.route.aktiv && (e.route.von === sid || e.route.nach === sid)) {
+      this.aendern(e.volk);
+      const z = this.z.staedte[e.route.nach]; if (z && z.volk !== e.volk) this.aendern(z.volk);
+    }
+  },
+
+  /** Plant einen Zeitpunkt, an dem sich Erträge eines Volkes von selbst ändern (Plünderung, Fallout, Zerstörung, Luxus, Tribut). */
+  ablaufPlanen(vid, t) {
+    if (vid == null || !t || t <= this.t) return;
+    const g = this.z.global;
+    (g.ablaeufe ||= []).push({ volk: vid, t });
+    this.markiere('g');
+  },
+  ablaufFaellig() {
+    const g = this.z.global;
+    const jetzt = (g.ablaeufe || []).filter((a) => a.t <= this.t);
+    g.ablaeufe = (g.ablaeufe || []).filter((a) => a.t > this.t);
+    for (const a of jetzt) if (this.z.voelker[a.volk]) { this.aendern(a.volk); delete this._raten[a.volk]; }
+    this.markiere('g');
   },
 
   routenWert(route) {

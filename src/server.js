@@ -60,7 +60,7 @@ export class WeltServer {
     this.uhr = zeilen.get('uhr') ? JSON.parse(zeilen.get('uhr')) : { anker_real: Date.now(), anker_spiel: Date.now(), faktor: 1 };
     if (!this.zeitreglerErlaubt()) this.uhr = { anker_real: 0, anker_spiel: 0, faktor: 1, echt: true };
     if (!this.env.__eigeneUhr) setzeUhr(() => this.spielzeit());
-    const kontenDaten = { konten: {}, sitzungen: {} };
+    const kontenDaten = { konten: Object.create(null), sitzungen: Object.create(null) };
     for (const [k, v] of zeilen) {
       if (k.startsWith('konto:')) kontenDaten.konten[k.slice(6)] = JSON.parse(v);
       else if (k.startsWith('sitzung:')) kontenDaten.sitzungen[k.slice(8)] = JSON.parse(v);
@@ -173,7 +173,20 @@ export class WeltServer {
     for (const e of s.einheitenVon(vid)) s.einheitEntfernen(e.id);
     for (const st of s.staedteVon(vid)) { for (const i of st.gebiet) s.setzeFeld(i, { s: null }); delete s.z.staedte[st.id]; s.markiere('s' + st.id); }
     for (const [k] of Object.entries(s.z.diplomatie)) if (k.split('|').map(Number).includes(vid)) { delete s.z.diplomatie[k]; s.markiere('g'); }
-    delete s.z.voelker[vid]; s.markiere('v' + vid); s.markiere('n' + vid);
+    for (const [id, a] of Object.entries(s.z.angebote)) if (a.von === vid || a.an === vid || a.parteien?.includes(vid)) { delete s.z.angebote[id]; s.markiere('a' + id); }
+    for (const [id, w] of Object.entries(s.z.wunder)) if (w.volk === vid) { delete s.z.wunder[id]; s.markiere('w' + id); }
+    if (s.z.global.tribute) s.z.global.tribute = s.z.global.tribute.filter((t) => t.von !== vid && t.an !== vid);
+    if (s.z.global.ablaeufe) s.z.global.ablaeufe = s.z.global.ablaeufe.filter((a) => a.volk !== vid);
+    for (const o of s.alleVoelker()) {
+      let ae = false;
+      if (o.bekannt && vid in o.bekannt) { delete o.bekannt[vid]; ae = true; }
+      if (o.einfluss && vid in o.einfluss) { delete o.einfluss[vid]; ae = true; }
+      if (o.verbuendet === vid) { o.verbuendet = null; ae = true; }
+      if (o.ki?.groll && vid in o.ki.groll) { delete o.ki.groll[vid]; ae = true; }
+      if (ae) { s.markiere('v' + o.id); delete s._raten[o.id]; }
+    }
+    for (const e of s.alleEinheiten()) if (e.route && (!s.z.staedte[e.route.von] || !s.z.staedte[e.route.nach])) s.routeBeenden(e);
+    delete s.z.voelker[vid]; s.markiere('v' + vid); s.markiere('n' + vid); s.markiere('g');
     s.positionenNeu();
   }
 
@@ -189,7 +202,7 @@ export class WeltServer {
   verbunden(ws) {
     const info = this.sockets.info(ws);
     this.spiel.verarbeite(jetzt());
-    if (info?.volk && this.spiel.z.voelker[info.volk]) this.spiel.verbindung(info.volk, true);
+    if (info?.volk && this.spiel.z.voelker[info.volk] && !info.gezaehlt) { this.spiel.verbindung(info.volk, true); this.sockets.setzeInfo(ws, { ...info, gezaehlt: true }); }
     this.letzte.delete(ws);
     this.sockets.sende(ws, JSON.stringify({ t: 'hallo', konto: info?.konto, volk: info?.volk || null, zeit: jetzt(), version: VERSION, farben: this.spiel.alleVoelker().map((v) => v.farbe) }));
     this.nachAenderung();
@@ -199,7 +212,7 @@ export class WeltServer {
     const info = this.sockets.info(ws);
     this.letzte.delete(ws);
     this.spiel.verarbeite(jetzt());
-    if (info?.volk && this.spiel.z.voelker[info.volk]) this.spiel.verbindung(info.volk, false);
+    if (info?.volk && this.spiel.z.voelker[info.volk] && info.gezaehlt) { this.spiel.verbindung(info.volk, false); this.sockets.setzeInfo(ws, { ...info, gezaehlt: false }); }
     this.speichern();
   }
 
@@ -217,10 +230,8 @@ export class WeltServer {
       try {
         const v = this.spiel.neuesSpielerVolk(info.konto, m.name, m.farbe);
         this.konten.konten[info.konto].volk = v.id; this.konten.schmutzig.add('konto:' + info.konto);
-        this.sockets.setzeInfo(ws, { ...info, volk: v.id });
-        // alle Sockets dieses Kontos zuordnen
-        for (const w of this.sockets.alle()) { const i = this.sockets.info(w); if (i && i.konto === info.konto && w !== ws) this.sockets.setzeInfo(w, { ...i, volk: v.id }); }
-        this.spiel.verbindung(v.id, true);
+        // alle Sockets dieses Kontos zuordnen und zählen
+        for (const w of this.sockets.alle()) { const i = this.sockets.info(w); if (i && i.konto === info.konto) { this.sockets.setzeInfo(w, { ...i, volk: v.id, gezaehlt: true }); this.spiel.verbindung(v.id, true); } }
         antwort({ ok: true, volk: v.id });
       } catch (e) { antwort({ ok: false, fehler: e.message || 'Fehler.' }); }
       this.nachAenderung();

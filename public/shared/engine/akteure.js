@@ -196,7 +196,7 @@ export const akteure = {
     k.ki.groll = k.ki.groll || {};
     k.ki.groll[taeter] = Math.min(100, (k.ki.groll[taeter] || 0) + wert);
     if (k.art === 'ki' && this.imKrieg(kid, taeter) && this.z.voelker[taeter]?.art === 'spieler') { k.ki.rache = k.ki.rache || {}; k.ki.rache[taeter] = this.t + 6 * STD; }
-    if (k.art === 'stadtstaat' && k.einfluss) k.einfluss[taeter] = Math.max(-60, (k.einfluss[taeter] || 0) - wert);
+    if (k.art === 'stadtstaat' && k.einfluss) { this.aendern(taeter); k.einfluss[taeter] = Math.max(-60, (k.einfluss[taeter] || 0) - wert); delete this._raten[taeter]; }
     this.markiere('v' + kid);
   },
 
@@ -314,6 +314,7 @@ export const akteure = {
         const bes = this.besitzer(e.feld);
         this.aendern(bes);
         this.setzeFeld(e.feld, { pl: this.t + 8 * STD });
+        this.ablaufPlanen(bes, this.t + 8 * STD);
         this.meldung(bes, `Barbaren haben ${VERBESSERUNG[this.z.felder[e.feld].v]?.name || 'eine Verbesserung'} geplündert!`, { art: 'kampf', feld: e.feld, wichtig: true });
         delete this._raten[bes];
       } else this.bewegeNach(e, best.feld, { still: true });
@@ -428,6 +429,7 @@ export const akteure = {
     } else {
       for (const vid of ev.betroffen || []) this.aendern(vid);
       g.ereignisse = g.ereignisse.filter((x) => x.id !== id);
+      this._evSets?.delete(id);
       for (const vid of ev.betroffen || []) { delete this._raten[vid]; this.meldung(vid, ev.typ === 'duerre' ? 'Die Dürre ist vorbei.' : 'Das Hochwasser ist zurückgegangen.', { art: 'natur', feld: ev.mitte }); }
     }
     this.markiere('g');

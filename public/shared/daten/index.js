@@ -21,7 +21,7 @@ export * from './wunder.js';
 export * from './forschung.js';
 export * from './akteure.js';
 
-const nachId = (liste) => Object.fromEntries(liste.map((x) => [x.id, x]));
+const nachId = (liste) => Object.assign(Object.create(null), Object.fromEntries(liste.map((x) => [x.id, x])));
 
 export const EINHEIT = nachId(EINHEITEN);
 export const GEB = nachId(GEBAEUDE);
@@ -34,7 +34,7 @@ export const VERBESSERUNG = nachId(VERBESSERUNGEN);
 export const GELAENDE_ID = nachId(GELAENDE);
 
 /** 'art:id' → ID der (ersten) Forschung, die es freischaltet. Boni sind nicht enthalten. */
-export const FREIGESCHALTET_DURCH = {};
+export const FREIGESCHALTET_DURCH = Object.create(null);
 for (const f of FORSCHUNGEN) {
   for (const x of f.freischaltet) {
     if (x.art === 'bonus') continue;
@@ -44,7 +44,7 @@ for (const f of FORSCHUNGEN) {
 }
 
 /** Forschungs-ID → IDs der Forschungen, die sie als Voraussetzung haben. */
-export const NACHFOLGER = Object.fromEntries(FORSCHUNGEN.map((f) => [f.id, []]));
+export const NACHFOLGER = Object.assign(Object.create(null), Object.fromEntries(FORSCHUNGEN.map((f) => [f.id, []])));
 for (const f of FORSCHUNGEN) for (const v of f.voraussetzungen) NACHFOLGER[v]?.push(f.id);
 
 /** IDs der Startforschungen (ohne Voraussetzungen). */

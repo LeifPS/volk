@@ -49,6 +49,7 @@ export function fenster(titel, inhalt, o = {}) {
     element: f, inhalt: innen, fuss, o,
     schliessen() {
       const i = stapel.indexOf(obj); if (i < 0) return;
+      versteckeTip();
       stapel.splice(i, 1); f.remove();
       if (stapel.length) stapel[stapel.length - 1].element.classList.remove('versteckt'); else ebene.classList.add('versteckt');
       o.beiSchliessen?.();
@@ -85,7 +86,8 @@ export function toast(text, art = 'info', o = {}) {
 export const fehler = (text) => toast(text, 'fehler', { symbol: 'warnung' });
 
 // ---------- Tooltips (Maus: Hover, Touch: langes Drücken auf Elemente der Oberfläche) ----------
-let tipEl = null;
+let tipEl = null, tipQuelle = null;
+setInterval(() => { if (tipQuelle && !tipQuelle.isConnected) versteckeTip(); }, 400);
 export function tip(e, text) {
   e.dataset.tip = typeof text === 'function' ? '' : text;
   if (typeof text === 'function') e._tip = text;
@@ -101,6 +103,7 @@ export function tip(e, text) {
 function zeigeTip(e, ev) {
   const text = e._tip ? e._tip() : e.dataset.tip;
   if (!text) return;
+  tipQuelle = e;
   if (!tipEl) { tipEl = el('div#tooltip.pix'); document.body.append(tipEl); }
   tipEl.innerHTML = '';
   if (text instanceof Node) tipEl.append(text); else tipEl.textContent = text;
@@ -114,7 +117,7 @@ function platziere(ev) {
   if (y + h > innerHeight - 4) y = ev.clientY - h - 10;
   tipEl.style.left = Math.max(4, x) + 'px'; tipEl.style.top = Math.max(4, y) + 'px';
 }
-export function versteckeTip() { tipEl?.classList.add('versteckt'); }
+export function versteckeTip() { tipEl?.classList.add('versteckt'); tipQuelle = null; }
 
 // ---------- Formate ----------
 export function zahl(x, stellen = 0) {

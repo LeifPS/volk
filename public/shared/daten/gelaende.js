@@ -29,7 +29,7 @@ export const GELAENDE = [
   { id: 'pilzwald', name: 'Pilzwald', beschreibung: 'Riesige Pilze, so hoch wie Bäume. Nahrhaft und seltsam schön.', ertrag: { n: 2, p: 1, g: 0 }, material: { holz: 1 }, kultur: 1, bewegung: 2, verteidigung: 2, sicht: 0, hoehe: 1, exotisch: true, farben: ['#6f5a86', '#7b6692', '#634f79'], seite: '#3f3054' },
 ];
 
-export const GELAENDE_NACH_ID = Object.fromEntries(GELAENDE.map((g, i) => [g.id, { ...g, nr: i }]));
+export const GELAENDE_NACH_ID = Object.assign(Object.create(null), Object.fromEntries(GELAENDE.map((g, i) => [g.id, { ...g, nr: i }])));
 export const GELAENDE_NR = Object.fromEntries(GELAENDE.map((g, i) => [g.id, i]));
 
 /** Fluss ist kein eigenes Gelände, sondern ein Merkmal eines Feldes. */

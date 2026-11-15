@@ -58,7 +58,7 @@ export const ROHSTOFFE = [
   { id: 'irrlichter', name: 'Irrlicht-Essenz', art: 'luxus', gelaende: ['irrlichtmoor'], dichte: 0.5, verbesserung: 'irrlichtschrein', ertrag: { k: 2, g: 1 }, glueck: 1, zweck: 'Zufriedenheit und viel Kultur. Nur in Mooren mit Irrlichtern.' },
 ];
 
-export const ROHSTOFF_NACH_ID = Object.fromEntries(ROHSTOFFE.map((r, i) => [r.id, { ...r, nr: i }]));
+export const ROHSTOFF_NACH_ID = Object.assign(Object.create(null), Object.fromEntries(ROHSTOFFE.map((r, i) => [r.id, { ...r, nr: i }])));
 export const ROHSTOFF_NR = Object.fromEntries(ROHSTOFFE.map((r, i) => [r.id, i]));
 
 /** Lagerbare Güter des Reichslagers (außer Gold). */

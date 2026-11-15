@@ -33,8 +33,8 @@ export function passwortFehler(p) {
 export class Konten {
   /** speicher: { lade(k), setze(k, v), loesche(k) } für die Tabellen-Zeilen "konto:<name>" und "sitzung:<token>" */
   constructor(daten, jetzt) {
-    this.konten = daten.konten || {};       // name_klein -> { name, salz, hash, iter, volk, erstellt, gesperrt }
-    this.sitzungen = daten.sitzungen || {}; // token -> { konto, ablauf }
+    this.konten = Object.assign(Object.create(null), daten.konten || {});       // name_klein -> { name, salz, hash, iter, volk, erstellt, gesperrt }
+    this.sitzungen = Object.assign(Object.create(null), daten.sitzungen || {}); // token -> { konto, ablauf }
     this.jetzt = jetzt;
     this.versuche = new Map();              // Schlüssel (IP oder Konto) -> { n, bis }
     this.schmutzig = new Set();
