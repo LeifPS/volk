@@ -4,7 +4,7 @@ import { abstand, nachbarn, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { ROHSTOFFE } from '../daten/rohstoffe.js';
 import { GEB, WUNDER_NACH_ID, EINHEIT, VERBESSERUNG, FREIGESCHALTET_DURCH } from '../daten/index.js';
-import { bauDauer, ABBRUCH_ERSTATTUNG, STD, MIN } from '../regeln.js';
+import { bauDauer, anfangsTempo, ABBRUCH_ERSTATTUNG, STD, MIN } from '../regeln.js';
 import { pruefe } from './spiel.js';
 import { sucheWeg } from '../pfad.js';
 
@@ -83,7 +83,7 @@ export const bau = {
     if (art === 'einheit') prozent += this.gebaeudeSumme(s, 'einheit_bauzeit_prozent');
     const v = this.z.voelker[s.volk];
     if (v.art === 'ki') prozent += 30;
-    return bauDauer(d.kosten.zeit, sr.p, prozent);
+    return bauDauer(d.kosten.zeit / anfangsTempo(d.zeitalter || 0), sr.p, prozent);
   },
 
   /** Befehl: Bauauftrag in die Warteschlange (startet sofort, wenn ein Bauplatz frei ist). */

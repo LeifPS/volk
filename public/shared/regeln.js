@@ -19,14 +19,21 @@ export const STADT_MINDESTABSTAND = 4;     // Felder Abstand (also mind. 3 Felde
 export const STADT_RADIUS_ARBEIT = 3;
 export const STADT_RADIUS_GRENZE_MAX = 5;
 
+// --- Anfangsbeschleunigung: Der Einstieg soll flott gehen, später wird es zäher ---
+/** Tempo-Faktor für Bauen, Ausbilden und Forschen je Zeitalter (0 = Antike). Danach 1. */
+export const ANFANGS_TEMPO = [2, 1.5, 1.25];
+export function anfangsTempo(zeitalter) { return ANFANGS_TEMPO[zeitalter] ?? 1; }
+/** Faktor auf den Bedarf für Wachstum und Grenzen: die ersten Stufen sind billiger (0,5 bei Stufe 0, ab Stufe 6 voll). */
+export function anfangsFaktor(stufe) { return Math.min(1, 0.5 + 0.08 * Math.max(0, stufe)); }
+
 /** Nahrung, die eine Stadt mit b Einwohnern zum Wachsen braucht. */
 export function wachstumsBedarf(b) {
-  return Math.round(ERTRAG_FAKTOR * (5 + 5 * (b - 1) + Math.pow(b - 1, 1.6)));
+  return Math.round(ERTRAG_FAKTOR * anfangsFaktor(b - 1) * (5 + 5 * (b - 1) + Math.pow(b - 1, 1.6)));
 }
 
 /** Kultur, die eine Stadt für ihr k-tes zusätzliches Grenzfeld braucht. */
 export function grenzKosten(k) {
-  return Math.round(ERTRAG_FAKTOR * (4 + 4 * k + Math.pow(k, 1.45)));
+  return Math.round(ERTRAG_FAKTOR * anfangsFaktor(k) * (4 + 4 * k + Math.pow(k, 1.45)));
 }
 
 /** Forschungstempo-Faktor aus Wissenschaftspunkten (1 Punkt = +1 %). */
