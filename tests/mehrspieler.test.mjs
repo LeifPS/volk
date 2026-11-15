@@ -59,7 +59,7 @@ test('Mehrspieler-Simulation: 4 Spieler (Bots) + KI + Stadtstaaten + Barbaren ü
     const sch = schichtVon(EINHEIT[e.typ]);
     if (sch === 'luft') continue;
     const k = e.feld + ':' + sch;
-    assert.ok(!belegt.has(k) || s.z.voelker[e.volk].art === 'tiere', 'Stapelregel verletzt auf ' + k);
+    if (belegt.has(k) && s.z.voelker[e.volk].art !== 'tiere') { const o = s.alleEinheiten().find((q) => q.id === belegt.get(k)); assert.fail('Stapelregel verletzt auf ' + k + ' | ' + JSON.stringify([e, o].map((x) => ({ id: x.id, typ: x.typ, volk: x.volk, modus: x.modus, pfad: (x.pfad || []).length })))); }
     belegt.set(k, e.id);
   }
   for (const [i, f] of Object.entries(s.z.felder)) if (f.s) assert.ok(s.z.staedte[f.s]?.gebiet.includes(+i), 'Feld ' + i + ' gehört einer Stadt, die es nicht kennt');

@@ -62,7 +62,7 @@ test('Abklingzeit endet zur richtigen Zeit; nächstes Ereignis ist korrekt', () 
   assert.ok(n > uhr.jetzt() && n <= stadt.bau[0].fertig_um);
 });
 
-test('Weltquerung: Antike-Infanterie braucht etwa 1 bis 2 Tage', () => {
+test('Weltquerung: Antike-Infanterie braucht etwa 8 bis 16 Stunden', () => {
   const k = karte();
   // längster Landweg innerhalb des größten Kontinents von West nach Ost
   const groesste = k.landmasseGroesse.indexOf(Math.max(...k.landmasseGroesse));
@@ -74,7 +74,7 @@ test('Weltquerung: Antike-Infanterie braucht etwa 1 bis 2 Tage', () => {
   // ganze Weltbreite hochrechnen
   const breite = Math.abs((ost % BREITE) - (west % BREITE));
   const welt = ms / breite * BREITE / STD;
-  assert.ok(welt >= 24 && welt <= 48, `Querung der Welt ~${welt.toFixed(1)} h`);
+  assert.ok(welt >= 8 && welt <= 16, `Querung der Welt ~${welt.toFixed(1)} h`);
 });
 
 test('Viele gleichzeitige Befehle und Ereignisse über eine simulierte Woche ohne Fehler', () => {

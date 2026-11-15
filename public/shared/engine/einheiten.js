@@ -227,6 +227,7 @@ export const einheiten = {
     const e = this.eigeneEinheit(v, b.einheit);
     e.pfad = []; e.angriff = null; e.nach_arbeit = null;
     if (e.modus === 'erkunden') e.modus = 'wach';
+    this.stapelAufloesen(e);
     this.markiere('e' + e.id);
   },
 
@@ -243,6 +244,22 @@ export const einheiten = {
     this.markiere('e' + e.id);
     if (b.modus === 'erkunden') { e.arbeit = null; this.erkundenWeiter(e); }
     if (b.modus === 'auto_arbeit') { if (!e.arbeit) this.autoArbeitWeiter(e); }
+  },
+
+  /** Steht die Einheit (nach Stopp/Blockade) auf einem Feld mit einer eigenen stehenden Einheit derselben Schicht, rückt sie aufs nächste freie Feld. */
+  stapelAufloesen(e) {
+    const d = EINHEIT[e.typ];
+    const sch = schichtVon(d);
+    if (sch === 'luft' || e.in) return;
+    const mit = this.einheitenAuf(e.feld).find((u) => u.id !== e.id && !u.in && u.volk === e.volk && schichtVon(EINHEIT[u.typ]) === sch && !u.pfad?.length);
+    if (!mit) return;
+    const f = this.freiesFeld(e.volk, d, e.feld);
+    if (f < 0 || f === e.feld) return;
+    e.feld = f;
+    for (const x of this.alleEinheiten()) if (x.in === e.id) { x.feld = f; this.markiere('e' + x.id); }
+    this.positionenNeu();
+    this.markiere('e' + e.id);
+    this.erkunde(e.volk, e.feld, this.sichtweite(e));
   },
 
   /** Ein Schritt eines Marsches ist fällig. */
@@ -268,6 +285,7 @@ export const einheiten = {
     }
     if (kosten === Infinity) {
       e.pfad = [];
+      this.stapelAufloesen(e);
       this.markiere('e' + eid);
       if (e.route) { this.routeNeuPlanen(e); return; }
       if (e.modus === 'erkunden') { this.erkundenWeiter(e); return; }

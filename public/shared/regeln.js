@@ -58,7 +58,7 @@ export function freierGebaeudeUnterhalt(bev) { return 3 + bev * 0.5; }
 
 // --- Bewegung ---
 /** Sekunden pro Bewegungskosten-Einheit bei Tempo 2. */
-export const SCHRITT_BASIS_S = 360;
+export const SCHRITT_BASIS_S = 120;
 export const EINGESCHIFFT_TEMPO = 2;
 
 /** Dauer eines Schritts in ms. kosten: Geländekosten (oder Wegkosten), tempo: Bewegungspunkte der Einheit, bonusProzent: schneller. */
