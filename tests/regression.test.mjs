@@ -125,3 +125,25 @@ test('Vorgemerkter Bauauftrag startet, sobald das Material reicht, ohne Sekunden
   assert.ok(stadt.bau.length === 1 || s.einheitenVon(v.id).filter((e) => e.typ === 'krieger').length >= 2, 'Auftrag muss gestartet sein: ' + JSON.stringify({ schlange: stadt.schlange, bau: stadt.bau.length, gold: v.gold, k: s.einheitenVon(v.id).map((e) => e.typ), m: v.meldungen.slice(-3).map((m) => m.text) }));
   assert.ok(ereignisse < 3000, 'Sekundentakt? Ereignisse: ' + ereignisse);
 });
+
+test('Barbaren ignorieren den Neulingsschutz, Raubtiere nicht, Offline-Spieler bleiben verschont', () => {
+  const s = neueWelt();
+  const { v } = spielerMitStadt(s, 'Neuling');
+  v.verbunden = 1; v.letzte_aktivitaet = s.t;
+  const b = s.barbarenVolk(), t = s.tierVolk();
+  assert.ok(v.schutz_bis > s.t);
+  assert.equal(s.kampfHindernis(b.id, v.id), null, 'Barbaren dürfen Neulinge angreifen');
+  assert.ok(s.kampfHindernis(t.id, v.id), 'Raubtiere respektieren den Schutz');
+  assert.equal(s.kampfHindernis(v.id, b.id), null, 'Neulinge dürfen Barbaren bekämpfen');
+  // Barbar neben einem Neuling geht tatsächlich zum Angriff über
+  const ziel = s.einheitenVon(v.id).find((e) => e.typ === 'krieger');
+  const n = nachbarn(ziel.feld).find((i) => s.einheitenAuf(i).length === 0 && !s.stadtAuf(i));
+  const e = s.einheitErzeugen(b.id, 'krieger', n, {});
+  e.abkling_bis = 0; e.pfad = [];
+  const hp = ziel.hp;
+  s.barbarHandeln(b, e);
+  assert.ok(e.angriff != null || ziel.hp < hp || e.hp < 100, 'Der Barbar geht auf den Neuling los');
+  // offline: verschont
+  v.verbunden = 0; v.letzte_aktivitaet = s.t - 2 * STD; v.getrennt_seit = s.t - 2 * STD;
+  assert.ok(s.kampfHindernis(b.id, v.id));
+});

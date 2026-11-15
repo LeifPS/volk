@@ -62,7 +62,8 @@ export const kampf = {
     if (vb.art === 'tiere') return null;
     if (va.art === 'tiere' || va.art === 'barbar') {
       if (vb.art === 'spieler') {
-        if (vb.schutz_bis > this.t) return 'Neulingsschutz.';
+        // Barbaren ignorieren den Neulingsschutz; Raubtiere respektieren ihn
+        if (va.art === 'tiere' && vb.schutz_bis > this.t) return 'Neulingsschutz.';
         if (!this.istOnline(b)) return 'Spieler ist offline.';
       }
       return null;

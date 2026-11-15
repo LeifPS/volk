@@ -46,7 +46,7 @@ export const T = {
   verbindungWeg: 'Verbindung unterbrochen – verbinde neu …', verbindungDa: 'Wieder verbunden.',
   sitzungAbgelaufen: 'Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.',
   waehrendWeg: 'Während du weg warst',
-  neulingsschutz: (rest) => `Neulingsschutz: noch ${rest}. In dieser Zeit kann dich niemand angreifen, und du kannst niemanden angreifen.`,
+  neulingsschutz: (rest) => `Neulingsschutz: noch ${rest}. In dieser Zeit kann dich kein anderer Spieler angreifen, und du kannst keinen Spieler angreifen. Nur Barbaren ignorieren den Schutz.`,
   // Diplomatie-Fenster (ui/diplomatie.js)
   diplo: {
     titel: 'Diplomatie und Handel',
@@ -145,7 +145,7 @@ export const T = {
     regeln: {
       titel: 'So schützt das Spiel dich',
       punkte: [
-        'Neulingsschutz: In den ersten 24 Stunden nach der Gründung kann dich niemand angreifen. Erklärst du selbst Krieg, endet er sofort.',
+        'Neulingsschutz: In den ersten 24 Stunden nach der Gründung kann dich kein anderer Spieler angreifen. Barbaren ignorieren den Schutz. Erklärst du selbst Krieg, endet er sofort.',
         'Krieg darf man nur Spielern erklären, die gerade online sind.',
         'Ist ein Spieler im Krieg länger als 30 Minuten offline, gilt Waffenruhe: Niemand darf ihn angreifen, er niemanden.',
         'Kommt er zurück, gibt es 10 Minuten Schonfrist, bevor der Krieg weitergeht.',
@@ -297,18 +297,19 @@ T.lexikon = {
     { id: 'zeit', titel: 'Zeit statt Runden', sym: 'uhr', absaetze: () => [
       'Es gibt **keine Runden**. Alles läuft in echter Zeit weiter, auch wenn du nicht da bist: Truppen marschieren, Gebäude entstehen, Forschungen werden fertig.',
       'Am Anfang dauert vieles nur Minuten, später Stunden und ganz am Ende sogar Tage. Du musst also nicht ständig online sein: Schau einfach ab und zu vorbei, gib neue Befehle und lass die Zeit für dich arbeiten.',
+      '**Flotter Start:** In der Antike gehen Bauen, Ausbilden und Forschen doppelt so schnell, im nächsten Zeitalter noch anderthalbfach, danach etwas weniger. Auch die ersten Einwohner und Grenzfelder kommen schneller. Später wird alles Schritt für Schritt zäher.',
       'Bevor du etwas startest, zeigt das Spiel immer, **wie lange es dauert** (z. B. die Ankunftszeit einer Einheit). Abkürzen mit Gold oder Echtgeld gibt es nicht.',
     ] },
     { id: 'bauen', titel: 'Bauen', sym: 'bau', absaetze: (R) => [
       'Jede Stadt baut **einen Auftrag gleichzeitig**: eine Einheit, ein [[kat:gebaeude|Gebäude]] oder ein [[kat:wunder|Weltwunder]]. Weitere Aufträge kannst du in die Warteschlange stellen. Später erlauben Forschungen einen 2. und 3. gleichzeitigen Auftrag.',
       'Aufträge kosten **Zeit** und **Material** (Gold, Holz, Stein, später Eisen, Öl …). Das Material wird beim Start aus deinem Reichslager genommen. Fehlt etwas, sagt dir das Spiel genau, was und wie viel.',
-      `**Produktion** macht eine Stadt schneller: Jeder Produktionspunkt beschleunigt alle Aufträge dieser Stadt um 4 %. Bricht man einen Auftrag ab, gibt es ${Math.round(R.ABBRUCH_ERSTATTUNG * 100)} % des Materials zurück.`,
+      `**Produktion** macht eine Stadt schneller: Jeder Produktionspunkt beschleunigt alle Aufträge dieser Stadt um 4 %. Aufträge aus den frühen Zeitaltern gehen zusätzlich besonders flott (Antike doppelt so schnell). Bricht man einen Auftrag ab, gibt es ${Math.round(R.ABBRUCH_ERSTATTUNG * 100)} % des Materials zurück.`,
       'Verbesserungen auf den Feldern (Farmen, Minen, Straßen …) baut ein [[einheit:arbeiter|Arbeiter]] – nur innerhalb deiner Grenzen. Siehe [[kat:verbesserung|Verbesserungen]].',
     ] },
     { id: 'forschung', titel: 'Forschung', sym: 'forschung', absaetze: () => [
       'Fast alles wird erforscht: neue Einheiten, Gebäude, Verbesserungen, Diplomatie-Möglichkeiten und Boni. Der Forschungsbaum ist groß und reicht von der Antike bis zur Atomzeit.',
       'Dein Volk forscht **immer an genau einer Sache**. Du kannst weitere Forschungen in eine Warteschlange stellen. Wählst du etwas weiter hinten im Baum, setzt das Spiel die fehlenden Voraussetzungen automatisch davor.',
-      '**Wissenschaft** macht die Forschung schneller: jeder Punkt um 1 %. 100 Wissenschaft heißt also doppelt so schnell. Wissenschaft kommt aus Städten, Bibliotheken, Universitäten, Wundern und Forschungsabkommen.',
+      '**Wissenschaft** macht die Forschung schneller: jeder Punkt um 1 %. 100 Wissenschaft heißt also doppelt so schnell. Forschungen der frühen Zeitalter sind außerdem von Haus aus schneller (Antike doppelt so schnell). Wissenschaft kommt aus Städten, Bibliotheken, Universitäten, Wundern und Forschungsabkommen.',
       'Tipp: Achte darauf, dass immer eine Forschung läuft. Oben rechts blinkt es, wenn nicht.',
     ] },
     { id: 'bewegung', titel: 'Bewegung', sym: 'bewegen', absaetze: (R) => [
@@ -355,7 +356,7 @@ T.lexikon = {
       '**Offline passiert gar nichts:** Der Unterhalt friert bei 0 Gold einfach ein. Abhilfe: Einheiten auflösen, Märkte bauen, [[regel:handel|Handelsrouten]] einrichten.',
     ] },
     { id: 'wachstum', titel: 'Städte wachsen', sym: 'bevoelkerung', absaetze: (R) => [
-      `Jeder Einwohner isst ${R.NAHRUNG_PRO_EINWOHNER} Nahrung. Was übrig bleibt, wird gesammelt; ist genug da, wächst die Stadt um einen Einwohner. Größere Städte brauchen mehr Nahrung zum Wachsen.`,
+      `Jeder Einwohner isst ${R.NAHRUNG_PRO_EINWOHNER} Nahrung. Was übrig bleibt, wird gesammelt; ist genug da, wächst die Stadt um einen Einwohner. Größere Städte brauchen mehr Nahrung zum Wachsen; die ersten Einwohner kommen dafür besonders schnell.`,
       `Einwohner bewirtschaften Felder im Umkreis von ${R.STADT_RADIUS_ARBEIT} Feldern innerhalb der Grenzen. Die Stadt wählt die Felder automatisch; im Stadtfenster kannst du selbst festlegen, welche Felder bewirtschaftet werden.`,
       `Neue Städte gründest du mit einem [[einheit:siedler|Siedler]]: mindestens ${R.STADT_MINDESTABSTAND} Felder von anderen Städten entfernt, nicht auf fremdem Gebiet, nicht auf Gebirge oder Wasser.`,
     ] },
@@ -386,7 +387,7 @@ T.lexikon = {
       'KI-Völker greifen Spieler nie von sich aus an. Siehe [[kat:akteur|Völker und Wildnis]].',
     ] },
     { id: 'neulingsschutz', titel: 'Neulingsschutz', sym: 'schild', absaetze: (R) => [
-      `Die ersten **${Math.round(R.SCHUTZ.neulingDauer / R.STD)} Stunden** nach der Gründung deines Volkes bist du geschützt: Niemand kann dich angreifen – auch keine Barbaren – und du kannst niemanden angreifen.`,
+      `Die ersten **${Math.round(R.SCHUTZ.neulingDauer / R.STD)} Stunden** nach der Gründung deines Volkes bist du geschützt: Kein anderer Spieler kann dich angreifen und du keinen Spieler. **Barbaren ignorieren den Schutz** und können jederzeit kommen, darum solltest du früh ein paar Krieger haben. Barbaren darfst du auch im Schutz bekämpfen.`,
       'Oben in der Leiste siehst du das Schild-Symbol mit der restlichen Zeit. Erklärst du selbst jemandem den Krieg, endet der Schutz sofort (das Spiel warnt dich vorher).',
       'Hast du keine Stadt mehr und keinen Siedler, kannst du in den Einstellungen einen **Neuanfang** machen. Dann bekommst du neue Starteinheiten und wieder 24 Stunden Schutz.',
     ] },
@@ -402,7 +403,7 @@ T.lexikon = {
     ] },
     { id: 'barbaren', titel: 'Barbaren', sym: 'pluendern', absaetze: () => [
       'Barbarenlager entstehen an wilden Orten weit weg von Städten. Alle paar Stunden schicken sie eine **schwache** Einheit los, die Einheiten angreift oder Verbesserungen plündert.',
-      'Am Anfang sind sie etwas lästig, später kaum noch gefährlich. Sie respektieren den Neulingsschutz und greifen niemanden an, der offline ist und Frieden hat.',
+      'Am Anfang sind sie etwas lästig, später kaum noch gefährlich. Sie **ignorieren den Neulingsschutz** und greifen auch Neulinge an, die gerade online sind. Wer offline ist, bleibt unbehelligt.',
       '**Lager zerstören:** Ziehe eine Militäreinheit auf das Lager. Das bringt Gold und Erfahrung.',
     ] },
     { id: 'raubtiere', titel: 'Raubtiere', sym: ['tier', 'wolf'], absaetze: () => [
