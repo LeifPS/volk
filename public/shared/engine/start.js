@@ -7,11 +7,18 @@ import { START_LAGER, SCHUTZ, BARBAREN, STD, MIN, TAG } from '../regeln.js';
 import { pruefe, SpielFehler } from './spiel.js';
 
 export const START_ABSTAND = 18;
+export const BARBAREN_FARBE = '#9b111e';
+const BARBAREN_FARBE_ALT = '#2b2b2b';
 import { farbAbstand, volksnameFehler, FARB_VORSCHLAEGE } from '../namen.js';
 export { farbAbstand, volksnameFehler, FARB_VORSCHLAEGE };
 
 export const start = {
   /** Erstellt die Welt beim allerersten Start: Barbaren, Tiere, KI-Völker und Stadtstaaten. */
+  /** Bestehende Welten: Barbaren waren früher schwarz, jetzt rot. */
+  barbarenFarbeAktualisieren() {
+    for (const v of this.alleVoelker()) if (v.art === 'barbar' && v.farbe === BARBAREN_FARBE_ALT) { v.farbe = BARBAREN_FARBE; this.markiere('v' + v.id); }
+  },
+
   weltInitialisieren() {
     const g = this.z.global;
     if (g.initialisiert) return;
@@ -21,7 +28,7 @@ export const start = {
     g.barbaren_um = this.t + 10 * MIN;
     g.natur_um = this.t + 12 * STD;
     g.diplo_um = this.t + STD;
-    this.volkAnlegen({ art: 'barbar', name: 'Barbaren', farbe: '#2b2b2b' });
+    this.volkAnlegen({ art: 'barbar', name: 'Barbaren', farbe: BARBAREN_FARBE });
     this.volkAnlegen({ art: 'tiere', name: 'Wilde Tiere', farbe: '#7a5c3a' });
     for (const k of KI_VOELKER) {
       const feld = this.startplatz(START_ABSTAND + 4);

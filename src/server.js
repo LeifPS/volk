@@ -68,6 +68,7 @@ export class WeltServer {
     this.konten = new Konten(kontenDaten, () => jetzt());
     this.spiel = new Spiel(zeilen.has('kern') ? zustandAusZeilen(zeilen) : leererZustand(jetzt()));
     if (!this.spiel.z.global.initialisiert) { this.spiel.t = jetzt(); this.spiel.weltInitialisieren(); }
+    this.spiel.barbarenFarbeAktualisieren();
     // Verbindungszähler aus den tatsächlich offenen Sockets neu aufbauen
     const zaehler = {};
     for (const ws of this.sockets.alle()) { const i = this.sockets.info(ws); if (i && i.volk) zaehler[i.volk] = (zaehler[i.volk] || 0) + 1; }

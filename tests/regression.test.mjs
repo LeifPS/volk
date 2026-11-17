@@ -183,3 +183,13 @@ test('Gewähltes Grenzfeld wird als Nächstes übernommen, ungültige Ziele werd
   assert.equal(stadt.grenz_ziel, null);
   assert.equal(s.befehl(v.id, { art: 'grenzziel', stadt: stadt.id, feld: null }).ok, true);
 });
+
+test('Barbaren sind rot; alte schwarze Barbaren werden beim Laden umgefärbt', () => {
+  const s = neueWelt();
+  const b = s.alleVoelker().find((v) => v.art === 'barbar');
+  assert.equal(b.farbe, '#9b111e');
+  b.farbe = '#2b2b2b';
+  s.barbarenFarbeAktualisieren();
+  assert.equal(b.farbe, '#9b111e');
+  assert.ok(s.schmutzig.has('v' + b.id));
+});
