@@ -445,8 +445,12 @@ function zeichneEinheiten(liste, feld, s, t) {
     const farbe = volkFarbe(e.volk);
     const ausgewaehlt = Z.auswahl?.art === 'einheit' && Z.auswahl.id === e.id;
     // Fußkreis in Volksfarbe
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.beginPath(); ctx.ellipse(Math.round(x), Math.round(y + 7 * s), 11 * s, 4 * s, 0, 0, Math.PI * 2); ctx.fill();
+    // Landeinheit auf einem Wasserfeld = eingeschifft: sie sitzt in einem kleinen Ruderboot
+    const imBoot = !e.tier && !!d && !['see_zivil', 'see_nah', 'see_fern', 'u_boot', 'traeger', 'transport', 'jaeger', 'bomber', 'rakete', 'atom'].includes(d.klasse) && !!GELAENDE[karte().gelaende[aktuellesFeld(e)]]?.wasser;
+    if (!imBoot) {
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath(); ctx.ellipse(Math.round(x), Math.round(y + 7 * s), 11 * s, 4 * s, 0, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.strokeStyle = ausgewaehlt ? '#ffe066' : farbe; ctx.lineWidth = Math.max(1, Math.round((ausgewaehlt ? 2 : 1.5) * s));
     ctx.beginPath(); ctx.ellipse(Math.round(x), Math.round(y + 7 * s), 11 * s, 4 * s, 0, 0, Math.PI * 2); ctx.stroke();
     let bild;
@@ -456,12 +460,23 @@ function zeichneEinheiten(liste, feld, s, t) {
     let wipp = 0;
     if (bereich === 'see') wipp = Math.round(Math.sin(t / 500 + e.id) * 1);
     if (bereich === 'luft') wipp = Math.round(Math.sin(t / 400 + e.id) * 1.5) - 3;
-    if (e.pfad && e.pfad.length && bereich === 'land') wipp = Math.floor(t / 180) % 2 ? -1 : 0;
+    if (imBoot) wipp = Math.round(Math.sin(t / 500 + e.id) * 1);
+    else if (e.pfad && e.pfad.length && bereich === 'land') wipp = Math.floor(t / 180) % 2 ? -1 : 0;
     const gehtLinks = e.pfad && e.pfad.length && feldMitte(e.pfad[e.pfad.length - 1].f, R)[0] < wx - 1;
     if (bild) {
       const bx = x - (bild.width / 2) * s, by = y + 9 * s - bild.height * s + wipp * s;
-      if (gehtLinks) { ctx.save(); ctx.translate(Math.round(x), 0); ctx.scale(-1, 1); ctx.drawImage(bild, Math.round(-(bild.width / 2) * s), Math.round(by), Math.round(bild.width * s), Math.round(bild.height * s)); ctx.restore(); }
-      else male(bild, bx, by, s);
+      const schnitt = imBoot ? 7 : 0;   // im Boot sind die Beine verdeckt
+      const hoehe = bild.height - schnitt;
+      if (gehtLinks) { ctx.save(); ctx.translate(Math.round(x), 0); ctx.scale(-1, 1); ctx.drawImage(bild, 0, 0, bild.width, hoehe, Math.round(-(bild.width / 2) * s), Math.round(by), Math.round(bild.width * s), Math.round(hoehe * s)); ctx.restore(); }
+      else ctx.drawImage(bild, 0, 0, bild.width, hoehe, Math.round(bx), Math.round(by), Math.round(bild.width * s), Math.round(hoehe * s));
+    }
+    if (imBoot) {
+      const boot = sprite('deko', 'ruderboot', { farbe });
+      if (boot) {
+        const by2 = y + wipp * s;
+        if (gehtLinks) { ctx.save(); ctx.translate(Math.round(x), 0); ctx.scale(-1, 1); ctx.drawImage(boot, Math.round(-(boot.width / 2) * s), Math.round(by2), Math.round(boot.width * s), Math.round(boot.height * s)); ctx.restore(); }
+        else male(boot, x - (boot.width / 2) * s, by2, s);
+      }
     }
     // Lebensbalken
     const hp = aktuelleHp(e);

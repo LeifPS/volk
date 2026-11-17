@@ -260,6 +260,7 @@ export const bau = {
 
   befehl_arbeiten(v, b) {
     const e = this.eigeneEinheit(v, b.einheit);
+    this.pruefeNichtEingeschifft(e, 'arbeiten');
     pruefe(!e.pfad?.length, 'Die Einheit ist noch unterwegs.');
     const h = this.verbesserungHindernis(v, e.feld, b.verbesserung, e);
     pruefe(!h, h);

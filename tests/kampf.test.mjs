@@ -218,3 +218,42 @@ test('Wie in Civ 6: Fernangriff gibt keinen Gegenschaden, auch nicht gegen Fernk
   assert.equal(a.hp, 100, 'Fernkämpfer nimmt keinen Schaden');
   assert.ok(s.einheit(b.id).hp < 100, 'Ziel verliert LP');
 });
+
+test('Wie in Civ 6: Eingeschiffte Landeinheiten können weder angreifen noch gründen noch arbeiten', () => {
+  const s = neueWelt();
+  const A = spielerMitStadt(s, 'Lambda'), B = spielerMitStadt(s, 'Mythen');
+  A.v.bekannt[B.v.id] = 1; B.v.bekannt[A.v.id] = 1;
+  vorspulen(s, 25 * STD); kriegsBereit(s, A.v, B.v);
+  s.befehl(A.v.id, { art: 'krieg_erklaeren', volk: B.v.id });
+  const k = karte();
+  let wasser = -1, land = -1;
+  for (let i = 5000; i < 20000 && wasser < 0; i++) {
+    if (!GELAENDE[k.gelaende[i]].wasser || s.einheitenAuf(i).length) continue;
+    const n = nachbarn(i).find((x) => GELAENDE[k.gelaende[x]].id === 'ebene' && s.besitzer(x) == null && !s.einheitenAuf(x).length);
+    if (n != null) { wasser = i; land = n; }
+  }
+  assert.ok(wasser >= 0 && land >= 0);
+  const a = s.einheitErzeugen(A.v.id, 'krieger', land);
+  s.einheitErzeugen(B.v.id, 'krieger', land === wasser ? land : nachbarn(wasser).find((x) => x !== land && !s.einheitenAuf(x).length) ?? land);
+  a.feld = wasser; // eingeschifft
+  assert.equal(s.eingeschifft(a), true);
+  const ziel = s.alleEinheiten().find((u) => u.volk === B.v.id && abstand(u.feld, wasser) === 1 && u.id !== a.id);
+  assert.ok(ziel, 'Gegner neben dem Boot');
+  {
+    const vs = s.kampfVorschau(a, ziel.feld);
+    assert.equal(vs.ok, false); assert.match(vs.grund, /Eingeschiffte/);
+    const r = s.befehl(A.v.id, { art: 'angreifen', einheit: a.id, ziel: ziel.feld });
+    assert.equal(r.ok, false); assert.match(r.fehler, /Eingeschiffte/);
+  }
+  const siedler = s.einheitErzeugen(A.v.id, 'siedler', land); siedler.feld = wasser;
+  const r2 = s.befehl(A.v.id, { art: 'stadt_gruenden', einheit: siedler.id });
+  assert.equal(r2.ok, false); assert.match(r2.fehler, /Eingeschiffte/);
+  const arb = s.einheitErzeugen(A.v.id, 'arbeiter', land); arb.feld = wasser;
+  const r3 = s.befehl(A.v.id, { art: 'arbeiten', einheit: arb.id, verbesserung: 'farm' });
+  assert.equal(r3.ok, false); assert.match(r3.fehler, /Eingeschiffte/);
+  const r4 = s.befehl(A.v.id, { art: 'modus', einheit: a.id, modus: 'befestigt' });
+  assert.equal(r4.ok, false); assert.match(r4.fehler, /Eingeschiffte/);
+  // an Land funktioniert Befestigen weiterhin
+  a.feld = land;
+  assert.equal(s.befehl(A.v.id, { art: 'modus', einheit: a.id, modus: 'befestigt' }).ok, true);
+});

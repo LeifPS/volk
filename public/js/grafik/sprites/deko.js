@@ -858,3 +858,23 @@ definiere('deko', 'fallout', {
     for (let i = 0; i < 25; i++) { const x = 8 + Math.floor(r() * 32), y = 10 + Math.floor(r() * 16); if (!p.hole(x, y)) { if (r() < 0.4) p.px(x, y, '#c8dc58'); } }
   },
 });
+
+// ---------- Kleines Ruderboot für eingeschiffte Landeinheiten (28x10, Bug rechts, Spielerfarbe als Streifen) ----------
+definiere('deko', 'ruderboot', {
+  w: 28, h: 10,
+  zeichne(p) {
+    const H = PAL.holz, HD = PAL.holzD, HH = PAL.holzH;
+    // Rumpf von der Seite: oben breit (Bordwand), nach unten eingezogen; Bug rechts hochgezogen
+    p.rect(2, 2, 23, 1, HH);
+    p.rect(1, 3, 25, 1, H).rect(26, 2, 1, 1, H);
+    p.rect(2, 4, 24, 1, HD);
+    p.rect(4, 5, 20, 1, HD);
+    p.rect(7, 6, 14, 1, '#3d2818');
+    p.px(27, 1, HH).px(26, 1, HH).px(25, 1, HH);
+    // Streifen in Volksfarbe an der Bordwand
+    p.rect(4, 3, 18, 1, 'S').rect(6, 4, 14, 1, 'S-');
+    // Wasserlinie: Schaum und kleine Wellen um den Rumpf
+    for (let x = 4; x <= 23; x++) if ((x * 5) % 3 === 0) p.px(x, 7, PAL.wasserH);
+    p.px(1, 6, '#e8f3f9').px(2, 7, '#e8f3f9').px(3, 7, PAL.wasserH).px(24, 7, PAL.wasserH).px(25, 6, '#e8f3f9').px(26, 7, '#e8f3f9');
+  },
+});

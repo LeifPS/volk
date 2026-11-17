@@ -405,6 +405,7 @@ export const diplomatie = {
     const e = this.eigeneEinheit(v, b.einheit);
     const d = EINHEIT[e.typ];
     pruefe(d.faehigkeiten?.includes('handel'), 'Nur Karawanen und Handelsschiffe können Handelsrouten einrichten.');
+    this.pruefeNichtEingeschifft(e, 'Handelsrouten einrichten');
     const ziel = this.z.staedte[b.stadt];
     pruefe(ziel, 'Unbekannte Stadt.');
     pruefe(this.aktiveRouten(v.id).filter((x) => x.id !== e.id).length < this.routenKapazitaet(v), `Du kannst höchstens ${this.routenKapazitaet(v)} Handelsrouten gleichzeitig betreiben (Märkte, Häfen und Forschung erhöhen das).`);

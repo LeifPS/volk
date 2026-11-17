@@ -35,6 +35,10 @@ export const einheiten = {
     return e;
   },
 
+  /** Eingeschifft: Landeinheit auf einem Wasserfeld. Sie wird nur übergesetzt und kann nichts tun (wie in Civ 6). */
+  eingeschifft(e) { return bereichVon(EINHEIT[e.typ]) === 'land' && !!GELAENDE[karte().gelaende[e.feld]]?.wasser; },
+  pruefeNichtEingeschifft(e, was) { pruefe(!this.eingeschifft(e), `Eingeschiffte Einheiten können nicht ${was}. Setze erst an Land über.`); },
+
   // ---------- Erzeugen / Entfernen ----------
   einheitErzeugen(vid, typ, feld, o = {}) {
     const d = EINHEIT[typ]; if (!d) return null;
@@ -236,6 +240,7 @@ export const einheiten = {
     pruefe(['wach', 'schlafen', 'befestigt', 'erkunden', 'auto_arbeit'].includes(b.modus), 'Unbekannter Modus.');
     const d = EINHEIT[e.typ];
     if (b.modus === 'befestigt') pruefe(istMilitaer(d), 'Nur Militäreinheiten können sich befestigen.');
+    if (b.modus === 'befestigt' || b.modus === 'auto_arbeit') this.pruefeNichtEingeschifft(e, b.modus === 'befestigt' ? 'sich befestigen' : 'automatisch arbeiten');
     if (b.modus === 'auto_arbeit') pruefe(d.faehigkeiten?.includes('arbeiten') || d.faehigkeiten?.includes('see_arbeiten'), 'Nur Arbeiter können automatisch arbeiten.');
     this.hpAbrechnen(e);
     e.modus = b.modus;
@@ -450,6 +455,7 @@ export const einheiten = {
     const e = this.eigeneEinheit(v, b.einheit);
     const d = EINHEIT[e.typ];
     pruefe(d.faehigkeiten?.includes('gruenden'), 'Nur Siedler können Städte gründen.');
+    this.pruefeNichtEingeschifft(e, 'Städte gründen');
     pruefe(!e.pfad?.length, 'Der Siedler ist noch unterwegs.');
     const h = this.stadtGruendenHindernis(v.id, e.feld);
     pruefe(!h, h);

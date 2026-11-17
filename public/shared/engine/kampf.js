@@ -155,12 +155,12 @@ export const kampf = {
     const d = EINHEIT[e.typ];
     const ziel = this.zielAuf(feld, e.volk);
     if (!ziel) return { ok: false, grund: 'Dort ist kein Ziel.' };
-    const hind = ziel.volk != null ? this.kampfHindernis(e.volk, ziel.volk) : null;
+    const hind = this.eingeschifft(e) ? 'Eingeschiffte Einheiten können nicht angreifen. Setze erst an Land über.' : ziel.volk != null ? this.kampfHindernis(e.volk, ziel.volk) : null;
     const dist = abstand(e.feld, feld);
     const fern = this.istFernkaempfer(d) && dist <= this.reichweite(e) && dist >= 1;
     const art = bereichVon(d) === 'luft' ? 'luft' : fern ? 'fern' : 'nah';
     if (ziel.zivil) return { ok: !hind, grund: hind, zivil: true, text: 'Zivile Einheiten werden kampflos gefangen genommen.' };
-    if (ziel.lager) return { ok: true, lager: true, text: 'Das Barbarenlager wird zerstört, wenn eine Militäreinheit es betritt.' };
+    if (ziel.lager) return { ok: !hind, grund: hind, lager: true, text: 'Das Barbarenlager wird zerstört, wenn eine Militäreinheit es betritt.' };
     const gegner = ziel.stadt ? { stadt: ziel.stadt } : { einheit: ziel.einheit };
     const A = this.einheitStaerke(e, 'angriff', art, gegner);
     let D;
@@ -199,6 +199,7 @@ export const kampf = {
     const feld = b.ziel | 0;
     pruefe(istMilitaer(d), 'Diese Einheit kann nicht kämpfen.');
     pruefe(bereichVon(d) !== 'luft', 'Flugzeuge greifen mit "Luftangriff" an.');
+    this.pruefeNichtEingeschifft(e, 'angreifen');
     pruefe(!e.in, 'Die Einheit muss zuerst ausgeladen werden.');
     const ziel = this.zielAuf(feld, e.volk);
     pruefe(ziel, 'Dort gibt es nichts anzugreifen.');
@@ -244,6 +245,7 @@ export const kampf = {
     const d = EINHEIT[e.typ];
     const ziel = this.zielAuf(feld, e.volk);
     pruefe(ziel, 'Dort gibt es nichts anzugreifen.');
+    this.pruefeNichtEingeschifft(e, 'angreifen');
     this.hpAbrechnen(e);
     // Zivilisten fangen
     if (ziel.zivil) {
@@ -485,6 +487,7 @@ export const kampf = {
     const e = this.eigeneEinheit(v, b.einheit);
     pruefe(this.hatOption(v, 'pluendern'), `Plündern erfordert die Forschung "${this.forschungsName(FREIGESCHALTET_DURCH['option:pluendern'])}".`);
     pruefe(istMilitaer(EINHEIT[e.typ]), 'Nur Militäreinheiten können plündern.');
+    this.pruefeNichtEingeschifft(e, 'plündern');
     const f = this.z.felder[e.feld];
     pruefe(f && f.v && !(f.pl > this.t), 'Hier gibt es nichts zu plündern.');
     const bes = this.besitzer(e.feld);
