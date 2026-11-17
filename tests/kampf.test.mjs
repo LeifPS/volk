@@ -194,3 +194,27 @@ test('Atomwaffe nur mit Forschung, nie gegen offline/geschützte Ziele, erobert 
   assert.equal(r.ok, false, 'B ist geschützt/nicht im Krieg');
   assert.equal(B.stadt.volk, B.v.id);
 });
+
+test('Wie in Civ 6: Fernangriff gibt keinen Gegenschaden, auch nicht gegen Fernkämpfer', () => {
+  const s = neueWelt();
+  const A = spielerMitStadt(s, 'Iota'), B = spielerMitStadt(s, 'Kappa');
+  A.v.bekannt[B.v.id] = 1; B.v.bekannt[A.v.id] = 1;
+  vorspulen(s, 25 * STD); kriegsBereit(s, A.v, B.v);
+  s.befehl(A.v.id, { art: 'krieg_erklaeren', volk: B.v.id });
+  const k = karte();
+  let ort = -1;
+  for (let i = 5000; i < 20000; i++) { const g = GELAENDE[k.gelaende[i]]; if (g.id === 'ebene' && s.besitzer(i) == null && !s.einheitenAuf(i).length && nachbarn(i).every((n) => GELAENDE[k.gelaende[n]].id === 'ebene' && s.besitzer(n) == null && !s.einheitenAuf(n).length)) { ort = i; break; } }
+  assert.ok(ort > 0);
+  const ziel = nachbarn(ort)[0];
+  const a = s.einheitErzeugen(A.v.id, 'bogenschuetze', ort);
+  const b = s.einheitErzeugen(B.v.id, 'bogenschuetze', ziel);
+  const vs = s.kampfVorschau(a, ziel);
+  assert.equal(vs.ok, true, vs.grund);
+  assert.equal(vs.art, 'fern');
+  assert.equal(vs.schadenAnAngreifer, 0);
+  assert.ok(vs.schadenAnVerteidiger > 0);
+  const r = s.befehl(A.v.id, { art: 'angreifen', einheit: a.id, ziel });
+  assert.equal(r.ok, true, r.fehler);
+  assert.equal(a.hp, 100, 'Fernkämpfer nimmt keinen Schaden');
+  assert.ok(s.einheit(b.id).hp < 100, 'Ziel verliert LP');
+});

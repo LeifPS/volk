@@ -178,9 +178,8 @@ export const kampf = {
       if (art === 'fern' || art === 'luft') anVert = Math.round(anVert * (d.faehigkeiten?.includes('belagerung') ? KAMPF.belagerungGegenStadtFaktor : KAMPF.fernGegenStadtFaktor));
       else if (d.faehigkeiten?.includes('belagerung')) anVert = Math.round(anVert * KAMPF.belagerungGegenStadtFaktor);
     } else if (art !== 'nah') {
-      // Gegenschaden nur, wenn beide Reichweite haben
+      // Wie in Civ 6: Wer aus der Ferne angreift, nimmt keinen Schaden. Nur Flugzeuge können von Flak/Jägern getroffen werden.
       const zd = EINHEIT[ziel.einheit.typ];
-      if (this.istFernkaempfer(zd) && this.reichweite(ziel.einheit) >= dist && art === 'fern') anAngr = erwarteterSchaden(zd.fern, A.wert) >> 1;
       if (art === 'luft' && (zd.klasse === 'flak' || zd.boni?.some((b) => b.gegen === 'luft'))) anAngr = erwarteterSchaden(D.wert, A.wert);
     }
     const zielHp = ziel.stadt ? this.stadtHp(ziel.stadt) : this.aktuelleHp(ziel.einheit);
