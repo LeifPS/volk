@@ -1,13 +1,15 @@
 /* Volk – Pixelart-Oberfläche. Nichts oben links (dort schwebt das Hub-Symbol). */
 @font-face { font-family: 'Silkscreen'; src: url('fonts/silkscreen-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 @font-face { font-family: 'Silkscreen'; src: url('fonts/silkscreen-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+/* Nur die Ziffern 0-9 kommen aus Jersey 10 (OFL): bei Pixelify und Silkscreen sehen 2 und 5 fast gleich aus. */
+@font-face { font-family: 'Zahlen'; src: url('fonts/zahlen.woff2') format('woff2'); font-weight: 400 700; font-display: swap; unicode-range: U+0030-0039; }
 @font-face { font-family: 'Pixelify'; src: url('fonts/pixelify.woff2') format('woff2'); font-weight: 400 700; font-display: swap; }
 
 :root {
   --bg: #12151f; --panel: #252b3b; --panel2: #1c2130; --rand: #0b0d14; --hell: #3f4862; --text: #f0ead6; --text2: #b8b2a0;
   --gold: #f1c40f; --gruen: #5fbf4a; --rot: #e0533d; --blau: #5aa0e6; --lila: #a77de0; --orange: #f0952f;
   --akzent: #d9a441; --akzent2: #8a5a2b;
-  --schrift: 'Pixelify', 'Silkscreen', monospace; --kopf: 'Silkscreen', 'Pixelify', monospace;
+  --schrift: 'Zahlen', 'Pixelify', 'Silkscreen', monospace; --kopf: 'Zahlen', 'Silkscreen', 'Pixelify', monospace;
   --sicher-oben: env(safe-area-inset-top, 0px); --sicher-unten: env(safe-area-inset-bottom, 0px);
   --sicher-links: env(safe-area-inset-left, 0px); --sicher-rechts: env(safe-area-inset-right, 0px);
 }

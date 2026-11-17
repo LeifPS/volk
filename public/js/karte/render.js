@@ -346,7 +346,7 @@ function stadtBanner(st, x, y, s) {
   const farbe = volkFarbe(st.volk);
   const gr = Math.max(1, Math.round(Math.min(s, 3 * (window.devicePixelRatio || 1))));
   const schrift = Math.round(8 * gr);
-  ctx.font = `700 ${schrift}px Silkscreen, monospace`;
+  ctx.font = `700 ${schrift}px Zahlen, Silkscreen, monospace`;
   const name = st.name + (st.hauptstadt ? ' ★' : '');
   const w = Math.ceil(ctx.measureText(name).width) + 22 * gr;
   const h = 12 * gr;
@@ -493,7 +493,7 @@ function zeichneEffekte(s, t) {
     }
     const textAuf = (wx, wy, text, farbe) => {
       const [x, y] = weltZuSchirm(wx, wy - 24 - p * 26);
-      ctx.font = `700 ${Math.round(10 * Math.min(s, 3))}px Silkscreen, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `700 ${Math.round(10 * Math.min(s, 3))}px Zahlen, Silkscreen, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.globalAlpha = Math.min(1, 2 - p * 2);
       ctx.fillStyle = '#000'; ctx.fillText(text, x + 1, y + 1); ctx.fillStyle = farbe; ctx.fillText(text, x, y);
       ctx.globalAlpha = 1;
@@ -551,3 +551,6 @@ export function objektBei(sx, sy) {
   }
   return best;
 }
+
+// Ziffern-Schrift (Zahlen) wird im Canvas erst nach dem Laden benutzt: danach einmal neu zeichnen.
+document.fonts?.load?.('700 12px Zahlen', '0123456789').then(() => neuZeichnen()).catch(() => {});

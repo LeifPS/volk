@@ -441,9 +441,9 @@ export function oeffneForschung(id) {
     while (t.length > 1 && ctx.measureText(t + '…').width > max) t = t.slice(0, -1);
     return t + '…';
   }
-  const FONT_NAME = '700 15px Pixelify, Silkscreen, monospace';
-  const FONT_GROSS = '700 26px Pixelify, Silkscreen, monospace';
-  const FONT_KLEIN = '400 13px Pixelify, Silkscreen, monospace';
+  const FONT_NAME = '700 15px Zahlen, Pixelify, Silkscreen, monospace';
+  const FONT_GROSS = '700 26px Zahlen, Pixelify, Silkscreen, monospace';
+  const FONT_KLEIN = '400 13px Zahlen, Pixelify, Silkscreen, monospace';
   function kurzName(id, gross) {
     const k = id + (gross ? '#g' : '');
     if (!namenKurz[k]) namenKurz[k] = gross ? kuerze(FORSCHUNG[id].name, NW - 50, FONT_GROSS) : kuerze(FORSCHUNG[id].name, NW - 40, FONT_NAME);
@@ -517,7 +517,7 @@ export function oeffneForschung(id) {
       if (xb - xa < 30) continue;
       ctx.fillStyle = 'rgba(11,13,20,.82)'; ctx.fillRect(xa, 0, xb - xa, 28);
       ctx.fillStyle = ZEITALTER[z].farbe; ctx.fillRect(xa, 25, xb - xa, 3); ctx.fillRect(xa, 0, 3, 28);
-      ctx.font = '700 15px Silkscreen, Pixelify, monospace'; ctx.textBaseline = 'middle';
+      ctx.font = '700 15px Zahlen, Silkscreen, Pixelify, monospace'; ctx.textBaseline = 'middle';
       const name = ZEITALTER[z].name.toUpperCase();
       const tw = ctx.measureText(name).width;
       const mx = Math.max(xa + 10, Math.min(xb - tw - 10, (xa + xb) / 2 - tw / 2));
@@ -587,7 +587,7 @@ export function oeffneForschung(id) {
     }
     // Markierungen
     const badge = (text, farbe, rx) => {
-      ctx.font = '700 14px Silkscreen, Pixelify, monospace';
+      ctx.font = '700 14px Zahlen, Silkscreen, Pixelify, monospace';
       const w = Math.max(24, ctx.measureText(text).width + 12);
       const bx = x + NW - w + 6 - (rx || 0), by = y - 11;
       ctx.fillStyle = '#0b0d14'; ctx.fillRect(bx - 2, by - 2, w + 4, 24);
@@ -845,7 +845,7 @@ export function oeffneForschung(id) {
   const ro = new ResizeObserver(() => groesse());
   ro.observe(buehne);
   abmelden.push(() => ro.disconnect());
-  document.fonts?.load?.(FONT_NAME).then(() => { for (const k in namenKurz) delete namenKurz[k]; bitte(); }).catch(() => {});
+  Promise.all([document.fonts?.load?.(FONT_NAME), document.fonts?.load?.(FONT_NAME, '0123456789')]).then(() => { for (const k in namenKurz) delete namenKurz[k]; bitte(); }).catch(() => {});
 
   offen = { waehle, fenster: f };
   groesse();
