@@ -173,14 +173,14 @@ function absatz(t) {
   return el('ul.lex-liste.lex-absatz', t.split('•').map((x) => x.trim()).filter(Boolean).map((x) => el('li', markup(x))));
 }
 
-function kostenChips(k) {
+function kostenChips(k, zeitalter = 0) {
   const teile = [];
   for (const [gut, n] of Object.entries(k || {})) {
     if (gut === 'zeit' || !n) continue;
     const r = ROHSTOFF[gut];
     teile.push(el(r ? 'button.lex-chip' : 'span.lex-chip.text', { onclick: r ? () => gehe('rohstoff', gut) : null }, symbol('ui', gut, { px: 20 }), el('b', { text: zahl(n) }), el('span', { text: LAGER_NAMEN[gut] || gut })));
   }
-  if (k?.zeit) teile.push(el('span.lex-chip.text', symbol('ui', 'zeit', { px: 20 }), el('span', { text: dauerText(k.zeit * 1000) })));
+  if (k?.zeit) teile.push(el('span.lex-chip.text', symbol('ui', 'zeit', { px: 20 }), el('span', { text: dauerText(k.zeit * 1000 / R.produktionTempo(zeitalter)) })));
   return teile.length ? chips(teile) : el('div', { text: L.keine });
 }
 function freiDurch(art, id) {
@@ -224,7 +224,7 @@ function eintraege(kat) {
     case 'einheit': return EINHEITEN.map((e) => ({ id: e.id, name: e.name, gruppe: zName(e.zeitalter), kurz: `${L.klassen[e.klasse] || e.klasse} · ${L.staerke} ${e.staerke}${e.fern ? ' · ' + L.fern + ' ' + e.fern : ''}`, text: e.beschreibung }));
     case 'gebaeude': return GEBAEUDE.map((g) => ({ id: g.id, name: g.name, gruppe: zName(g.zeitalter), kurz: L.gebKategorien[g.kategorie] || '', text: g.beschreibung }));
     case 'wunder': return WUNDER.map((w) => ({ id: w.id, name: w.name, gruppe: zName(w.zeitalter), kurz: zName(w.zeitalter), text: w.beschreibung }));
-    case 'forschung': return FORSCHUNGEN.map((f) => ({ id: f.id, name: f.name, gruppe: zName(f.zeitalter), kurz: `${L.zweige[f.zweig] || f.zweig} · ${dauerText(f.dauer * 1000)}`, text: f.beschreibung }));
+    case 'forschung': return FORSCHUNGEN.map((f) => ({ id: f.id, name: f.name, gruppe: zName(f.zeitalter), kurz: `${L.zweige[f.zweig] || f.zweig} · ${dauerText(f.dauer * 1000 / R.forschungZeitTempo(f.zeitalter || 0))}`, text: f.beschreibung }));
     case 'rohstoff': return ROHSTOFFE.map((r) => ({ id: r.id, name: r.name, gruppe: L.rohstoffArten[r.art], kurz: r.zweck, text: r.zweck }));
     case 'gelaende': return [...GELAENDE.map((g) => ({ id: g.id, name: g.name, gruppe: g.wasser ? 'Wasser' : 'Land', kurz: g.beschreibung, text: g.beschreibung })), { id: 'fluss', name: L.fluss, gruppe: 'Land', kurz: FLUSS.beschreibung, text: FLUSS.beschreibung }];
     case 'verbesserung': return VERBESSERUNGEN.map((v) => ({ id: v.id, name: v.name, gruppe: v.schicht === 'weg' ? 'Wege' : v.verteidigung || v.sicht ? 'Militär' : 'Felder', kurz: v.beschreibung, text: v.beschreibung }));
@@ -314,7 +314,7 @@ function einheitDetail(d) {
       wert('gold', dz((d.unterhalt || 0) * R.WIRTSCHAFT_TEMPO), L.unterhalt + ' ' + L.proStunde),
       d.abklingzeit ? wert('zeit', dauerText(d.abklingzeit * 1000 * R.abklingFaktor(d.zeitalter || 0)), L.abklingzeit) : null,
     ),
-    abschnitt(L.kosten, kostenChips(d.kosten)),
+    abschnitt(L.kosten, kostenChips(d.kosten, d.zeitalter)),
     abschnitt(L.faehigkeiten, d.faehigkeiten.length ? el('ul.lex-liste', d.faehigkeiten.map((f) => el('li', { text: L.faehigkeitText[f] || f }))) : null),
     abschnitt(L.boni, d.boni.length ? el('ul.lex-liste', d.boni.map((b) => el('li', { text: `${b.wert > 0 ? '+' : ''}${b.wert} Stärke gegen ${L.gegen[b.gegen] || L.klassen[b.gegen] || b.gegen}` }))) : null),
     abschnitt(L.upgrade, d.upgrade ? chips([chip('einheit', d.upgrade, { zusatz: ' · ' + zName(EINHEIT[d.upgrade]?.zeitalter) })]) : null),
@@ -337,7 +337,7 @@ function gebaeudeDetail(g) {
   return el('div',
     kopf('gebaeude', g.id, g.name, `${zName(g.zeitalter)} · ${L.gebKategorien[g.kategorie] || ''}`, g.beschreibung),
     abschnitt(L.wirkung, wirkungListe(g.wirkung)),
-    abschnitt(L.kosten, kostenChips(g.kosten)),
+    abschnitt(L.kosten, kostenChips(g.kosten, g.zeitalter)),
     el('div.lex-werte', wert('gold', dz((g.unterhalt || 0) * R.WIRTSCHAFT_TEMPO), L.unterhalt + ' ' + L.proStunde)),
     abschnitt(L.voraussetzungen,
       benoetigt.length ? el('div', el('div.klein', { text: L.braucht }), chips(benoetigt.map((b) => chip('gebaeude', b)))) : null,
@@ -358,7 +358,7 @@ function wunderDetail(w) {
     kopf('wunder', w.id, w.name, `${zName(w.zeitalter)} · ${L.kategorien.wunder}`, w.beschreibung, { status: status ? el('div.lex-status', { class: st?.fertig ? 'rot-t' : 'gruen-t', text: status }) : null }),
     abschnitt(L.reichWirkung, bonusListe(w.reich)),
     abschnitt(L.stadtWirkung, wirkungListe(w.wirkung)),
-    abschnitt(L.kosten, kostenChips(w.kosten)),
+    abschnitt(L.kosten, kostenChips(w.kosten, w.zeitalter)),
     abschnitt(L.voraussetzungen, (w.benoetigt || []).length ? chips(w.benoetigt.map((b) => chip('gebaeude', b))) : null, w.braucht_kueste ? el('div', { text: '• ' + L.kueste }) : null),
     abschnitt(L.freiDurch, freiDurch('wunder', w.id)),
     el('p.klein', markup('[[regel:wunder|Wie funktionieren Weltwunder?]]')),
@@ -382,10 +382,11 @@ function freischaltungChip(x) {
 function forschungDetail(f) {
   if (!f) return el('p', { text: L.keineTreffer });
   const w = du()?.raten?.wissenschaft || 0;
-  const jetzt = Z.ansicht ? f.dauer * 1000 / R.forschungsTempo(w) : null;
+  const grund = f.dauer * 1000 / R.forschungZeitTempo(f.zeitalter || 0);
+  const jetzt = Z.ansicht ? grund / R.forschungsTempo(w) : null;
   return el('div',
     kopf('forschung', f.id, f.name, `${zName(f.zeitalter)} · ${L.zweig}: ${L.zweige[f.zweig] || f.zweig}`, f.beschreibung, { px: 112, status: forschungStatus(f) }),
-    el('div.lex-werte', wert('zeit', dauerText(f.dauer * 1000), L.dauer), jetzt ? wert('wissenschaft', dauerText(jetzt), L.dauerJetzt) : null),
+    el('div.lex-werte', wert('zeit', dauerText(grund), L.dauer), jetzt ? wert('wissenschaft', dauerText(jetzt), L.dauerJetzt) : null),
     f.schluessel ? el('p.gold-t', { text: '★ ' + L.schluessel }) : null,
     f.wiederholbar ? el('p.blau-t', { text: L.wiederholbar }) : null,
     abschnitt(L.schaltetFrei, f.freischaltet.length ? chips(f.freischaltet.map(freischaltungChip)) : null),

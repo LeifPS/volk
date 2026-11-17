@@ -4,9 +4,17 @@ export const MIN = 60 * 1000, STD = 60 * MIN, TAG = 24 * STD;
 
 // --- Spieltempo (Update 2026-11-17: alles deutlich schneller, nur gegen Ende langsamer) ---
 // Alle Stellschrauben für das Tempo stehen hier. Grunddauern in den Daten bleiben unverändert und werden nur geteilt.
-/** Tempo-Faktor je Zeitalter (0 = Antike ... 6 = Atomzeit) für Bauen, Ausbilden, Forschen und Verbesserungen: Dauer = Grunddauer / Faktor. */
+/** Grundkurve des Tempos je Zeitalter (0 = Antike ... 6 = Atomzeit): Dauer = Grunddauer / Faktor. Daraus werden Produktion und Forschung abgeleitet. */
 export const ZEIT_TEMPO = [10, 8, 6, 5, 4, 3, 2.5];
 export function zeitTempo(zeitalter) { return ZEIT_TEMPO[Math.max(0, Math.min(ZEIT_TEMPO.length - 1, Math.floor(zeitalter || 0)))]; }
+/** Produktion (Bauen, Ausbilden, Verbessern) dauert so viel länger als die Grundkurve (Leifs Wunsch 2026-11-17: doppelt so lange). */
+export const PRODUKTION_LANGSAMER = 2;
+/** Forschung dauert so viel länger als die Grundkurve (Leifs Wunsch 2026-11-17: dreimal so lange). */
+export const FORSCHUNG_LANGSAMER = 3;
+/** Tempo-Faktor für Bauen, Ausbilden und Verbessern im Zeitalter z. */
+export function produktionTempo(zeitalter) { return zeitTempo(zeitalter) / PRODUKTION_LANGSAMER; }
+/** Tempo-Faktor für Forschung im Zeitalter z (kann unter 1 liegen: dann dauert es länger als die Grunddauer). */
+export function forschungZeitTempo(zeitalter) { return zeitTempo(zeitalter) / FORSCHUNG_LANGSAMER; }
 /** Wirtschaftstempo: Erträge, Verbrauch, Unterhalt, Heilung und Handel je Stunde laufen mit diesem Faktor (Kosten bleiben gleich). */
 export const WIRTSCHAFT_TEMPO = 5;
 /** Abklingzeiten nach Angriffen folgen dem Zeitalter-Tempo nur abgeschwächt (Wurzel), damit Gefechte ihren Rhythmus behalten. */

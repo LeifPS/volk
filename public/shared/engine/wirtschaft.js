@@ -7,7 +7,7 @@ import { GEB, WUNDER_NACH_ID, FORSCHUNG, ROHSTOFF, VERBESSERUNG, STADTSTAATEN } 
 import {
   STD, MIN, ERTRAG_RATE as F, WIRTSCHAFT_TEMPO, GOLD_FAKTOR, WISSEN_JE_EINWOHNER, NAHRUNG_PRO_EINWOHNER, BAUSTOFFE, STRATEGISCH, LAGER_BASIS_BAU, LAGER_BASIS_STRATEGISCH,
   STADT_RADIUS_ARBEIT, STADT_RADIUS_GRENZE_MAX, wachstumsBedarf, grenzKosten, zufriedenheitsFaktor, stadtUnzufriedenheit,
-  freieEinheiten, freierGebaeudeUnterhalt, forschungsTempo, zeitTempo, FORSCHUNGSABKOMMEN, HANDEL, STADTSTAAT,
+  freieEinheiten, freierGebaeudeUnterhalt, forschungsTempo, forschungZeitTempo, FORSCHUNGSABKOMMEN, HANDEL, STADTSTAAT,
 } from '../regeln.js';
 import { SpielFehler, pruefe } from './spiel.js';
 
@@ -277,7 +277,7 @@ export const wirtschaft = {
     let dauer = f.dauer;
     if (f.wiederholbar) dauer *= 1 + 0.15 * (v.forschung.erforscht[id] || 0);
     const kiFaktor = v.art === 'ki' ? 1.6 : 1;
-    return dauer * 1000 * kiFaktor / zeitTempo(f.zeitalter || 0) / forschungsTempo(wissenschaft);
+    return dauer * 1000 * kiFaktor / forschungZeitTempo(f.zeitalter || 0) / forschungsTempo(wissenschaft);
   },
 
   // ---------- Wachstum ----------

@@ -4,7 +4,7 @@ import { abstand, nachbarn, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { ROHSTOFFE } from '../daten/rohstoffe.js';
 import { GEB, WUNDER_NACH_ID, EINHEIT, VERBESSERUNG, FREIGESCHALTET_DURCH } from '../daten/index.js';
-import { bauDauer, zeitTempo, ABBRUCH_ERSTATTUNG, STD, MIN } from '../regeln.js';
+import { bauDauer, produktionTempo, ABBRUCH_ERSTATTUNG, STD, MIN } from '../regeln.js';
 import { pruefe } from './spiel.js';
 import { sucheWeg } from '../pfad.js';
 
@@ -83,7 +83,7 @@ export const bau = {
     if (art === 'einheit') prozent += this.gebaeudeSumme(s, 'einheit_bauzeit_prozent');
     const v = this.z.voelker[s.volk];
     if (v.art === 'ki') prozent += 30;
-    return bauDauer(d.kosten.zeit / zeitTempo(d.zeitalter || 0), sr.p, prozent);
+    return bauDauer(d.kosten.zeit / produktionTempo(d.zeitalter || 0), sr.p, prozent);
   },
 
   /** Befehl: Bauauftrag in die Warteschlange (startet sofort, wenn ein Bauplatz frei ist). */
@@ -255,7 +255,7 @@ export const bau = {
 
   verbesserungDauer(v, id) {
     const b = this.raten(v.id).boni;
-    return Math.max(15 * 1000, Math.round(VERBESSERUNG[id].bauzeit * 1000 / zeitTempo(v.zeitalter || 0) / (1 + Math.max(0, b.arbeiter_tempo || 0) / 100) * (v.art === 'ki' ? 1.5 : 1)));
+    return Math.max(15 * 1000, Math.round(VERBESSERUNG[id].bauzeit * 1000 / produktionTempo(v.zeitalter || 0) / (1 + Math.max(0, b.arbeiter_tempo || 0) / 100) * (v.art === 'ki' ? 1.5 : 1)));
   },
 
   befehl_arbeiten(v, b) {

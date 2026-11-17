@@ -5,6 +5,7 @@ import { sprite } from '../grafik/sprites.js';
 import { T } from '../texte.js';
 import { an, du, forschungsFortschritt, serverJetzt } from '../kern/zustand.js';
 import { befehl } from '../kern/netz.js';
+import { forschungZeitTempo } from '../../shared/regeln.js';
 import { FORSCHUNGEN, FORSCHUNG, NACHFOLGER, EINHEIT, GEB, WUNDER_NACH_ID, VERBESSERUNG, ROHSTOFF, ZEITALTER } from '../../shared/daten/index.js';
 import { SPALTEN_ZEITALTER } from '../../shared/daten/forschung.js';
 
@@ -141,7 +142,7 @@ const erforscht = () => du()?.forschung?.erforscht || {};
 function dauerMs(f) {
   let d = f.dauer;
   if (f.wiederholbar) d *= 1 + 0.15 * (erforscht()[f.id] || 0);
-  return d * 1000 / (1 + Math.max(0, wissenschaft()) / 100);
+  return d * 1000 / forschungZeitTempo(f.zeitalter || 0) / (1 + Math.max(0, wissenschaft()) / 100);
 }
 /** Restdauer in ms (berücksichtigt aktive Forschung und Teilfortschritt). */
 function restMs(id) {
