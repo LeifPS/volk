@@ -1,6 +1,9 @@
 // Forschung: genau eine aktive Forschung je Volk, Warteschlange, Fortschritt als Integration über die Wissenschaft.
 import { FORSCHUNG, FORSCHUNGEN, EINHEIT, GEB, WUNDER_NACH_ID, VERBESSERUNG, ROHSTOFF } from '../daten/index.js';
 import { ZEITALTER } from '../daten/zeitalter.js';
+import { ROHSTOFFE } from '../daten/rohstoffe.js';
+import { karte } from '../karte.js';
+import { abstand } from '../hex.js';
 import { pruefe } from './spiel.js';
 
 export const forschung = {
@@ -87,7 +90,7 @@ export const forschung = {
     this.meldung(vid, `Forschung abgeschlossen: ${f.name}. ${this.freischaltText(f)}`, { art: 'forschung', wichtig: true });
     // Optionen und Sichtbarkeit
     for (const fs of f.freischaltet) {
-      if (fs.art === 'rohstoff') this.markiere('v' + vid);
+      if (fs.art === 'rohstoff') { this.markiere('v' + vid); this.rohstoffFundMelden(vid, fs.id); }
     }
     this.zeitalterPruefen(v);
     // nächste aus der Warteschlange
@@ -99,6 +102,25 @@ export const forschung = {
     for (const s of this.staedteVon(vid)) this.bauSchlangeWeiter(s.id);
     delete this._raten[vid];
     this.markiere('v' + vid);
+  },
+
+  /** Neu sichtbarer Rohstoff: gleich melden, wo er im schon erkundeten Gebiet liegt (Klick auf die Meldung springt zum nächsten). */
+  rohstoffFundMelden(vid, rid) {
+    const v = this.z.voelker[vid];
+    if (!v || v.art !== 'spieler') return;
+    const r = ROHSTOFF[rid]; if (!r) return;
+    const nr = ROHSTOFFE.findIndex((x) => x.id === rid) + 1;
+    const k = karte(), n = this.nebel(vid);
+    const stadt = this.staedteVon(vid).find((x) => x.hauptstadt) || this.staedteVon(vid)[0];
+    let anzahl = 0, best = -1, bestD = Infinity;
+    for (let i = 0; i < k.rohstoff.length; i++) {
+      if (k.rohstoff[i] !== nr || !this.istErkundet(n, i)) continue;
+      anzahl++;
+      const d = stadt ? abstand(stadt.feld, i) : 0;
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    if (!anzahl) { this.meldung(vid, `${r.name}: In deinem erkundeten Gebiet gibt es noch kein Vorkommen. Erkunde weiter, dann siehst du es sofort.`, { art: 'forschung' }); return; }
+    this.meldung(vid, `${r.name}: ${anzahl === 1 ? 'Ein Vorkommen' : anzahl + ' Vorkommen'} in deinem erkundeten Gebiet, jetzt auf der Karte sichtbar. Klicke hier, um zum nächsten zu springen.`, { art: 'forschung', feld: best, wichtig: true });
   },
 
   freischaltText(f) {

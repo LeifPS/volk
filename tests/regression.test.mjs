@@ -193,3 +193,22 @@ test('Barbaren sind rot; alte schwarze Barbaren werden beim Laden umgefärbt', (
   assert.equal(b.farbe, '#9b111e');
   assert.ok(s.schmutzig.has('v' + b.id));
 });
+
+test('Neuer Rohstoff durch Forschung: Meldung zeigt sofort, wo er im erkundeten Gebiet liegt', async () => {
+  const { karte } = await import('../public/shared/karte.js');
+  const { ROHSTOFFE } = await import('../public/shared/daten/rohstoffe.js');
+  const s = neueWelt();
+  const A = spielerMitStadt(s, 'Omikron');
+  const nr = ROHSTOFFE.findIndex((r) => r.id === 'kohle') + 1;
+  const k = karte();
+  const vorkommen = []; for (let i = 0; i < k.rohstoff.length; i++) if (k.rohstoff[i] === nr) vorkommen.push(i);
+  assert.ok(vorkommen.length >= 2);
+  const n = s.nebel(A.v.id); n.fill(0);
+  n[vorkommen[0] >> 3] |= 1 << (vorkommen[0] & 7); // nur ein Vorkommen ist erkundet
+  A.v.forschung.aktiv = 'kohleabbau'; A.v.forschung.fortschritt = 0;
+  s.forschungFertig(A.v.id);
+  const m = A.v.meldungen.find((x) => /Kohle/.test(x.text) && /Vorkommen/.test(x.text));
+  assert.ok(m, 'Meldung vorhanden');
+  assert.equal(m.feld, vorkommen[0]);
+  assert.match(m.text, /Ein Vorkommen/);
+});
