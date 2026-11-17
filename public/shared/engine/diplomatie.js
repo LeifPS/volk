@@ -1,7 +1,7 @@
 // Diplomatie, Online-/Offline-Schutz, Angebote (Frieden, Grenzen, Bündnis, Abkommen, Tausch, Tribut), Handelsrouten, Stadtstaaten.
 import { abstand, umkreis } from '../hex.js';
 import { EINHEIT, FREIGESCHALTET_DURCH } from '../daten/index.js';
-import { SCHUTZ, STD, MIN, FORSCHUNGSABKOMMEN, STADTSTAAT, TAG } from '../regeln.js';
+import { SCHUTZ, OFFLINE, STD, MIN, FORSCHUNGSABKOMMEN, STADTSTAAT, TAG } from '../regeln.js';
 import { LAGERGUETER, LAGER_NAMEN, ROHSTOFF_NACH_ID } from '../daten/rohstoffe.js';
 import { pruefe } from './spiel.js';
 import { istMilitaer } from './einheiten.js';
@@ -53,6 +53,8 @@ export const diplomatie = {
     if (!v) return;
     if (an) {
       if (!(v.verbunden > 0)) {
+        // Wirtschaft wieder auf volle Leistung: bis jetzt noch mit Offline-Rate abrechnen
+        if (v.offline_faktor != null) { this.aendern(vid); v.offline_faktor = null; v.offline_ende = null; delete this._raten[vid]; }
         const weg = Math.max(v.getrennt_seit || 0, v.letzte_aktivitaet || 0);
         if (weg && this.t - weg >= SCHUTZ.waffenruheNach && this.hatKrieg(vid)) {
           v.schonfrist_bis = this.t + SCHUTZ.schonfrist;
@@ -64,8 +66,10 @@ export const diplomatie = {
       v.verbunden = (v.verbunden || 0) + 1;
       v.letzte_aktivitaet = this.t;
     } else {
+      const warOnline = (v.verbunden || 0) > 0;
       v.verbunden = Math.max(0, (v.verbunden || 0) - 1);
       if (!v.verbunden) {
+        if (warOnline && v.art === 'spieler') { this.aendern(vid); v.offline_faktor = OFFLINE.faktor; v.offline_ende = this.t + OFFLINE.maxDauer; delete this._raten[vid]; }
         v.getrennt_seit = this.t; v.zuletzt_gesehen = this.t;
         // Offline schützt: laufende Naturereignisse wirken nicht mehr auf dieses Volk
         for (const ev of this.z.global.ereignisse || []) if (ev.aktiv && ev.betroffen?.includes(vid)) { this.aendern(vid); ev.betroffen = ev.betroffen.filter((x) => x !== vid); delete this._raten[vid]; this.markiere('g'); }

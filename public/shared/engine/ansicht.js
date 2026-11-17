@@ -92,6 +92,7 @@ export const ansicht = {
       raten: { n: sr.n, p: sr.p, g: sr.g, w: sr.w, k: sr.k, material: sr.material, verbrauch: sr.verbrauch, ueberschuss: sr.ueberschuss, zufriedenheit: sr.zufriedenheit, grenzKultur: sr.grenzKultur, unterhalt: sr.gebaeudeUnterhalt },
       wachstum_um: this.wachstumsZeit(s), grenze_um: this.grenzZeit(s), warte_um: s.warte_um || null, bauplaetze: this.bauplaetze(s), mauer: this.mauerStufe(s), zeitalter: this.z.voelker[s.volk]?.zeitalter || 0,
       kueste: this.istKuestenstadt(s),
+      grenzKandidaten: this.grenzKandidaten(s), grenzZiel: s.grenz_ziel ?? null,
     };
   },
 

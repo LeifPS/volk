@@ -146,6 +146,7 @@ export class Spiel {
     }
     for (const v of this.alleVoelker()) {
       k(this.forschungsZeit(v), 'forsch' + v.id, () => this.forschungFertig(v.id), () => { v.forschung.aktiv = null; });
+      if (v.offline_ende) k(v.offline_ende, 'offende' + v.id, () => { this.aendern(v.id); v.offline_faktor = 0; v.offline_ende = null; delete this._raten[v.id]; }, () => { v.offline_ende = null; });
       k(this.goldNullZeit(v), 'goldnull' + v.id, () => this.goldNull(v.id));
       if (v.mangel_um) k(v.mangel_um, 'mangel' + v.id, () => this.mangelSchritt(v.id), () => { v.mangel_um = null; });
       if (v.abkommen_bis) k(v.abkommen_bis, 'abk' + v.id, () => { this.aendern(v.id); v.abkommen_bis = null; this.markiere('v' + v.id); this.meldung(v.id, 'Das Forschungsabkommen ist ausgelaufen.'); });
@@ -192,7 +193,7 @@ export class Spiel {
 /** Erlaubte Befehle (Whitelist). */
 export const BEFEHLE = new Set([
   'stadt_gruenden', 'bewegen', 'anhalten', 'modus', 'angreifen', 'arbeiten', 'arbeit_abbrechen', 'bauen', 'bau_abbrechen', 'bau_hoch',
-  'forschen', 'forschung_schlange', 'feld_bewirtschaften', 'auto_bewirtschaften', 'aufloesen', 'aufruesten', 'befoerdern',
+  'forschen', 'forschung_schlange', 'feld_bewirtschaften', 'auto_bewirtschaften', 'grenzziel', 'aufloesen', 'aufruesten', 'befoerdern',
   'krieg_erklaeren', 'diplomatie_angebot', 'angebot_antwort', 'angebot_zurueckziehen', 'tausch_angebot', 'handelsroute',
   'stadtstaat_geschenk', 'pluendern', 'luftangriff', 'verlegen', 'atomschlag', 'stadt_angriff', 'stadt_umbenennen',
   'meldungen_gelesen', 'tutorial', 'neuanfang', 'ping', 'einstellungen', 'tribut_fordern',

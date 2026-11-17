@@ -169,3 +169,6 @@ export const AUFRUESTEN_FAKTOR = 0.6; // Anteil der Goldkosten-Differenz
 export function gesamtWertung(k) {
   return Math.round(k.gold / 50 + k.militaer / 5 + k.staedte * 20 + k.bevoelkerung * 4 + k.forschungen * 5 + k.gebiet / 2 + k.kultur / 200 + k.wunder * 60);
 }
+
+/** Offline-Wirtschaft: Nach dem Trennen läuft die Wirtschaft (Gold, Forschung, Rohstoffe, Wachstum, Kultur) höchstens 2 Stunden weiter, nur mit halber Leistung; danach steht sie still, bis der Spieler zurückkehrt. */
+export const OFFLINE = { maxDauer: 2 * STD, faktor: 0.5 };

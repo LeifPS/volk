@@ -391,10 +391,10 @@ function einheitPosition(e, t) {
 }
 
 // ---------- Einheiten-Banner (wie in Civilization: Schild in Volksfarbe mit Klassen-Symbol) ----------
-const BANNER_IKON = 11;
+const BANNER_IKON = 15;
 const BANNER_BREITE = (() => { const w = []; for (let r = 0; r < 19; r++) w.push(r < 13 ? 17 : 17 - 2 * (r - 12)); return w; })();
 const BANNER_CACHE = new Map();
-/** Eigenes Symbol je Einheit: ihr Sprite, zugeschnitten und auf 11×11 verkleinert. */
+/** Eigenes Symbol je Einheit: ihr Sprite, zugeschnitten und auf 15×15 verkleinert. */
 function bannerIkon(typ, hell) {
   const k = typ + (hell ? ':h' : ':d');
   if (BANNER_CACHE.has(k)) return BANNER_CACHE.get(k);
@@ -430,11 +430,7 @@ function zeichneBanner(x, yUnten, s, farbe, typ, ausgewaehlt) {
   for (let r = 0; r < h; r++) { const w = BANNER_BREITE[r]; ctx.fillRect(x0 - Math.floor(w / 2) * p, y0 + r * p, w * p, p); }
   ctx.fillStyle = 'rgba(255,255,255,0.28)';
   ctx.fillRect(x0 - Math.floor(BANNER_BREITE[0] / 2) * p, y0, BANNER_BREITE[0] * p, p);
-  // heller Grund, darauf das farbige Einheiten-Symbol
-  ctx.fillStyle = '#efe6cc';
-  ctx.fillRect(x0 - Math.floor((BANNER_IKON + 2) / 2) * p, y0 + p, (BANNER_IKON + 2) * p, (BANNER_IKON + 2) * p);
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.fillRect(x0 - Math.floor((BANNER_IKON + 2) / 2) * p, y0 + (BANNER_IKON + 2) * p, (BANNER_IKON + 2) * p, p);
+  // Einheit direkt auf der Volksfarbe
   const ik = bannerIkon(typ, false);
   if (ik) { const was = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false; ctx.drawImage(ik, x0 - Math.floor(BANNER_IKON / 2) * p, y0 + 2 * p, BANNER_IKON * p, BANNER_IKON * p); ctx.imageSmoothingEnabled = was; }
   return y0;

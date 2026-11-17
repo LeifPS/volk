@@ -150,3 +150,36 @@ test('Barbaren ignorieren den Neulingsschutz, Raubtiere nicht, Offline-Spieler b
   v.verbunden = 0; v.letzte_aktivitaet = s.t - 2 * STD; v.getrennt_seit = s.t - 2 * STD;
   assert.ok(s.kampfHindernis(b.id, v.id));
 });
+
+test('Offline läuft die Wirtschaft nur 2 Stunden lang mit halber Leistung weiter', () => {
+  const s = neueWelt();
+  const { v } = spielerMitStadt(s, 'Anfang');
+  s.verbindung(v.id, true); s.aendern(v.id); v.gold = 0; s.aendern(v.id);
+  const rate = s.raten(v.id).gold;
+  assert.ok(rate > 0);
+  s.verbindung(v.id, false);
+  vorspulen(s, 1 * STD); s.aendern(v.id);
+  const verh = v.gold / rate;
+  assert.ok(verh > 0.35 && verh < 0.65, 'nach 1 h ca. halbe Leistung: ' + verh);
+  vorspulen(s, 1 * STD); s.aendern(v.id);
+  const nach2 = v.gold;
+  vorspulen(s, 5 * STD); s.aendern(v.id);
+  assert.ok(Math.abs(v.gold - nach2) < 0.5, 'nach 2 h steht die Wirtschaft still');
+  s.verbindung(v.id, true);
+  assert.ok(s.raten(v.id).gold >= rate * 0.9, 'zurück online: volle Leistung');
+});
+
+test('Gewähltes Grenzfeld wird als Nächstes übernommen, ungültige Ziele werden abgelehnt', () => {
+  const s = neueWelt();
+  const { v, stadt } = spielerMitStadt(s, 'Ausbreiter');
+  const kand = s.grenzKandidaten(stadt);
+  assert.ok(kand.length > 0);
+  const ziel = kand[kand.length - 1];
+  assert.equal(s.befehl(v.id, { art: 'grenzziel', stadt: stadt.id, feld: ziel }).ok, true);
+  assert.equal(s.bestesGrenzfeld(stadt), ziel);
+  assert.equal(s.befehl(v.id, { art: 'grenzziel', stadt: stadt.id, feld: stadt.feld }).ok, false);
+  s.aendern(v.id); stadt.kultur = 1e9; s.grenzwachstum(stadt.id);
+  assert.ok(stadt.gebiet.includes(ziel), 'Ziel wurde übernommen');
+  assert.equal(stadt.grenz_ziel, null);
+  assert.equal(s.befehl(v.id, { art: 'grenzziel', stadt: stadt.id, feld: null }).ok, true);
+});

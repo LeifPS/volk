@@ -163,6 +163,13 @@ export const wirtschaft = {
       extra += b.lager;
       erg.kapazitaet[gut] = Math.round(basis + extra * (BAUSTOFFE.includes(gut) ? 10 : 1));
     }
+    // Offline-Wirtschaft: gedrosselt (halbe Leistung) bzw. nach der Frist ganz angehalten
+    const of = v.offline_faktor ?? 1;
+    if (of !== 1) {
+      erg.gold *= of; erg.einnahmen *= of; erg.kultur *= of; erg.handel *= of;
+      erg.unterhalt.einheiten *= of; erg.unterhalt.gebaeude *= of;
+      for (const m of Object.keys(erg.material)) erg.material[m] *= of;
+    }
     return erg;
   },
 
@@ -212,9 +219,10 @@ export const wirtschaft = {
     r.verbrauch = s.bev * NAHRUNG_PRO_EINWOHNER * F;
     r.ueberschuss = r.n - r.verbrauch;
     if (r.ueberschuss > 0 && r.zufriedenheit < 0) r.ueberschuss *= 0.5;
+    r.ueberschuss *= v.offline_faktor ?? 1;
     if (zerstoert) { r.p = 0; r.g = 0; r.w = 0; r.k = 0; r.material = {}; r.ueberschuss = Math.min(r.ueberschuss, 0); }
     // Kultur fürs Grenzwachstum (mit Bonus)
-    r.grenzKultur = r.k * (1 + (b.grenzwachstum_prozent + this.gebaeudeSumme(s, 'grenzwachstum_prozent')) / 100);
+    r.grenzKultur = r.k * (1 + (b.grenzwachstum_prozent + this.gebaeudeSumme(s, 'grenzwachstum_prozent')) / 100) * (v.offline_faktor ?? 1);
     for (const x of ['n', 'p', 'g', 'w', 'k', 'verbrauch', 'ueberschuss', 'grenzKultur']) r[x] = Math.round(r[x] * 100) / 100;
     return r;
   },
@@ -277,7 +285,9 @@ export const wirtschaft = {
     let dauer = f.dauer;
     if (f.wiederholbar) dauer *= 1 + 0.15 * (v.forschung.erforscht[id] || 0);
     const kiFaktor = v.art === 'ki' ? 1.6 : 1;
-    return dauer * 1000 * kiFaktor / forschungZeitTempo(f.zeitalter || 0) / forschungsTempo(wissenschaft);
+    const offline = v.offline_faktor ?? 1;
+    if (offline <= 0) return Infinity;
+    return dauer * 1000 * kiFaktor / forschungZeitTempo(f.zeitalter || 0) / forschungsTempo(wissenschaft) / offline;
   },
 
   // ---------- Wachstum ----------
@@ -336,22 +346,37 @@ export const wirtschaft = {
     if (f < 0) { s.grenze_voll = true; this.markiere('s' + sid); return; }
     s.kultur = Math.max(0, (s.kultur || 0) - kosten);
     s.grenz_k = (s.grenz_k || 0) + 1;
+    if (s.grenz_ziel === f) s.grenz_ziel = null;
     this.feldUebernehmen(s, f);
     this.meldung(s.volk, `Die Grenzen von ${s.name} sind gewachsen.`, { art: 'stadt', feld: f });
     if (!s.manuell) this.autoBewirtschaften(s);
     delete this._raten[s.volk];
   },
 
-  /** Nächstes Feld für die Grenzerweiterung (wie in Civ: das wertvollste angrenzende freie Feld). */
+  /** Felder, auf die sich die Stadt als Nächstes ausbreiten darf (angrenzend, frei, nicht zu weit). */
+  grenzKandidaten(s) {
+    const eigen = new Set(s.gebiet);
+    const out = new Set();
+    for (const i of s.gebiet) for (const n of nachbarn(i)) {
+      if (eigen.has(n) || out.has(n) || this.z.felder[n]?.s) continue;
+      if (abstand(s.feld, n) > STADT_RADIUS_GRENZE_MAX) continue;
+      out.add(n);
+    }
+    return [...out];
+  },
+
+  /** Nächstes Feld für die Grenzerweiterung: das vom Spieler gewählte Ziel, sonst (wie in Civ) das wertvollste angrenzende freie Feld. */
   bestesGrenzfeld(s) {
     const k = karte();
-    const eigen = new Set(s.gebiet);
+    const kand = this.grenzKandidaten(s);
+    if (s.grenz_ziel != null) {
+      if (kand.includes(s.grenz_ziel)) return s.grenz_ziel;
+      s.grenz_ziel = null; // Ziel ist nicht mehr möglich (z. B. von jemand anderem besetzt)
+    }
     let best = -1, bestW = -Infinity;
     const v = this.z.voelker[s.volk];
-    for (const i of s.gebiet) for (const n of nachbarn(i)) {
-      if (eigen.has(n) || this.z.felder[n]?.s) continue;
+    for (const n of kand) {
       const d = abstand(s.feld, n);
-      if (d > STADT_RADIUS_GRENZE_MAX) continue;
       const e = this.feldErtrag(n, v, false);
       const rn = k.rohstoff[n];
       let w = e.n * 3 + e.p * 2 + e.g * 2 + e.w * 2 + e.k + (rn && this.siehtRohstoff(v, ROHSTOFFE[rn - 1]) ? 6 : 0) - d * 2.5;
@@ -360,6 +385,18 @@ export const wirtschaft = {
       if (w > bestW) { bestW = w; best = n; }
     }
     return best;
+  },
+
+  befehl_grenzziel(v, b) {
+    const s = this.z.staedte[b.stadt];
+    pruefe(s && s.volk === v.id, 'Das ist nicht deine Stadt.');
+    if (b.feld == null) s.grenz_ziel = null;
+    else {
+      const i = b.feld | 0;
+      pruefe(this.grenzKandidaten(s).includes(i), 'Dorthin kann sich die Stadt nicht ausbreiten: Das Feld muss an dein Gebiet grenzen und frei sein.');
+      s.grenz_ziel = i;
+    }
+    this.markiere('s' + s.id);
   },
 
   feldUebernehmen(s, i) {

@@ -630,7 +630,8 @@ function felder(s, k) {
   const kk = karte();
   const gebiet = new Set(s.gebiet || []);
   const arbeit = new Set(s.arbeit || []);
-  let rad = STADT_RADIUS_ARBEIT; for (const i of gebiet) rad = Math.max(rad, abstand(s.feld, i)); rad = Math.min(rad, 5);
+  const kandidaten = new Set(s.grenzKandidaten || []);
+  let rad = STADT_RADIUS_ARBEIT; for (const i of gebiet) rad = Math.max(rad, abstand(s.feld, i)); for (const i of kandidaten) rad = Math.max(rad, abstand(s.feld, i)); rad = Math.min(rad, 6);
   const liste = umkreis(s.feld, rad);
   const pos = (i) => [WH * (xVon(i) + 0.5 * (yVon(i) & 1)), 1.5 * RH * yVon(i)];
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -669,6 +670,19 @@ function felder(s, k) {
     if (!gebiet.has(i) && i !== s.feld) { ctx.globalAlpha = 0.6; hexFuellen(ctx, cx, cy, RH - 1, '#05060a'); ctx.globalAlpha = 1; }
     else if (abstand(s.feld, i) > STADT_RADIUS_ARBEIT) { ctx.globalAlpha = 0.3; hexFuellen(ctx, cx, cy, RH - 1, '#05060a'); ctx.globalAlpha = 1; }
   }
+  // Mögliche Ziele der Ausbreitung (blau), das gewählte hell hervorgehoben
+  for (const i of kandidaten) {
+    if (!liste.includes(i)) continue;
+    const [cx, cy] = mitte(i);
+    const gewaehlt = s.grenzZiel === i;
+    const tmp = document.createElement('canvas'); tmp.width = cw; tmp.height = ch;
+    const t = tmp.getContext('2d');
+    hexFuellen(t, cx, cy, RH - 1, gewaehlt ? '#7fe8ff' : '#3fa0e0');
+    t.globalCompositeOperation = 'destination-out'; hexFuellen(t, cx, cy, RH - (gewaehlt ? 6 : 4), '#000');
+    ctx.globalAlpha = gewaehlt ? 0.35 : 0.18; hexFuellen(ctx, cx, cy, RH - 1, gewaehlt ? '#7fe8ff' : '#3fa0e0'); ctx.globalAlpha = 1;
+    ctx.drawImage(tmp, 0, 0);
+    if (gewaehlt) { ctx.fillStyle = 'rgba(11,13,20,.8)'; ctx.fillRect(cx - 9, cy - RH + 4, 18, 18); zeichneSprite(ctx, 'ui', 'karte', cx, cy - RH + 13); }
+  }
   for (const i of arbeit) {
     if (!liste.includes(i)) continue;
     const [cx, cy] = mitte(i);
@@ -703,6 +717,12 @@ function felder(s, k) {
         b.classList.add('gewaehlt');
         zeigeInfo(i);
         if (i === s.feld || !erkundet(i)) return;
+        if (kandidaten.has(i)) {
+          const neuZiel = s.grenzZiel === i ? null : i;
+          const r = await befehl({ art: 'grenzziel', stadt: s.id, feld: neuZiel });
+          if (!r.ok) { fehler(r.fehler); ton('fehler'); } else { ton('klick'); toast(neuZiel == null ? S().grenzAutoGesetzt : S().grenzGesetzt, 'erfolg'); }
+          return;
+        }
         if (!gebiet.has(i)) { fehler(S().feldNichtImGebiet); return; }
         if (abstand(s.feld, i) > STADT_RADIUS_ARBEIT) { fehler(S().feldZuWeitFehler(STADT_RADIUS_ARBEIT)); return; }
         const r = await befehl({ art: 'feld_bewirtschaften', stadt: s.id, feld: i, an: !arbeit.has(i) });
@@ -722,8 +742,16 @@ function felder(s, k) {
       el('p.klein', { text: S().felderHilfe(STADT_RADIUS_ARBEIT) }),
       el('button.knopf' + (s.manuell ? '.gold' : ''), { onclick: async () => { const r = await befehl({ art: 'auto_bewirtschaften', stadt: s.id }); if (!r.ok) fehler(r.fehler); else { ton('klick'); toast(S().autoGesetzt, 'erfolg'); } }, tip: S().autoTip }, symbol('ui', 'haken'), S().auto),
     ),
+    el('div.st-box',
+      el('h2', symbol('ui', 'karte'), S().grenzTitel),
+      el('div.klein', { text: s.grenzZiel != null ? S().grenzGewaehlt : S().grenzAuto }),
+      el('p.klein', { text: S().grenzHilfe }),
+      s.grenzZiel != null ? el('button.knopf', { onclick: async () => { const r = await befehl({ art: 'grenzziel', stadt: s.id, feld: null }); if (!r.ok) fehler(r.fehler); else { ton('klick'); toast(S().grenzAutoGesetzt, 'erfolg'); } } }, symbol('ui', 'haken'), S().grenzZuruecksetzen) : null,
+    ),
     info,
     el('div.st-box', el('h2', symbol('ui', 'hilfe'), S().legende), el('div.st-legende',
+      el('i', { style: { borderColor: '#7fe8ff', background: 'transparent' } }), el('span', { text: S().legGrenzZiel }),
+      el('i', { style: { borderColor: '#3fa0e0', background: 'transparent' } }), el('span', { text: S().legGrenzMoeglich }),
       el('i', { style: { borderColor: '#f1c40f', background: 'transparent' } }), el('span', { text: S().legBewirtschaftet }),
       el('i', { style: { background: '#4a8c44' } }), el('span', { text: S().legNutzbar }),
       el('i', { style: { background: '#2e4a2c' } }), el('span', { text: S().legZuWeit(STADT_RADIUS_ARBEIT) }),

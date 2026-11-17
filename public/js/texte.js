@@ -671,6 +671,8 @@ T.stadt = {
   // Felder
   bewirtschaftung: 'Bewirtschaftung', arbeiter: (a, b) => `${a} von ${b} Einwohnern arbeiten auf Feldern`,
   manuell: 'Felder von Hand gewählt.', automatisch: 'Felder werden automatisch gewählt.',
+  grenzTitel: 'Nächste Ausbreitung', grenzHilfe: 'Blau umrandete Felder grenzen an dein Gebiet. Tippe eines an, dann wächst die Stadt als Nächstes dorthin. Ohne Wahl nimmt sie automatisch das wertvollste Feld.',
+  grenzAuto: 'Automatisch (wertvollstes Feld)', grenzGewaehlt: 'Gewähltes Feld', grenzZuruecksetzen: 'Auf automatisch stellen', grenzGesetzt: 'Die Stadt wächst als Nächstes zu diesem Feld.', grenzAutoGesetzt: 'Die Stadt wählt ihr nächstes Feld wieder selbst.', legGrenzZiel: 'Nächstes Feld der Ausbreitung', legGrenzMoeglich: 'Mögliches Ziel der Ausbreitung',
   felderHilfe: (r) => `Tippe ein Feld im Umkreis von ${r} an, um es zu bewirtschaften oder freizugeben. Jeder Einwohner bearbeitet ein Feld.`,
   auto: 'Automatisch', autoTip: 'Die Stadt wählt selbst die besten Felder (und tut das auch weiterhin, wenn sie wächst).', autoGesetzt: 'Die Stadt wählt ihre Felder jetzt selbst.',
   feldInfo: 'Feld', unerforscht: 'Unerforscht', fluss: 'Fluss', proStunde: 'Erträge pro Stunde', nichtErschlossen: '(noch nicht erschlossen)', gepluendert: '(geplündert)',
