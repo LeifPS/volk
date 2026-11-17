@@ -1,6 +1,8 @@
 // Diplomatie, Online-/Offline-Schutz, Angebote (Frieden, Grenzen, Bündnis, Abkommen, Tausch, Tribut), Handelsrouten, Stadtstaaten.
 import { abstand, umkreis } from '../hex.js';
-import { EINHEIT, FREIGESCHALTET_DURCH } from '../daten/index.js';
+import { EINHEIT, FREIGESCHALTET_DURCH, VERBESSERUNG } from '../daten/index.js';
+import { GELAENDE } from '../daten/gelaende.js';
+import { karte } from '../karte.js';
 import { SCHUTZ, OFFLINE, STD, MIN, FORSCHUNGSABKOMMEN, STADTSTAAT, TAG } from '../regeln.js';
 import { LAGERGUETER, LAGER_NAMEN, ROHSTOFF_NACH_ID } from '../daten/rohstoffe.js';
 import { pruefe } from './spiel.js';
@@ -416,8 +418,30 @@ export const diplomatie = {
     const vor = e.route;
     e.route = { von: heim.id, nach: ziel.id, aktiv: false, richtung: 'hin' };
     if (!this.routeNeuPlanen(e, true)) { e.route = vor; pruefe(false, 'Es gibt keinen Weg zur Zielstadt (fremdes Gebiet braucht offene Grenzen; bei Stadtstaaten Freundschaft).'); }
+    e.route.felder = e.pfad.map((p) => p.f);   // Weg der ersten Reise: Hier entsteht bei Einrichtung der Route eine Straße
     this.markiere('e' + e.id);
     return { ankunft: e.pfad[e.pfad.length - 1]?.t };
+  },
+
+  /** Wie in Civ 6: Eine eingerichtete Handelsroute legt auf ihrem Weg automatisch einen Pfad/eine Straße an (eigenes und neutrales Land). */
+  routeWegeBauen(e, r) {
+    const v = this.z.voelker[e.volk];
+    if (!v || !r.felder?.length || EINHEIT[e.typ]?.klasse === 'see_zivil' || (EINHEIT[e.typ]?.faehigkeiten || []).includes('see_arbeiten')) return;
+    const wid = ['pflasterstrasse', 'strasse', 'pfad'].find((id) => VERBESSERUNG[id] && this.freigeschaltet(v, 'verbesserung', id));
+    if (!wid) return;
+    const k = karte();
+    let n = 0;
+    for (const i of r.felder) {
+      if (GELAENDE[k.gelaende[i]].wasser || this.stadtAuf(i)) continue;
+      const bes = this.besitzer(i);
+      if (bes != null && bes !== e.volk) continue;
+      const alt = this.z.felder[i]?.w;
+      if (alt && (alt === wid || VERBESSERUNG[alt]?.stufe >= VERBESSERUNG[wid].stufe)) continue;
+      this.verbesserungSetzen(i, wid);
+      n++;
+    }
+    delete r.felder;
+    if (n) this.meldung(e.volk, `Die Handelsroute hat auf ihrem Weg ${n === 1 ? 'ein Feld' : n + ' Felder'} mit ${VERBESSERUNG[wid].name} ausgebaut.`, { art: 'bau', feld: e.feld });
   },
 
   routeNeuPlanen(e, still = false) {
@@ -445,6 +469,7 @@ export const diplomatie = {
       const ziel = this.z.staedte[r.nach];
       if (ziel && ziel.volk !== e.volk) this.aendern(ziel.volk);
       r.aktiv = true;
+      this.routeWegeBauen(e, r);
       this.meldung(e.volk, `Handelsroute nach ${ziel?.name} eingerichtet: +${this.routenWert(r)} Gold pro Stunde.`, { art: 'handel', feld: e.feld, wichtig: true });
       if (ziel && ziel.volk !== e.volk) this.meldung(ziel.volk, `${v.name} hat eine Handelsroute zu ${ziel.name} eingerichtet. Du verdienst mit.`, { art: 'handel' });
       if (ziel) { delete this._raten[ziel.volk]; }

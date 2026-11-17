@@ -212,3 +212,46 @@ test('Neuer Rohstoff durch Forschung: Meldung zeigt sofort, wo er im erkundeten 
   assert.equal(m.feld, vorkommen[0]);
   assert.match(m.text, /Ein Vorkommen/);
 });
+
+test('Handelsroute: Beim Einrichten entsteht auf ihrem Weg eine Straße (nur Land, nicht in fremdem Gebiet)', async () => {
+  const { FREIGESCHALTET_DURCH } = await import('../public/shared/daten/index.js');
+  const { GELAENDE } = await import('../public/shared/daten/gelaende.js');
+  const { umkreis } = await import('../public/shared/hex.js');
+  const s = neueWelt();
+  const A = spielerMitStadt(s, 'Pioniere');
+  const wid = 'pfad';
+  const noetig = FREIGESCHALTET_DURCH['verbesserung:' + wid];
+  if (noetig) A.v.forschung.erforscht[noetig] = 1;
+  const k = karte();
+  const felder = umkreis(A.stadt.feld, 3).filter((i) => i !== A.stadt.feld && !GELAENDE[k.gelaende[i]].wasser && s.besitzer(i) === A.v.id && !s.stadtAuf(i)).slice(0, 4);
+  assert.ok(felder.length >= 2);
+  const wasser = umkreis(A.stadt.feld, 6).find((i) => GELAENDE[k.gelaende[i]].wasser);
+  const e = s.einheitErzeugen(A.v.id, 'karawane', A.stadt.feld);
+  const r = { von: A.stadt.id, nach: A.stadt.id, aktiv: false, richtung: 'hin', felder: [...felder, ...(wasser != null ? [wasser] : [])] };
+  s.routeWegeBauen(e, r);
+  for (const i of felder) assert.equal(s.z.felder[i]?.w, wid);
+  if (wasser != null) assert.ok(!s.z.felder[wasser]?.w, 'kein Weg auf Wasser');
+  assert.ok(A.v.meldungen.some((m) => /Handelsroute hat auf ihrem Weg/.test(m.text)));
+  assert.equal(r.felder, undefined);
+});
+
+test('Handelsroute zwischen zwei eigenen Städten: nach der Ankunft liegt ein Pfad auf dem Weg', async () => {
+  const { FREIGESCHALTET_DURCH } = await import('../public/shared/daten/index.js');
+  const { umkreis, abstand } = await import('../public/shared/hex.js');
+  const s = neueWelt();
+  const A = spielerMitStadt(s, 'Handelsvolk');
+  const noetig = FREIGESCHALTET_DURCH['verbesserung:pfad'];
+  if (noetig) A.v.forschung.erforscht[noetig] = 1;
+  const ziel = umkreis(A.stadt.feld, 8).find((i) => abstand(i, A.stadt.feld) >= 5 && !s.stadtGruendenHindernis(A.v.id, i));
+  assert.ok(ziel != null, 'Platz für zweite Stadt');
+  const st2 = s.stadtGruenden(A.v.id, ziel, 'Zweitstadt');
+  const e = s.einheitErzeugen(A.v.id, 'karawane', A.stadt.feld);
+  const r = s.befehl(A.v.id, { art: 'handelsroute', einheit: e.id, stadt: (st2.id ?? st2) });
+  assert.equal(r.ok, true, r.fehler);
+  assert.ok(e.route.felder?.length > 0, 'Weg wurde gemerkt');
+  const weg = [...e.route.felder];
+  vorspulen(s, 6 * STD);
+  const mitWeg = weg.filter((i) => s.z.felder[i]?.w);
+  assert.ok(mitWeg.length > 0, 'Auf dem Weg liegt jetzt ein Pfad');
+  assert.ok(A.v.meldungen.some((m) => /Handelsroute hat auf ihrem Weg/.test(m.text)));
+});
