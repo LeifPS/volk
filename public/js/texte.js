@@ -402,7 +402,7 @@ T.lexikon = {
       `Einfluss sinkt langsam (${String(R.STADTSTAAT.verfallProStunde).replace('.', ',')} pro Stunde). Klicke auf einen Stadtstaat und wähle „Geschenk machen“. Alle Stadtstaaten: [[kat:akteur|Völker und Wildnis]].`,
     ] },
     { id: 'barbaren', titel: 'Barbaren', sym: 'pluendern', absaetze: () => [
-      'Barbarenlager entstehen an wilden Orten weit weg von Städten. Etwa jede Stunde schicken sie eine **schwache** Einheit los, die Einheiten angreift oder Verbesserungen plündert.',
+      'Barbarenlager gibt es viele, an wilden Orten weit weg von Städten. Jedes Lager bringt alle 15 bis 35 Minuten eine neue **schwache** Einheit hervor (bis zu drei gleichzeitig), die Einheiten angreift oder Verbesserungen plündert. Zerstörst du ein Lager, bekommst du Gold.',
       'Am Anfang sind sie etwas lästig, später kaum noch gefährlich. Sie **ignorieren den Neulingsschutz** und greifen auch Neulinge an, die gerade online sind. Wer offline ist, bleibt unbehelligt.',
       '**Lager zerstören:** Ziehe eine Militäreinheit auf das Lager. Das bringt Gold und Erfahrung.',
     ] },

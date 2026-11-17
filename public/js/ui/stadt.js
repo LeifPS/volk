@@ -390,6 +390,8 @@ function bauen(s, k) {
   );
   k.append(el('div.st-bau', links, el('div', steuer, z.listeEl)));
   if (z.liste && z.listeFuer === s.id) listeZeichnen(s); else ladeListe();
+  // Gold und Rohstoffe wachsen laufend, ohne dass der Server ein Ereignis schickt: "zu wenig" regelmäßig neu prüfen
+  z.live.push(() => { if (offen === z && z.reiter === 'bauen' && z.liste?.some((e) => e.fehlt) && Date.now() - z.listeZeit > 3000) ladeListe(true); });
 }
 
 async function ladeListe(still) {
@@ -479,8 +481,16 @@ async function senden(b, name) {
   return true;
 }
 
-function bestellen(x, s) {
+async function bestellen(x, s) {
   const d = bauDaten(x.art, x.id);
+  if (x.fehlt && !x.grund) {
+    // Anzeige kann veraltet sein (Gold ist inzwischen gewachsen): vor der Meldung frisch beim Server nachfragen
+    try {
+      const l = (await frage({ art: 'bauliste', stadt: s.id, alle: offen?.alle || undefined })).liste;
+      const neu = l.find((e) => e.art === x.art && e.id === x.id);
+      if (neu) x = neu;
+    } catch { /* alte Anzeige genügt */ }
+  }
   if (x.grund) { fehler(x.grund); ton('fehler'); return; }
   if (x.art === 'wunder') { wunderDialog(x, s); return; }
   const b = { art: 'bauen', stadt: s.id, typ: x.art, id: x.id };

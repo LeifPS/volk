@@ -4,7 +4,7 @@ import { karte, startWert, stadtGelaendeOk } from '../karte.js';
 import { ANZAHL, abstand, nachbarn, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { EINHEIT, EINHEITEN, GEB, GEBAEUDE, FORSCHUNGEN, FORSCHUNG, BARBARENLAGER, VERBESSERUNG } from '../daten/index.js';
-import { STD, MIN, TAG, KAMPF, WIRTSCHAFT_TEMPO } from '../regeln.js';
+import { STD, MIN, TAG, KAMPF, WIRTSCHAFT_TEMPO, BARBAREN } from '../regeln.js';
 import { bereichVon, istMilitaer, schichtVon } from './einheiten.js';
 import { SpielFehler } from './spiel.js';
 
@@ -232,18 +232,21 @@ export const akteure = {
     const b = this.barbarenVolk();
     if (!b) return;
     const spieler = this.alleVoelker().filter((v) => v.art === 'spieler');
-    const cap = Math.min(12, 3 + Math.round(spieler.length * 1.5));
-    const lager = Object.values(this.z.lager);
-    if (lager.length < cap) this.lagerGruenden();
+    // Viel mehr Lager als früher (Leifs Wunsch 2026-11-17): Obergrenze wächst mit der Spielerzahl, je Takt entstehen bis zu 6 neue Lager.
+    const cap = Math.min(BARBAREN.maxLager, BARBAREN.basisLager + Math.round(spieler.length * BARBAREN.lagerJeSpieler));
+    for (let n = 0, anzahl = Object.keys(this.z.lager).length; n < BARBAREN.neueJeTakt && anzahl < cap; n++) {
+      if (this.lagerGruenden()) anzahl++; else break;
+    }
+    const alle = this.einheitenVon(b.id);
     for (const l of Object.values(this.z.lager)) {
-      const einheiten = this.einheitenVon(b.id).filter((e) => e.lager === l.id);
-      if (einheiten.length < 2 && this.t >= (l.naechste || 0)) {
+      const einheiten = alle.filter((e) => e.lager === l.id);
+      if (einheiten.length < BARBAREN.einheitenJeLager && this.t >= (l.naechste || 0)) {
         const za = this.zeitalterUmgebung(l.feld);
         const typ = BARBARENLAGER.find((x) => x.id === l.typ) || BARBARENLAGER[0];
         const liste = typ.einheiten_je_zeitalter[Math.max(0, Math.min(6, za - 1))] || ['krieger'];
         const e = this.einheitErzeugen(b.id, liste[Math.floor(this.zufall() * liste.length)], l.feld, {});
         if (e) { e.lager = l.id; e.hp = 85; }
-        l.naechste = this.t + (3 + this.zufall() * 3) * STD / WIRTSCHAFT_TEMPO;
+        l.naechste = this.t + (BARBAREN.spawnMinMin + this.zufall() * (BARBAREN.spawnMaxMin - BARBAREN.spawnMinMin)) * MIN;
         this.markiere('b' + l.id);
       }
     }
@@ -264,7 +267,7 @@ export const akteure = {
   lagerGruenden() {
     const k = karte();
     const typen = BARBARENLAGER;
-    for (let versuch = 0; versuch < 60; versuch++) {
+    for (let versuch = 0; versuch < 120; versuch++) {
       const i = Math.floor(this.zufall() * ANZAHL);
       const g = GELAENDE[k.gelaende[i]];
       if (g.wasser || g.hoehe >= 3 || this.besitzer(i) != null || this.einheitenAuf(i).length) continue;
@@ -275,10 +278,11 @@ export const akteure = {
       const passend = typen.filter((t) => t.gelaende.includes(g.id));
       const typ = (passend.length ? passend : typen)[Math.floor(this.zufall() * (passend.length || typen.length))];
       const id = this.neueId();
-      this.z.lager[id] = { id, feld: i, typ: typ.id, entstanden: this.t, naechste: this.t + STD };
+      this.z.lager[id] = { id, feld: i, typ: typ.id, entstanden: this.t, naechste: this.t + BARBAREN.ersteEinheitMin * MIN };
       this.markiere('b' + id);
-      return;
+      return true;
     }
+    return false;
   },
 
   barbarHandeln(b, e) {

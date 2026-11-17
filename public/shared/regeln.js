@@ -28,7 +28,7 @@ export const ERTRAG_FAKTOR = 6;
 /** Faktor, mit dem Erträge tatsächlich pro Stunde ausgeschüttet werden (Grundfaktor mal Wirtschaftstempo). */
 export const ERTRAG_RATE = ERTRAG_FAKTOR * WIRTSCHAFT_TEMPO;
 /** Gold wird schwächer skaliert, damit Gold knapp genug bleibt, um wertvoll zu sein (inklusive Wirtschaftstempo). */
-export const GOLD_FAKTOR = 3 * WIRTSCHAFT_TEMPO;
+export const GOLD_FAKTOR = 6 * WIRTSCHAFT_TEMPO; // doppelter Goldverdienst (vorher 3)
 /** Grundwissen je Einwohner (Punkte). */
 export const WISSEN_JE_EINWOHNER = 1;
 export const BAUSTOFFE = ['holz', 'stein', 'marmor', 'lehm', 'salz'];
@@ -134,6 +134,18 @@ export const HEILUNG = { stadt: 35, eigen: 15, freund: 6, fremd: 0, stadtRegener
 /** Erfahrung bis zur n-ten Beförderung (n ab 1). */
 export function epFuerBefoerderung(n) { return 10 * n * (n + 1) / 2; }
 export const EP = { angriff: 5, verteidigung: 4, fern: 3, sieg: 3, max_barbar: 30 };
+
+// --- Barbarenlager (Update 2026-11-17: deutlich mehr Lager, die laufend Einheiten hervorbringen) ---
+export const BARBAREN = {
+  basisLager: 12,        // Lager auf der Karte, unabhängig von der Spielerzahl
+  lagerJeSpieler: 8,     // zusätzliche Lager je Spieler-Volk
+  maxLager: 60,          // Obergrenze (Karte 192 x 120, Mindestabstand 8 Felder zwischen Lagern und zu Städten)
+  neueJeTakt: 6,         // so viele neue Lager entstehen höchstens je Barbaren-Takt (ca. alle 24 Minuten)
+  einheitenJeLager: 3,   // ein Lager hält bis zu so viele eigene Einheiten und bringt neue hervor, sobald eine fehlt
+  ersteEinheitMin: 5,    // Minuten bis zur ersten Einheit eines neuen Lagers
+  spawnMinMin: 15,       // neue Einheit frühestens nach so vielen Minuten
+  spawnMaxMin: 35,       // und spätestens nach so vielen
+};
 
 // --- Mehrspieler-Schutz ---
 export const SCHUTZ = {

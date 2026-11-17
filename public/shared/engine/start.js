@@ -3,7 +3,7 @@ import { karte, startWert } from '../karte.js';
 import { ANZAHL, abstand, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { KI_VOELKER, STADTSTAATEN, STARTFORSCHUNGEN, FORSCHUNG } from '../daten/index.js';
-import { START_LAGER, SCHUTZ, STD, MIN, TAG } from '../regeln.js';
+import { START_LAGER, SCHUTZ, BARBAREN, STD, MIN, TAG } from '../regeln.js';
 import { pruefe, SpielFehler } from './spiel.js';
 
 export const START_ABSTAND = 18;
@@ -18,7 +18,7 @@ export const start = {
     g.initialisiert = true;
     g.jahreszeit = 0;
     g.jahreszeit_um = this.t + 2 * TAG;
-    g.barbaren_um = this.t + 2 * STD;
+    g.barbaren_um = this.t + 10 * MIN;
     g.natur_um = this.t + 12 * STD;
     g.diplo_um = this.t + STD;
     this.volkAnlegen({ art: 'barbar', name: 'Barbaren', farbe: '#2b2b2b' });
@@ -44,7 +44,7 @@ export const start = {
       for (let i = 0; i < 3; i++) this.grenzwachstum(st.id);
     }
     this.tiereNachfuellen();
-    for (let i = 0; i < 4; i++) this.lagerGruenden();
+    for (let i = 0; i < BARBAREN.basisLager; i++) this.lagerGruenden();
     this.markiere('g');
   },
 

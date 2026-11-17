@@ -389,6 +389,56 @@ function einheitPosition(e, t) {
   }
   return feldMitte(von, R);
 }
+
+// ---------- Einheiten-Banner (wie in Civilization: Schild in Volksfarbe mit Klassen-Symbol) ----------
+const BANNER_IKON = 11;
+const BANNER_BREITE = (() => { const w = []; for (let r = 0; r < 19; r++) w.push(r < 13 ? 17 : 17 - 2 * (r - 12)); return w; })();
+const BANNER_CACHE = new Map();
+/** Eigenes Symbol je Einheit: ihr Sprite, zugeschnitten und auf 11×11 verkleinert. */
+function bannerIkon(typ, hell) {
+  const k = typ + (hell ? ':h' : ':d');
+  if (BANNER_CACHE.has(k)) return BANNER_CACHE.get(k);
+  let out = null;
+  const bild = sprite('einheit', typ, { farbe: '#8a8f9c' });
+  if (bild) {
+    const q = document.createElement('canvas'); q.width = bild.width; q.height = bild.height;
+    const qc = q.getContext('2d'); qc.drawImage(bild, 0, 0);
+    const dat = qc.getImageData(0, 0, q.width, q.height).data;
+    let x0 = q.width, y0 = q.height, x1 = -1, y1 = -1;
+    for (let y = 0; y < q.height; y++) for (let x = 0; x < q.width; x++) if (dat[(y * q.width + x) * 4 + 3] > 20) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    if (x1 >= x0) {
+      const bw = x1 - x0 + 1, bh = y1 - y0 + 1, f = Math.min(BANNER_IKON / bw, BANNER_IKON / bh, 1);
+      const w = Math.max(1, Math.round(bw * f)), h = Math.max(1, Math.round(bh * f));
+      out = document.createElement('canvas'); out.width = BANNER_IKON; out.height = BANNER_IKON;
+      const oc = out.getContext('2d'); oc.imageSmoothingEnabled = true; oc.imageSmoothingQuality = 'high';
+      oc.drawImage(q, x0, y0, bw, bh, Math.floor((BANNER_IKON - w) / 2), Math.floor((BANNER_IKON - h) / 2), w, h);
+    }
+  }
+  BANNER_CACHE.set(k, out);
+  return out;
+}
+function zeichneBanner(x, yUnten, s, farbe, typ, ausgewaehlt) {
+  const p = Math.max(1, Math.round(s * 0.75)); // Pixelgröße des Banners
+  const h = BANNER_BREITE.length;
+  const x0 = Math.round(x), y0 = Math.round(yUnten) - (h + 1) * p;
+  const rand = ausgewaehlt ? '#ffe066' : '#0b0d14';
+  ctx.fillStyle = rand;
+  ctx.fillRect(x0 - Math.floor((BANNER_BREITE[0] + 2) / 2) * p, y0 - p, (BANNER_BREITE[0] + 2) * p, p);
+  for (let r = 0; r < h; r++) { const w = BANNER_BREITE[r] + 2; ctx.fillRect(x0 - Math.floor(w / 2) * p, y0 + r * p, w * p, p); }
+  ctx.fillRect(x0 - p, y0 + h * p, 3 * p, p);
+  ctx.fillStyle = farbe;
+  for (let r = 0; r < h; r++) { const w = BANNER_BREITE[r]; ctx.fillRect(x0 - Math.floor(w / 2) * p, y0 + r * p, w * p, p); }
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.fillRect(x0 - Math.floor(BANNER_BREITE[0] / 2) * p, y0, BANNER_BREITE[0] * p, p);
+  // heller Grund, darauf das farbige Einheiten-Symbol
+  ctx.fillStyle = '#efe6cc';
+  ctx.fillRect(x0 - Math.floor((BANNER_IKON + 2) / 2) * p, y0 + p, (BANNER_IKON + 2) * p, (BANNER_IKON + 2) * p);
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillRect(x0 - Math.floor((BANNER_IKON + 2) / 2) * p, y0 + (BANNER_IKON + 2) * p, (BANNER_IKON + 2) * p, p);
+  const ik = bannerIkon(typ, false);
+  if (ik) { const was = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false; ctx.drawImage(ik, x0 - Math.floor(BANNER_IKON / 2) * p, y0 + 2 * p, BANNER_IKON * p, BANNER_IKON * p); ctx.imageSmoothingEnabled = was; }
+  return y0;
+}
 function zeichneEinheiten(liste, feld, s, t) {
   const sortiert = liste.slice().sort((a, b) => (EINHEIT[a.typ]?.klasse === 'zivil' ? -1 : 0) - (EINHEIT[b.typ]?.klasse === 'zivil' ? -1 : 0));
   sortiert.forEach((e, n) => {
@@ -425,11 +475,17 @@ function zeichneEinheiten(liste, feld, s, t) {
       ctx.fillStyle = '#0b0d14'; ctx.fillRect(bx - 1, by - 1, Math.round(bw) + 2, Math.round(bh) + 2);
       ctx.fillStyle = hp > 60 ? '#5fbf4a' : hp > 30 ? '#f0c040' : '#e0533d'; ctx.fillRect(bx, by, Math.round(bw * hp / 100), Math.round(bh));
     }
+    // Banner über dem Kopf (nicht für Tiere)
+    let bannerOben = y - 24 * s;
+    if (!e.tier && d) {
+      const kopf = bild ? y + 9 * s - bild.height * s + wipp * s : y - 8 * s;
+      bannerOben = zeichneBanner(x, kopf - 1 * s, s, farbe, e.typ, ausgewaehlt);
+    }
     // Status-Symbole
     if (e.volk === Z.volk) {
       let sym = null;
       if (e.modus === 'befestigt') sym = 'befestigen'; else if (e.modus === 'schlafen') sym = 'schlafen'; else if (e.modus === 'erkunden') sym = 'erkunden'; else if (e.arbeit || e.modus === 'auto_arbeit') sym = 'arbeiten'; else if (e.route) sym = 'handel'; else if (e.befoerderbar) sym = 'befoerderung';
-      if (sym) { const ic = sprite('ui', sym); if (ic) male(ic, x + 6 * s, y - 24 * s, Math.max(1, s * 0.75)); }
+      if (sym) { const ic = sprite('ui', sym); if (ic) male(ic, x + 8 * s, bannerOben, Math.max(1, s * 0.75)); }
     }
   });
 }
