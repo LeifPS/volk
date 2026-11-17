@@ -5,9 +5,9 @@ import { GELAENDE } from '../daten/gelaende.js';
 import { ROHSTOFFE, LAGERGUETER, LAGER_NAMEN } from '../daten/rohstoffe.js';
 import { GEB, WUNDER_NACH_ID, FORSCHUNG, ROHSTOFF, VERBESSERUNG, STADTSTAATEN } from '../daten/index.js';
 import {
-  STD, MIN, ERTRAG_FAKTOR as F, GOLD_FAKTOR, WISSEN_JE_EINWOHNER, NAHRUNG_PRO_EINWOHNER, BAUSTOFFE, STRATEGISCH, LAGER_BASIS_BAU, LAGER_BASIS_STRATEGISCH,
+  STD, MIN, ERTRAG_RATE as F, WIRTSCHAFT_TEMPO, GOLD_FAKTOR, WISSEN_JE_EINWOHNER, NAHRUNG_PRO_EINWOHNER, BAUSTOFFE, STRATEGISCH, LAGER_BASIS_BAU, LAGER_BASIS_STRATEGISCH,
   STADT_RADIUS_ARBEIT, STADT_RADIUS_GRENZE_MAX, wachstumsBedarf, grenzKosten, zufriedenheitsFaktor, stadtUnzufriedenheit,
-  freieEinheiten, freierGebaeudeUnterhalt, forschungsTempo, anfangsTempo, FORSCHUNGSABKOMMEN, HANDEL, STADTSTAAT,
+  freieEinheiten, freierGebaeudeUnterhalt, forschungsTempo, zeitTempo, FORSCHUNGSABKOMMEN, HANDEL, STADTSTAAT,
 } from '../regeln.js';
 import { SpielFehler, pruefe } from './spiel.js';
 
@@ -128,7 +128,7 @@ export const wirtschaft = {
       if (!r || !r.liefert) continue;
       const vb = VERBESSERUNG[this.z.felder[i].v];
       const lf = vb?.lieferfaktor || 1;
-      for (const [m, x] of Object.entries(r.liefert)) erg.material[m] = (erg.material[m] || 0) + x * lf * (BAUSTOFFE.includes(m) ? F : 1);
+      for (const [m, x] of Object.entries(r.liefert)) erg.material[m] = (erg.material[m] || 0) + x * lf * (BAUSTOFFE.includes(m) ? F : WIRTSCHAFT_TEMPO);
     }
     // Handelsrouten
     for (const e of this.alleEinheiten()) {
@@ -146,7 +146,7 @@ export const wirtschaft = {
       if (tr.von === vid) erg.handel -= tr.gold;
     }
     // Einheiten-Unterhalt mit großzügigem Freikontingent (die teuersten sind frei)
-    const kosten = this.einheitenVon(vid).map((e) => this.einheitDaten(e)?.unterhalt || 0).filter((x) => x > 0).sort((a, c) => c - a);
+    const kosten = this.einheitenVon(vid).map((e) => (this.einheitDaten(e)?.unterhalt || 0) * WIRTSCHAFT_TEMPO).filter((x) => x > 0).sort((a, c) => c - a);
     const frei = freieEinheiten(staedte.length);
     erg.unterhalt.einheiten = kosten.slice(frei).reduce((a, x) => a + x, 0);
     const rabatt = Math.min(75, Math.max(0, b.unterhalt_rabatt)) / 100;
@@ -199,7 +199,7 @@ export const wirtschaft = {
       const wk = WUNDER_NACH_ID[wid]?.wirkung || {};
       r.n += wk.nahrung || 0; r.p += wk.produktion || 0; r.g += wk.gold || 0; r.w += wk.wissenschaft || 0; r.k += wk.kultur || 0; zuf += wk.zufriedenheit || 0;
     }
-    r.gebaeudeUnterhalt = Math.max(0, r.gebaeudeUnterhalt - freierGebaeudeUnterhalt(s.bev));
+    r.gebaeudeUnterhalt = Math.max(0, r.gebaeudeUnterhalt * WIRTSCHAFT_TEMPO - freierGebaeudeUnterhalt(s.bev));
     r.zufriedenheit = Math.round(zuf);
     const zf = zufriedenheitsFaktor(r.zufriedenheit);
     const m = (x, p) => x * (1 + p / 100);
@@ -277,7 +277,7 @@ export const wirtschaft = {
     let dauer = f.dauer;
     if (f.wiederholbar) dauer *= 1 + 0.15 * (v.forschung.erforscht[id] || 0);
     const kiFaktor = v.art === 'ki' ? 1.6 : 1;
-    return dauer * 1000 * kiFaktor / anfangsTempo(f.zeitalter || 0) / forschungsTempo(wissenschaft);
+    return dauer * 1000 * kiFaktor / zeitTempo(f.zeitalter || 0) / forschungsTempo(wissenschaft);
   },
 
   // ---------- Wachstum ----------

@@ -2,11 +2,25 @@
 
 export const MIN = 60 * 1000, STD = 60 * MIN, TAG = 24 * STD;
 
+// --- Spieltempo (Update 2026-11-17: alles deutlich schneller, nur gegen Ende langsamer) ---
+// Alle Stellschrauben für das Tempo stehen hier. Grunddauern in den Daten bleiben unverändert und werden nur geteilt.
+/** Tempo-Faktor je Zeitalter (0 = Antike ... 6 = Atomzeit) für Bauen, Ausbilden, Forschen und Verbesserungen: Dauer = Grunddauer / Faktor. */
+export const ZEIT_TEMPO = [10, 8, 6, 5, 4, 3, 2.5];
+export function zeitTempo(zeitalter) { return ZEIT_TEMPO[Math.max(0, Math.min(ZEIT_TEMPO.length - 1, Math.floor(zeitalter || 0)))]; }
+/** Wirtschaftstempo: Erträge, Verbrauch, Unterhalt, Heilung und Handel je Stunde laufen mit diesem Faktor (Kosten bleiben gleich). */
+export const WIRTSCHAFT_TEMPO = 5;
+/** Abklingzeiten nach Angriffen folgen dem Zeitalter-Tempo nur abgeschwächt (Wurzel), damit Gefechte ihren Rhythmus behalten. */
+export function abklingFaktor(zeitalter) { return 1 / Math.sqrt(zeitTempo(zeitalter)); }
+/** Marschtempo je Zeitalter der Einheit: später wird es zäher (Faktor auf die Schrittdauer). */
+export const MARSCH_ZEITALTER = [1, 1, 1, 1, 1.25, 1.5, 2];
+
 // --- Wirtschaft ---
-/** Nahrung, Gold, Kultur und Baustoffe (Holz, Stein, Marmor, Lehm, Salz) werden mit diesem Faktor pro Stunde ausgeschüttet. */
+/** Grundfaktor für Nahrung, Gold, Kultur und Baustoffe (Holz, Stein, Marmor, Lehm, Salz). Er bestimmt auch die Kosten für Wachstum und Grenzen. */
 export const ERTRAG_FAKTOR = 6;
-/** Gold wird schwächer skaliert, damit Gold knapp genug bleibt, um wertvoll zu sein. */
-export const GOLD_FAKTOR = 3;
+/** Faktor, mit dem Erträge tatsächlich pro Stunde ausgeschüttet werden (Grundfaktor mal Wirtschaftstempo). */
+export const ERTRAG_RATE = ERTRAG_FAKTOR * WIRTSCHAFT_TEMPO;
+/** Gold wird schwächer skaliert, damit Gold knapp genug bleibt, um wertvoll zu sein (inklusive Wirtschaftstempo). */
+export const GOLD_FAKTOR = 3 * WIRTSCHAFT_TEMPO;
 /** Grundwissen je Einwohner (Punkte). */
 export const WISSEN_JE_EINWOHNER = 1;
 export const BAUSTOFFE = ['holz', 'stein', 'marmor', 'lehm', 'salz'];
@@ -19,10 +33,7 @@ export const STADT_MINDESTABSTAND = 4;     // Felder Abstand (also mind. 3 Felde
 export const STADT_RADIUS_ARBEIT = 3;
 export const STADT_RADIUS_GRENZE_MAX = 5;
 
-// --- Anfangsbeschleunigung: Der Einstieg soll flott gehen, später wird es zäher ---
-/** Tempo-Faktor für Bauen, Ausbilden und Forschen je Zeitalter (0 = Antike). Danach 1. */
-export const ANFANGS_TEMPO = [2, 1.5, 1.25];
-export function anfangsTempo(zeitalter) { return ANFANGS_TEMPO[zeitalter] ?? 1; }
+// --- Anfangsbeschleunigung bei Wachstum und Grenzen: Der Einstieg soll flott gehen, später wird es zäher ---
 /** Faktor auf den Bedarf für Wachstum und Grenzen: die ersten Stufen sind billiger (0,5 bei Stufe 0, ab Stufe 6 voll). */
 export function anfangsFaktor(stufe) { return Math.min(1, 0.5 + 0.08 * Math.max(0, stufe)); }
 
@@ -44,7 +55,7 @@ export function bauTempo(produktion) { return 1 + Math.max(0, produktion) / 25; 
 /** Bauzeit in ms aus Grundzeit (Sekunden), Produktion und Zusatzprozent (negativ = schneller). */
 export function bauDauer(grundSek, produktion, prozent = 0) {
   const f = Math.max(0.25, 1 + prozent / 100);
-  return Math.max(30 * 1000, Math.round(grundSek * 1000 * f / bauTempo(produktion)));
+  return Math.max(10 * 1000, Math.round(grundSek * 1000 * f / bauTempo(produktion)));
 }
 
 /** Zufriedenheits-Wirkung auf Erträge: -25 % bei sehr unzufrieden bis +10 % bei sehr zufrieden. */
@@ -61,17 +72,18 @@ export function stadtUnzufriedenheit(bev, anzahlStaedte) {
 /** Kostenloses Kontingent: so viele Militäreinheiten kosten keinen Unterhalt. */
 export function freieEinheiten(anzahlStaedte) { return 4 + 2 * anzahlStaedte; }
 /** Kostenloses Gebäude-Unterhalts-Kontingent je Stadt (Gold/h). */
-export function freierGebaeudeUnterhalt(bev) { return 3 + bev * 0.5; }
+export function freierGebaeudeUnterhalt(bev) { return (3 + bev * 0.5) * WIRTSCHAFT_TEMPO; }
 
 // --- Bewegung ---
-/** Sekunden pro Bewegungskosten-Einheit bei Tempo 2. */
-export const SCHRITT_BASIS_S = 120;
+/** Sekunden pro Bewegungskosten-Einheit bei Tempo 2 (Update 2026-11-17: 30 statt 120). */
+export const SCHRITT_BASIS_S = 30;
 export const EINGESCHIFFT_TEMPO = 2;
 
-/** Dauer eines Schritts in ms. kosten: Geländekosten (oder Wegkosten), tempo: Bewegungspunkte der Einheit, bonusProzent: schneller. */
-export function schrittDauer(kosten, tempo, bonusProzent = 0) {
+/** Dauer eines Schritts in ms. kosten: Geländekosten (oder Wegkosten), tempo: Bewegungspunkte der Einheit, bonusProzent: schneller, zeitalter: der Einheit (später langsamer). */
+export function schrittDauer(kosten, tempo, bonusProzent = 0, zeitalter = 0) {
   const t = Math.max(1, tempo);
-  return Math.round(SCHRITT_BASIS_S * 1000 * kosten * 2 / t / (1 + Math.max(0, bonusProzent) / 100));
+  const z = MARSCH_ZEITALTER[Math.max(0, Math.min(MARSCH_ZEITALTER.length - 1, Math.floor(zeitalter || 0)))];
+  return Math.round(SCHRITT_BASIS_S * 1000 * kosten * 2 * z / t / (1 + Math.max(0, bonusProzent) / 100));
 }
 
 // --- Kampf ---
@@ -89,9 +101,9 @@ export const KAMPF = {
   fernGegenStadtFaktor: 0.5,
   belagerungGegenStadtFaktor: 1.5,
   stadtReichweite: 2,
-  stadtAbklingzeit: 15 * MIN,
+  stadtAbklingzeit: 5 * MIN,
   eroberungsRestBev: 0.4,
-  zerstoertDauer: 6 * STD,
+  zerstoertDauer: 6 * STD / WIRTSCHAFT_TEMPO,
   raubtierMinHp: 20,
 };
 
@@ -108,7 +120,7 @@ export function verwundungsMalus(hp) { return 0 - Math.floor((100 - Math.max(0, 
 /** Stadt: Grundstärke und Lebenspunkte. */
 export function stadtGrundStaerke(zeitalter, bev) { return 14 + 9 * zeitalter + Math.min(10, Math.floor(bev / 3)); }
 export const STADT_GRUND_HP = 300;
-/** Heilung in HP pro Stunde. */
+/** Heilung in HP pro Stunde (Grundwerte; die Engine multipliziert mit dem Wirtschaftstempo). */
 export const HEILUNG = { stadt: 35, eigen: 15, freund: 6, fremd: 0, stadtRegeneration: 60 };
 
 /** Erfahrung bis zur n-ten Beförderung (n ab 1). */

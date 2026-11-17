@@ -8,7 +8,7 @@ import { LAGER_NAMEN } from '../../shared/daten/rohstoffe.js';
 import { karte } from '../../shared/karte.js';
 import { abstand, umkreis, xVon, yVon } from '../../shared/hex.js';
 import * as REGELN from '../../shared/regeln.js';
-import { ERTRAG_FAKTOR as F, STD, bauTempo, zufriedenheitsFaktor, stadtUnzufriedenheit, freierGebaeudeUnterhalt, STADT_RADIUS_ARBEIT, ABBRUCH_ERSTATTUNG } from '../../shared/regeln.js';
+import { ERTRAG_RATE as F, WIRTSCHAFT_TEMPO, STD, bauTempo, zufriedenheitsFaktor, stadtUnzufriedenheit, freierGebaeudeUnterhalt, STADT_RADIUS_ARBEIT, ABBRUCH_ERSTATTUNG } from '../../shared/regeln.js';
 import { sprite } from '../grafik/sprites.js';
 import { ton } from '../audio.js';
 
@@ -358,7 +358,7 @@ function uebersicht(s, k) {
   );
 
   // --- Unterhalt ---
-  let brutto = 0; for (const gid of s.gebaeude || []) brutto += GEB[gid]?.unterhalt || 0;
+  let brutto = 0; for (const gid of s.gebaeude || []) brutto += (GEB[gid]?.unterhalt || 0) * WIRTSCHAFT_TEMPO;
   const frei = freierGebaeudeUnterhalt(s.bev);
   const unterhalt = box('gold', S().unterhalt,
     zeileEl('lager', S().unterhaltBrutto, '−' + z1(brutto) + '/h'),

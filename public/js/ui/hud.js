@@ -8,6 +8,7 @@ import { GELAENDE } from '../../shared/daten/gelaende.js';
 import { LAGER_NAMEN } from '../../shared/daten/rohstoffe.js';
 import { ZEITALTER } from '../../shared/daten/zeitalter.js';
 import { karte } from '../../shared/karte.js';
+import { WIRTSCHAFT_TEMPO } from '../../shared/regeln.js';
 import { BREITE, HOEHE, idx, abstand, umkreis, feldMitte } from '../../shared/hex.js';
 import { kamera, zentriereAuf, neuZeichnen, overlay, volkFarbe } from '../karte/render.js';
 import { R, WELT_B, WELT_H } from '../karte/gelaende.js';
@@ -176,7 +177,7 @@ function einheitPanel(e) {
     if (e.route) kinder.push(zeile('handel', `Handelsroute ${stadt(e.route.von)?.name || '?'} ↔ ${stadt(e.route.nach)?.name || '?'}` + (e.route.aktiv ? '' : ' (unterwegs)')));
     if (e.ep != null) kinder.push(zeile('befoerderung', `Erfahrung ${e.ep}` + (e.bef?.length ? ' · ' + e.bef.map((b) => BEFOERDERUNG[b]?.name).join(', ') : '')));
     if (e.unterversorgt) kinder.push(el('div.rot-t', { text: 'Unterversorgt (Goldmangel): schwächer, heilt nicht.' }));
-    if (d.unterhalt) kinder.push(el('div.klein', { text: `Unterhalt ${zahl(d.unterhalt, 1)} Gold/h (ein Grundkontingent an Einheiten ist gratis)` }));
+    if (d.unterhalt) kinder.push(el('div.klein', { text: `Unterhalt ${zahl(d.unterhalt * WIRTSCHAFT_TEMPO, 1)} Gold/h (ein Grundkontingent an Einheiten ist gratis)` }));
   }
   kinder.push(el('div.klein', { style: { marginTop: '4px' } }, d.beschreibung || ''));
   auswahlEl.replaceChildren(...kinder);

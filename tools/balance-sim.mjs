@@ -1,5 +1,5 @@
 // Balance-Simulation: Ein guter Bot-Spieler spielt mehrere Wochen in simulierter Zeit in einer vollen Welt (KI, Stadtstaaten, Barbaren).
-// Prüft die Zielwerte für die Zeitalter (Antike ~1 Tag ... Atomzeit ~5 Tage, ganzer Baum in 2-4 Wochen), den Unterhalt und die Stabilität.
+// Prüft die Zielwerte für die Zeitalter (Antike ~Stunden ... Atomzeit ~3 Tage, ganzer Baum in ~8-10 Tagen), den Unterhalt und die Stabilität.
 // Aufruf: node tools/balance-sim.mjs [tage=32] [--still]
 import { simulierteUhr } from '../public/shared/uhr.js';
 const uhr = simulierteUhr(Date.UTC(2026, 2, 1, 8));
@@ -12,7 +12,7 @@ botErweitern(Spiel);
 const TAGE = +(process.argv[2] || 32);
 const still = process.argv.includes('--still');
 const STD = 3600e3, TAG = 24 * STD;
-const ZIEL_TAGE = [1, 2, 3, 3, 4, 6, 5]; // effektive Tage je Zeitalter (Auftrag)
+const ZIEL_TAGE = [0.3, 0.3, 0.6, 0.9, 1.1, 2.3, 2.8]; // effektive Tage je Zeitalter (Tempo-Update 2026-11-17: alles schneller, nur gegen Ende langsamer)
 
 const s = new Spiel(leererZustand(uhr.jetzt()));
 s.t = uhr.jetzt();

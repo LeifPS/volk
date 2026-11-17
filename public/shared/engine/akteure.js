@@ -4,7 +4,7 @@ import { karte, startWert, stadtGelaendeOk } from '../karte.js';
 import { ANZAHL, abstand, nachbarn, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { EINHEIT, EINHEITEN, GEB, GEBAEUDE, FORSCHUNGEN, FORSCHUNG, BARBARENLAGER, VERBESSERUNG } from '../daten/index.js';
-import { STD, MIN, TAG, KAMPF } from '../regeln.js';
+import { STD, MIN, TAG, KAMPF, WIRTSCHAFT_TEMPO } from '../regeln.js';
 import { bereichVon, istMilitaer, schichtVon } from './einheiten.js';
 import { SpielFehler } from './spiel.js';
 
@@ -28,8 +28,8 @@ export const akteure = {
   kiDenken(vid) {
     const v = this.z.voelker[vid];
     const ki = v.ki;
-    const intervall = (v.ki.bot ? 30 : this.spielerOnline() ? 35 : 150) * MIN;
-    ki.denken_um = this.t + intervall + Math.floor(this.zufall() * 10 * MIN);
+    const intervall = (v.ki.bot ? 30 : this.spielerOnline() ? 35 : 150) * MIN / WIRTSCHAFT_TEMPO;
+    ki.denken_um = this.t + intervall + Math.floor(this.zufall() * 10 * MIN / WIRTSCHAFT_TEMPO);
     this.markiere('v' + vid);
     try {
       this.kiForschung(v);
@@ -227,7 +227,7 @@ export const akteure = {
   // ---------- Barbaren ----------
   barbarenZug() {
     const g = this.z.global;
-    g.barbaren_um = this.t + 2 * STD;
+    g.barbaren_um = this.t + 2 * STD / WIRTSCHAFT_TEMPO;
     this.markiere('g');
     const b = this.barbarenVolk();
     if (!b) return;
@@ -243,7 +243,7 @@ export const akteure = {
         const liste = typ.einheiten_je_zeitalter[Math.max(0, Math.min(6, za - 1))] || ['krieger'];
         const e = this.einheitErzeugen(b.id, liste[Math.floor(this.zufall() * liste.length)], l.feld, {});
         if (e) { e.lager = l.id; e.hp = 85; }
-        l.naechste = this.t + (3 + this.zufall() * 3) * STD;
+        l.naechste = this.t + (3 + this.zufall() * 3) * STD / WIRTSCHAFT_TEMPO;
         this.markiere('b' + l.id);
       }
     }

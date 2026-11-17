@@ -5,7 +5,7 @@ import { Z, an, du, volk, stadt as stadtVon, eigeneStaedte, eigeneEinheiten, akt
 import { EINHEIT, VERBESSERUNG, ROHSTOFF, WUNDER, ZEITALTER } from '../../shared/daten/index.js';
 import { LAGERGUETER, LAGER_NAMEN } from '../../shared/daten/rohstoffe.js';
 import { abstand, xVon, yVon } from '../../shared/hex.js';
-import { freieEinheiten } from '../../shared/regeln.js';
+import { freieEinheiten, WIRTSCHAFT_TEMPO } from '../../shared/regeln.js';
 import { springe, waehle } from './hud.js';
 import * as fenster_ from './fenster.js';
 import { bauName, bauSymbol, boniListe, wirkungListe } from './stadt.js';
@@ -176,7 +176,7 @@ function einheiten(k) {
     { k: 'ort', titel: sp.ort, wert: ortVon },
     { k: 'hp', titel: sp.lp, z: true, wert: (e) => aktuelleHp(e), zelle: (e) => { const hp = aktuelleHp(e); return el('span.re-n', el('span.re-bar', { style: { width: '60px' } }, balken(hp / 100, hp > 60 ? '' : hp > 30 ? 'gold' : 'rot')), el('span', { text: String(Math.round(hp)) })); } },
     { k: 'status', titel: sp.status, wert: (e) => statusVon(e)[0], zelle: (e) => { const [t, c] = statusVon(e); return el('span', { class: c, text: t }); } },
-    { k: 'unterhalt', titel: sp.unterhalt, z: true, wert: (e) => EINHEIT[e.typ]?.unterhalt || 0, zelle: (e) => { const u = EINHEIT[e.typ]?.unterhalt || 0; return u ? z1(u) + '/h' : '–'; } },
+    { k: 'unterhalt', titel: sp.unterhalt, z: true, wert: (e) => (EINHEIT[e.typ]?.unterhalt || 0) * WIRTSCHAFT_TEMPO, zelle: (e) => { const u = (EINHEIT[e.typ]?.unterhalt || 0) * WIRTSCHAFT_TEMPO; return u ? z1(u) + '/h' : '–'; } },
   ], l, (e) => { offen?.f.schliessen(); springe(aktuellesFeld(e)); waehle({ art: 'einheit', id: e.id }); }));
   k.append(el('p.klein', { text: R().einheitenHinweis }));
 }

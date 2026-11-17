@@ -332,12 +332,12 @@ T.lexikon = {
     ] },
     { id: 'eroberung', titel: 'Städte erobern', sym: 'stadt', absaetze: (R) => [
       `Städte sind **sehr stark**: Sie haben ${R.STADT_GRUND_HP} Lebenspunkte und eine eigene Stärke, die mit Zeitalter und Größe wächst. Mauern, Türme, eine Garnison (Einheit in der Stadt) und ein Hügel machen sie noch stärker.`,
-      `Eine Stadt **schießt** auf Feinde in ${R.KAMPF.stadtReichweite} Feldern Umkreis und **regeneriert** ${R.HEILUNG.stadtRegeneration} Lebenspunkte pro Stunde. Fernkämpfer machen gegen Städte nur halben Schaden, Belagerungswaffen dagegen deutlich mehr.`,
+      `Eine Stadt **schießt** auf Feinde in ${R.KAMPF.stadtReichweite} Feldern Umkreis und **regeneriert** ${R.HEILUNG.stadtRegeneration * R.WIRTSCHAFT_TEMPO} Lebenspunkte pro Stunde. Fernkämpfer machen gegen Städte nur halben Schaden, Belagerungswaffen dagegen deutlich mehr.`,
       `Fallen die Lebenspunkte auf 0, kann eine **Nahkampfeinheit** einziehen. Die Stadt gehört dann dem Eroberer, ist aber **zerstört**: Sie verliert viele Einwohner und Gebäude und ist ${Math.round(R.KAMPF.zerstoertDauer / R.STD)} Stunden unproduktiv.`,
       'KI-Völker erobern niemals Städte von Spielern.',
     ] },
     { id: 'heilung', titel: 'Heilung', sym: 'hp', absaetze: (R) => [
-      `Verwundete Einheiten heilen von selbst: in einer eigenen Stadt ${R.HEILUNG.stadt} LP pro Stunde, im eigenen Gebiet ${R.HEILUNG.eigen} LP, im Gebiet eines Verbündeten ${R.HEILUNG.freund} LP. In fremdem Gebiet heilen sie nicht.`,
+      `Verwundete Einheiten heilen von selbst: in einer eigenen Stadt ${R.HEILUNG.stadt * R.WIRTSCHAFT_TEMPO} LP pro Stunde, im eigenen Gebiet ${R.HEILUNG.eigen * R.WIRTSCHAFT_TEMPO} LP, im Gebiet eines Verbündeten ${R.HEILUNG.freund * R.WIRTSCHAFT_TEMPO} LP. In fremdem Gebiet heilen sie nicht.`,
       'Krankenhäuser, [[einheit:sanitaeter|Sanitäter]] und manche [[kat:befoerderung|Beförderungen]] beschleunigen die Heilung. Unterversorgte Einheiten (Goldmangel) heilen nicht.',
     ] },
     { id: 'erfahrung', titel: 'Erfahrung und Beförderung', sym: 'befoerderung', absaetze: (R) => [
@@ -402,7 +402,7 @@ T.lexikon = {
       `Einfluss sinkt langsam (${String(R.STADTSTAAT.verfallProStunde).replace('.', ',')} pro Stunde). Klicke auf einen Stadtstaat und wähle „Geschenk machen“. Alle Stadtstaaten: [[kat:akteur|Völker und Wildnis]].`,
     ] },
     { id: 'barbaren', titel: 'Barbaren', sym: 'pluendern', absaetze: () => [
-      'Barbarenlager entstehen an wilden Orten weit weg von Städten. Alle paar Stunden schicken sie eine **schwache** Einheit los, die Einheiten angreift oder Verbesserungen plündert.',
+      'Barbarenlager entstehen an wilden Orten weit weg von Städten. Etwa jede Stunde schicken sie eine **schwache** Einheit los, die Einheiten angreift oder Verbesserungen plündert.',
       'Am Anfang sind sie etwas lästig, später kaum noch gefährlich. Sie **ignorieren den Neulingsschutz** und greifen auch Neulinge an, die gerade online sind. Wer offline ist, bleibt unbehelligt.',
       '**Lager zerstören:** Ziehe eine Militäreinheit auf das Lager. Das bringt Gold und Erfahrung.',
     ] },

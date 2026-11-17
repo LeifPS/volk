@@ -3,7 +3,7 @@ import { karte } from '../karte.js';
 import { abstand, nachbarn, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { EINHEIT, BEFOERDERUNG, VERBESSERUNG, GEB, FREIGESCHALTET_DURCH } from '../daten/index.js';
-import { KAMPF, schaden, erwarteterSchaden, verwundungsMalus, stadtGrundStaerke, STADT_GRUND_HP, HEILUNG, EP, STD, MIN, epFuerBefoerderung } from '../regeln.js';
+import { KAMPF, schaden, erwarteterSchaden, verwundungsMalus, stadtGrundStaerke, STADT_GRUND_HP, HEILUNG, WIRTSCHAFT_TEMPO, abklingFaktor, EP, STD, MIN, epFuerBefoerderung } from '../regeln.js';
 import { pruefe, SpielFehler } from './spiel.js';
 import { bereichVon, schichtVon, istMilitaer } from './einheiten.js';
 
@@ -32,7 +32,7 @@ export const kampf = {
     const hp = s.hp ?? max;
     if (s.angriff_um && this.t - s.angriff_um < 30 * MIN) return Math.min(max, hp);
     const ab = Math.max(s.hp_um ?? this.t, (s.angriff_um || 0) + 30 * MIN);
-    return Math.min(max, hp + HEILUNG.stadtRegeneration * max / 300 * Math.max(0, this.t - ab) / STD);
+    return Math.min(max, hp + HEILUNG.stadtRegeneration * WIRTSCHAFT_TEMPO * max / 300 * Math.max(0, this.t - ab) / STD);
   },
   stadtHpAbrechnen(s) { s.hp = Math.round(this.stadtHp(s) * 10) / 10; s.hp_um = this.t; this.markiere('s' + s.id); },
   garnison(s) { return this.einheitenAuf(s.feld).find((u) => u.volk === s.volk && istMilitaer(EINHEIT[u.typ]) && bereichVon(EINHEIT[u.typ]) === 'land'); },
@@ -323,7 +323,7 @@ export const kampf = {
     let s = d.abklingzeit || 600;
     let p = 0;
     for (const b of e.befoerderungen || []) p += BEFOERDERUNG[b]?.wirkung?.abklingzeit_prozent || 0;
-    return Math.max(60, Math.round(s * (1 + p / 100)));
+    return Math.max(30, Math.round(s * abklingFaktor(d.zeitalter || 0) * (1 + p / 100)));
   },
 
   einheitZiehen(e, feld) {

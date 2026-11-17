@@ -4,7 +4,7 @@ import { ANZAHL, abstand, nachbarn, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { EINHEIT, BEFOERDERUNG, VERBESSERUNG, FREIGESCHALTET_DURCH } from '../daten/index.js';
 import { sucheWeg } from '../pfad.js';
-import { schrittDauer, EINGESCHIFFT_TEMPO, STADT_MINDESTABSTAND, HEILUNG, STD, MIN, AUFLOESEN_ERSTATTUNG, AUFRUESTEN_FAKTOR, epFuerBefoerderung, STADT_GRUND_HP } from '../regeln.js';
+import { schrittDauer, WIRTSCHAFT_TEMPO, EINGESCHIFFT_TEMPO, STADT_MINDESTABSTAND, HEILUNG, STD, MIN, AUFLOESEN_ERSTATTUNG, AUFRUESTEN_FAKTOR, epFuerBefoerderung, STADT_GRUND_HP } from '../regeln.js';
 import { pruefe, SpielFehler } from './spiel.js';
 
 // Raubtiere sind keine baubare Einheit, sondern Teil der Welt (nicht in EINHEITEN, also nicht im Forschungsbaum).
@@ -178,7 +178,7 @@ export const einheiten = {
     let t = this.t;
     const pfad = [];
     for (let j = 0; j < w.felder.length; j++) {
-      t += schrittDauer(w.kosten[j], d.tempo || 2, bonus);
+      t += schrittDauer(w.kosten[j], d.tempo || 2, bonus, d.zeitalter || 0);
       pfad.push({ f: w.felder[j], t });
     }
     return pfad;
@@ -413,7 +413,7 @@ export const einheiten = {
   heilrate(e) {
     if (e.pfad?.length || e.unterversorgt || e.in) return 0;
     const d = EINHEIT[e.typ];
-    if (bereichVon(d) === 'luft') { const s = this.stadtAuf(e.feld); return s && s.volk === e.volk ? HEILUNG.stadt : HEILUNG.eigen; }
+    if (bereichVon(d) === 'luft') { const s = this.stadtAuf(e.feld); return (s && s.volk === e.volk ? HEILUNG.stadt : HEILUNG.eigen) * WIRTSCHAFT_TEMPO; }
     const s = this.stadtAuf(e.feld);
     let r;
     if (s && s.volk === e.volk) r = HEILUNG.stadt + this.gebaeudeSumme(s, 'heilung');
@@ -422,6 +422,7 @@ export const einheiten = {
     for (const bid of e.befoerderungen || []) r += BEFOERDERUNG[bid]?.wirkung?.heilung || 0;
     // Sanitäter in der Nähe
     for (const n of [e.feld, ...nachbarn(e.feld)]) for (const u of this.einheitenAuf(n)) if (u.volk === e.volk && EINHEIT[u.typ]?.faehigkeiten?.includes('heilen')) { r += 10; break; }
+    r *= WIRTSCHAFT_TEMPO;
     const v = this.z.voelker[e.volk];
     if (v && v.art !== 'tiere' && v.art !== 'barbar') r *= 1 + (this.raten(e.volk).boni.heilung_prozent || 0) / 100;
     return r;
