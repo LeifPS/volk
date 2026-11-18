@@ -164,6 +164,14 @@ export class WeltServer {
     } else if (befehl === 'statistik') {
       const s = this.spiel;
       r = { ok: true, konten: Object.values(this.konten.konten).map((k) => ({ name: k.name, volk: k.volk, gesperrt: k.gesperrt, erstellt: k.erstellt })), voelker: s.alleVoelker().map((v) => ({ id: v.id, name: v.name, art: v.art, staedte: s.staedteVon(v.id).length, einheiten: s.einheitenVon(v.id).length, zeitalter: v.zeitalter || 0, online: s.istOnline(v.id) })), fehler: s.z.global.fehler || [], zeit: jetzt() };
+    } else if (befehl === 'karte') {
+      const s = this.spiel;
+      r = {
+        ok: true,
+        voelker: s.alleVoelker().map((v) => ({ id: v.id, name: v.name, art: v.art, farbe: v.farbe, online: s.istOnline(v.id) })),
+        staedte: Object.values(s.z.staedte).map((st) => ({ id: st.id, volk: st.volk, name: st.name, feld: st.feld, bev: st.bev })),
+        lager: Object.values(s.z.lager || {}).map((l) => ({ feld: l.feld })),
+      };
     } else r = { ok: false, fehler: 'Unbekannter Admin-Befehl.' };
     this.nachAenderung();
     return r;
