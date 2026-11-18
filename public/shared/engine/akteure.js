@@ -234,8 +234,11 @@ export const akteure = {
     const spieler = this.alleVoelker().filter((v) => v.art === 'spieler');
     // Viel mehr Lager als früher (Leifs Wunsch 2026-11-17): Obergrenze wächst mit der Spielerzahl, je Takt entstehen bis zu 6 neue Lager.
     const cap = Math.min(BARBAREN.maxLager, BARBAREN.basisLager + Math.round(spieler.length * BARBAREN.lagerJeSpieler));
-    for (let n = 0, anzahl = Object.keys(this.z.lager).length; n < BARBAREN.neueJeTakt && anzahl < cap; n++) {
-      if (this.lagerGruenden()) anzahl++; else break;
+    // Lager respawnen nicht (Leifs Wunsch 2026-11-18): Gezählt wird, wie viele je gegründet wurden, nicht wie viele noch stehen.
+    // Zerstörte Lager bleiben weg, nur die Einheiten der übrigen Lager kommen nach. Neue Lager entstehen nur, wenn die Obergrenze (z. B. durch neue Spieler) steigt.
+    if (g.lager_gegruendet == null) g.lager_gegruendet = Object.keys(this.z.lager).length;
+    for (let n = 0; n < BARBAREN.neueJeTakt && g.lager_gegruendet < cap; n++) {
+      if (!this.lagerGruenden()) break;
     }
     const alle = this.einheitenVon(b.id);
     for (const l of Object.values(this.z.lager)) {
@@ -279,6 +282,7 @@ export const akteure = {
       const typ = (passend.length ? passend : typen)[Math.floor(this.zufall() * (passend.length || typen.length))];
       const id = this.neueId();
       this.z.lager[id] = { id, feld: i, typ: typ.id, entstanden: this.t, naechste: this.t + BARBAREN.ersteEinheitMin * MIN };
+      this.z.global.lager_gegruendet = (this.z.global.lager_gegruendet || 0) + 1;
       this.markiere('b' + id);
       return true;
     }

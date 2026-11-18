@@ -255,3 +255,20 @@ test('Handelsroute zwischen zwei eigenen Städten: nach der Ankunft liegt ein Pf
   assert.ok(mitWeg.length > 0, 'Auf dem Weg liegt jetzt ein Pfad');
   assert.ok(A.v.meldungen.some((m) => /Handelsroute hat auf ihrem Weg/.test(m.text)));
 });
+
+test('Barbarenlager respawnen nicht: zerstörte Lager bleiben weg, die übrigen bringen weiter Einheiten hervor', () => {
+  const s = neueWelt();
+  const ids = Object.keys(s.z.lager);
+  assert.ok(ids.length >= 5);
+  const zerstoert = ids.slice(0, 3);
+  for (const id of zerstoert) delete s.z.lager[id];
+  const rest = Object.keys(s.z.lager).length;
+  for (let i = 0; i < 4; i++) s.barbarenZug();
+  assert.equal(Object.keys(s.z.lager).length, rest, 'keine neuen Lager nach Zerstörung');
+  const b = s.barbarenVolk();
+  const l = Object.values(s.z.lager)[0];
+  l.naechste = 0;
+  const vorher = s.einheitenVon(b.id).filter((e) => e.lager === l.id).length;
+  s.barbarenZug();
+  assert.ok(s.einheitenVon(b.id).filter((e) => e.lager === l.id).length >= vorher, 'Einheiten kommen weiter');
+});
