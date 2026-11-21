@@ -516,6 +516,30 @@ function zeichneOverlay(s, t) {
     ctx.fillStyle = pf.ok === false ? '#e0533d' : '#ffe066';
     for (const i of pf.felder) { const [mx, my] = feldMitte(i, R); const [x, y] = weltZuSchirm(mx, my); ctx.fillRect(Math.round(x - 2 * s), Math.round(y - 2 * s), Math.round(4 * s), Math.round(4 * s)); }
   }
+  // Verbleibender Weg der ausgewählten, laufenden Einheit
+  const sel = Z.auswahl?.art === 'einheit' ? Z.ansicht.einheiten[Z.auswahl.id] : null;
+  if (sel && sel.pfad && sel.pfad.length && !(overlay.pfad && overlay.pfad.felder)) {
+    const jetzt = serverJetzt();
+    const rest = sel.pfad.filter((p) => p.t > jetzt);
+    if (rest.length) {
+      const [px, py] = einheitPosition(sel, t);
+      const punkte = [weltZuSchirm(px, py), ...rest.map((p) => { const [mx, my] = feldMitte(p.f, R); return weltZuSchirm(mx, my); })];
+      ctx.save();
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = Math.max(3, 4 * s); ctx.setLineDash([Math.max(4, 7 * s), Math.max(4, 6 * s)]);
+      ctx.beginPath(); punkte.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke();
+      ctx.strokeStyle = '#ffe066'; ctx.lineWidth = Math.max(2, 2.5 * s);
+      ctx.beginPath(); punkte.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ffe066';
+      for (let k = 1; k < punkte.length - 1; k++) ctx.fillRect(Math.round(punkte[k][0] - 2 * s), Math.round(punkte[k][1] - 2 * s), Math.round(4 * s), Math.round(4 * s));
+      const [zx, zy] = punkte[punkte.length - 1];
+      ctx.strokeStyle = `rgba(255,224,102,${puls})`; ctx.lineWidth = Math.max(2, 2 * s);
+      ctx.beginPath(); ctx.arc(zx, zy, Math.max(5, 8 * s), 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+      schmutzig = true;
+    }
+  }
   if (overlay.hover >= 0) {
     const [mx, my] = feldMitte(overlay.hover, R);
     ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = Math.max(1, s); hexPfad(mx, my, s, 0.97); ctx.stroke();
