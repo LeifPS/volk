@@ -234,3 +234,18 @@ test('Händler blockieren kein Feld: Militär, Zivil und Händler stehen zusamme
   assert.notEqual(arb2.feld, nf, 'zweiter Arbeiter weicht aus (Zivilschicht belegt), Händler nicht');
   assert.equal(s.platzFrei(A.v.id, EINHEIT.arbeiter, k1.feld, arb.id), true, 'Händler auf dem Feld stören den Arbeiter nicht');
 });
+
+test('Wege: Altspielstand-Umrechnung reißt keine Straße ab (Kurven, Version-1-Stand wird neu abgeleitet)', async () => {
+  const { nachbar } = await import('../public/shared/hex.js');
+  const s = neueWelt();
+  let i = 25 * 40 + 10; const kette = [i];
+  for (const r of [0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 5, 0]) { i = nachbar(i, r); kette.push(i); }
+  for (const k of kette) s.z.felder[k] = { ...(s.z.felder[k] || {}), w: 'strasse', wk: 1 };   // kaputter Stand der ersten Ableitung
+  s.z.global.wege_v = 1;
+  s.wegeMigrieren();
+  // alle Kettenfelder bleiben über Verbindungen erreichbar
+  const gesehen = new Set([kette[0]]); const stapel = [kette[0]];
+  while (stapel.length) { const a = stapel.pop(); for (let r = 0; r < 6; r++) { const n = nachbar(a, r); if (n >= 0 && !gesehen.has(n) && kette.includes(n) && s.wegKante(a, n)) { gesehen.add(n); stapel.push(n); } } }
+  assert.equal(gesehen.size, kette.length, 'Straße zusammenhängend');
+  for (let q = 1; q < kette.length; q++) assert.ok(s.wegKante(kette[q - 1], kette[q]), 'Kettenglied ' + q);
+});

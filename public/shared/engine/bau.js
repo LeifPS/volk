@@ -316,29 +316,50 @@ export const bau = {
     if (fa?.w) this.setzeFeld(a, { wk: (fa.wk || 0) | (1 << r) });
     if (fb?.w) this.setzeFeld(b, { wk: (this.z.felder[b].wk || 0) | (1 << ((r + 3) % 6)) });
   },
-  /**
-   * Ein neues Wegfeld schließt sich benachbarten Wegen oder Städten an, aber nie zwei Nachbarn, die selbst Nachbarn sind
-   * (sonst entstünden Dreiecke), und bevorzugt die geradlinige Fortsetzung. So verschmelzen kreuzende Straßen nicht.
-   */
-  wegAutoVerbinden(i) {
-    const kandidaten = [];
-    for (let r = 0; r < 6; r++) { const n = nachbar(i, r); if (n >= 0 && (this.z.felder[n]?.w || this.stadtAuf(n))) kandidaten.push({ n, r }); }
-    const gewaehlt = [];
-    for (let r = 0; r < 6; r++) { const n = nachbar(i, r); if (n >= 0 && ((this.z.felder[i]?.wk || 0) >> r) & 1) gewaehlt.push({ n, r }); }
-    const grad = (n) => { let b = this.z.felder[n]?.wk || 0, k = 0; while (b) { k += b & 1; b >>= 1; } return k; };
-    for (const c of kandidaten) c.fort = (((this.z.felder[c.n]?.wk || 0) >> c.r) & 1) ? 1 : 0;   // c läuft geradlinig in dieses Feld hinein weiter
-    kandidaten.sort((a, b) => b.fort - a.fort || grad(a.n) - grad(b.n) || a.r - b.r);
-    const nehmen = (c) => { if (gewaehlt.some((g) => g.n === c.n)) return; if (gewaehlt.some((g) => this.richtungZu(g.n, c.n) >= 0)) return; gewaehlt.push(c); this.wegVerbinden(i, c.n); };
-    if (!gewaehlt.length && kandidaten.length) nehmen(kandidaten[0]);
-    for (const c of kandidaten) if (gewaehlt.some((g) => g.r === (c.r + 3) % 6)) nehmen(c);
-    for (const c of kandidaten) nehmen(c);
+  /** Ist a (Weg oder Stadt) mit dem Nachbarn b verbunden? (Die Bits stehen nur an Wegfeldern.) */
+  wegKante(a, b) {
+    const r = this.richtungZu(a, b); if (r < 0) return false;
+    return !!(((this.z.felder[a]?.wk || 0) >> r) & 1) || !!(((this.z.felder[b]?.wk || 0) >> ((r + 3) % 6)) & 1);
   },
-  /** Einmalig für ältere Spielstände: Wegverbindungen aus der Nachbarschaft ableiten (ohne Dreiecke). */
+  wegTrennen(a, b) {
+    const r = this.richtungZu(a, b); if (r < 0) return;
+    const fa = this.z.felder[a], fb = this.z.felder[b];
+    if (fa?.w) this.setzeFeld(a, { wk: (fa.wk || 0) & ~(1 << r) });
+    if (fb?.w) this.setzeFeld(b, { wk: (fb.wk || 0) & ~(1 << ((r + 3) % 6)) });
+  },
+  wegGrad(n) { let k = 0; for (let r = 0; r < 6; r++) { const m = nachbar(n, r); if (m >= 0 && this.wegKante(n, m)) k++; } return k; },
+  /**
+   * Dreiecke (zwei Nachbarn von i, die selbst Nachbarn sind, alle drei verbunden) lösen sich auf: Die unwichtigste Kante fällt weg
+   * (wichtig = setzt auf einer Seite eine gerade Straße fort). So bleiben Kreuzungen sauber und keine Straße reißt ab, denn die beiden anderen Kanten bleiben.
+   */
+  wegDreieckeLoesen(i) {
+    const gerade = (x, y) => { const r = this.richtungZu(x, y); const nx = nachbar(x, (r + 3) % 6), ny = nachbar(y, r); return (nx >= 0 && this.wegKante(x, nx) ? 1 : 0) + (ny >= 0 && this.wegKante(y, ny) ? 1 : 0); };
+    for (let wiederhol = 0; wiederhol < 6; wiederhol++) {
+      const ns = []; for (let r = 0; r < 6; r++) { const n = nachbar(i, r); if (n >= 0 && this.wegKante(i, n)) ns.push(n); }
+      let geaendert = false;
+      for (let x = 0; x < ns.length && !geaendert; x++) for (let y = x + 1; y < ns.length && !geaendert; y++) {
+        const g = ns[x], h = ns[y];
+        if (this.richtungZu(g, h) < 0 || !this.wegKante(g, h)) continue;
+        const kanten = [[g, h, gerade(g, h)], [i, g, gerade(i, g)], [i, h, gerade(i, h)]];
+        kanten.sort((p, q) => p[2] - q[2] || (this.wegGrad(p[0]) + this.wegGrad(p[1])) - (this.wegGrad(q[0]) + this.wegGrad(q[1])));
+        this.wegTrennen(kanten[0][0], kanten[0][1]); geaendert = true;
+      }
+      if (!geaendert) break;
+    }
+  },
+  /** Ein neues Wegfeld schließt sich benachbarten Wegen und Städten an; entstehende Dreiecke lösen sich auf, kreuzende Straßen verschmelzen so nicht. */
+  wegAutoVerbinden(i) {
+    for (let r = 0; r < 6; r++) { const n = nachbar(i, r); if (n >= 0 && (this.z.felder[n]?.w || this.stadtAuf(n))) this.wegVerbinden(i, n); }
+    this.wegDreieckeLoesen(i);
+  },
+  /** Einmalig für ältere Spielstände: Wegverbindungen aus der Nachbarschaft ableiten (Dreiecke lösen sich dabei auf). */
   wegeMigrieren() {
-    if (this.z.global.wege_v >= 1) return;
-    this.z.global.wege_v = 1;
+    if (this.z.global.wege_v >= 2) return;
+    this.z.global.wege_v = 2; this.markiere('g');
     const ids = Object.keys(this.z.felder).map(Number).filter((i) => this.z.felder[i].w).sort((a, b) => a - b);
-    for (const i of ids) if (this.z.felder[i].wk == null) this.wegAutoVerbinden(i);
+    for (const i of ids) if (this.z.felder[i].wk != null) this.setzeFeld(i, { wk: null });   // frühere (Version 1) Ableitung verwerfen
+    for (const i of ids) for (let r = 0; r < 6; r++) { const n = nachbar(i, r); if (n >= 0 && (this.z.felder[n]?.w || this.stadtAuf(n))) this.wegVerbinden(i, n); }
+    for (const i of ids) this.wegDreieckeLoesen(i);
   },
 
   /** Landweg zwischen zwei Feldern durch eigenes oder neutrales Gebiet (für Straßen). */
