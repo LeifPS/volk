@@ -50,11 +50,20 @@ function felderImChunk(cx, cy) {
 }
 
 /** Anschlüsse eines Wegfeldes: nur die Richtungen, in denen der Weg wirklich weiterführt (Bitmaske wk vom Server). */
+let wkVersion = -1, wkDa = false;
+/** Kennt der Server die Verbindungsdaten (wk)? Sonst (älterer Serverstand) verbinden sich benachbarte Wege wie früher. */
+function serverHatWk() {
+  if (wkVersion !== version) { wkVersion = version; wkDa = Object.values(Z.ansicht?.felder || {}).some((f) => f.w && f.wk); }
+  return wkDa;
+}
 function anschluesse(i, staedte) {
-  const wk = Z.ansicht.felder[i]?.wk || 0;
+  const f = Z.ansicht.felder[i];
+  const alle = !serverHatWk();
+  const wk = f?.wk || 0;
   const l = [];
   for (let r = 0; r < 6; r++) {
-    if (!((wk >> r) & 1)) continue;
+    if (!alle && !((wk >> r) & 1)) continue;
+    if (alle) { const n = nachbar(i, r); if (n < 0 || !(Z.ansicht.felder[n]?.w || staedte.has(n))) continue; }
     const n = nachbar(i, r); if (n < 0) continue;
     l.push({ n, r, stadt: staedte.has(n) });
   }
