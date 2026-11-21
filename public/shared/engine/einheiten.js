@@ -242,7 +242,7 @@ export const einheiten = {
     pruefe(['wach', 'schlafen', 'befestigt', 'erkunden', 'auto_arbeit'].includes(b.modus), 'Unbekannter Modus.');
     const d = EINHEIT[e.typ];
     if (b.modus === 'befestigt') pruefe(istMilitaer(d), 'Nur Militäreinheiten können sich befestigen.');
-    if (b.modus === 'befestigt' || b.modus === 'auto_arbeit') this.pruefeNichtEingeschifft(e, b.modus === 'befestigt' ? 'sich befestigen' : 'automatisch arbeiten');
+    if (b.modus === 'befestigt' || b.modus === 'auto_arbeit' || b.modus === 'erkunden') this.pruefeNichtEingeschifft(e, b.modus === 'befestigt' ? 'sich befestigen' : b.modus === 'erkunden' ? 'automatisch erkunden' : 'automatisch arbeiten');
     if (b.modus === 'auto_arbeit') pruefe(d.faehigkeiten?.includes('arbeiten') || d.faehigkeiten?.includes('see_arbeiten'), 'Nur Arbeiter können automatisch arbeiten.');
     this.hpAbrechnen(e);
     e.modus = b.modus;

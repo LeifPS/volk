@@ -217,7 +217,7 @@ function einheitAktionen(e) {
     k.push(aktKnopf('luft', B.verlegen, () => zielmodus('verlegen', e)));
   } else {
     if (e.pfad?.length) k.push(aktKnopf('kreuz', B.anhalten, () => ausfuehren({ art: 'anhalten', einheit: e.id })));
-    if (d.klasse === 'spaeher' || d.faehigkeiten?.includes('erkunden')) k.push(aktKnopf('erkunden', B.erkunden, () => ausfuehren({ art: 'modus', einheit: e.id, modus: 'erkunden' }, 'Die Einheit erkundet jetzt selbstständig.'), { tip: BT.erkunden }));
+    k.push(aktKnopf('erkunden', B.erkunden, () => ausfuehren({ art: 'modus', einheit: e.id, modus: 'erkunden' }, 'Die Einheit erkundet jetzt selbstständig.'), { tip: BT.erkunden }));
     if (!ZIVIL.has(d.klasse)) {
       k.push(aktKnopf('befestigen', B.befestigen, () => ausfuehren({ art: 'modus', einheit: e.id, modus: 'befestigt' }), { tip: BT.befestigen }));
       const f = feldInfo(aktuellesFeld(e));

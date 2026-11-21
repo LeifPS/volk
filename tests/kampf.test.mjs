@@ -257,3 +257,22 @@ test('Wie in Civ 6: Eingeschiffte Landeinheiten kÃ¶nnen weder angreifen noch grÃ
   a.feld = land;
   assert.equal(s.befehl(A.v.id, { art: 'modus', einheit: a.id, modus: 'befestigt' }).ok, true);
 });
+
+test('Automatisch erkunden geht mit jeder Einheit, nur nicht eingeschifft', () => {
+  const s = neueWelt();
+  const A = spielerMitStadt(s, 'Nomaden');
+  const k = karte();
+  const feld = s.einheitenVon(A.v.id)[0].feld;
+  const frei = nachbarn(feld).find((x) => !GELAENDE[k.gelaende[x]].wasser && !s.einheitenAuf(x).length);
+  assert.ok(frei != null);
+  const kr = s.einheitErzeugen(A.v.id, 'krieger', frei);
+  const r = s.befehl(A.v.id, { art: 'modus', einheit: kr.id, modus: 'erkunden' });
+  assert.equal(r.ok, true, r.fehler);
+  assert.ok(['erkunden', 'wach'].includes(kr.modus));
+  // eingeschifft: nicht erlaubt
+  let wasser = -1;
+  for (let i = 5000; i < 20000 && wasser < 0; i++) if (GELAENDE[k.gelaende[i]].wasser && !s.einheitenAuf(i).length) wasser = i;
+  const k2 = s.einheitErzeugen(A.v.id, 'krieger', frei); k2.feld = wasser;
+  const r2 = s.befehl(A.v.id, { art: 'modus', einheit: k2.id, modus: 'erkunden' });
+  assert.equal(r2.ok, false); assert.match(r2.fehler, /Eingeschiffte/);
+});

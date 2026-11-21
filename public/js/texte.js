@@ -229,7 +229,7 @@ T.lexikon = {
   gegen: { reiter: 'Reiter', stadt: 'Städte', nahkampf: 'Nahkämpfer', luft: 'Flugzeuge', see: 'Schiffe', u_boot: 'U-Boote', bomber: 'Bomber', rakete: 'Raketen', fernkampf: 'Fernkämpfer', belagerung: 'Belagerungswaffen' },
   faehigkeitText: {
     gruenden: 'Gründet eine Stadt (wird dabei verbraucht).', arbeiten: 'Baut Verbesserungen auf Landfeldern.', see_arbeiten: 'Baut Verbesserungen auf dem Wasser.',
-    handel: 'Richtet Handelsrouten ein.', erkunden: 'Kann automatisch erkunden.', transport: 'Trägt bis zu 2 Landeinheiten über das Meer.', traeger: 'Trägt bis zu 3 Flugzeuge.',
+    handel: 'Richtet Handelsrouten ein.', transport: 'Trägt bis zu 2 Landeinheiten über das Meer.', traeger: 'Trägt bis zu 3 Flugzeuge.',
     tarnung: 'Getarnt: nur von Nachbarfeldern aus sichtbar.', abfangen: 'Fängt feindliche Bomber ab.', heilen: 'Benachbarte Einheiten heilen schneller.',
     einmalig: 'Wird beim Angriff verbraucht.', flaechenschaden: 'Schaden im Umkreis von 2 Feldern.', belagerung: 'Stark gegen Städte, schwach im offenen Feld.',
     kein_gegenschaden: 'Greift aus der Ferne an und nimmt dabei keinen Schaden.', tiefsee: 'Darf auf die Tiefsee.', gelaende_ignorieren: 'Jedes Feld kostet nur 1 Bewegung.',
@@ -316,7 +316,7 @@ T.lexikon = {
       'Wähle eine Einheit aus und gib per **Rechtsklick** (Tablet: **lange drücken**) ein Ziel an. Die Einheit läuft los, und du siehst sofort die **Ankunftszeit**.',
       `Ein Schritt auf flachem Land dauert für eine normale Einheit (Tempo 2) etwa ${Math.round(R.schrittDauer(1, 2) / 60000)} Minuten. Wald, Hügel, Sumpf und Gebirge kosten mehr, Straßen viel weniger. Schnelle Einheiten (Reiter, später Fahrzeuge) haben mehr Tempo.`,
       'Auf einem Feld darf **eine Militäreinheit und eine zivile Einheit** stehen. Fremdes Gebiet darfst du nur mit **Offenen Grenzen** oder im Krieg betreten. Aufs Wasser kommen Landeinheiten erst nach der passenden Forschung (Einschiffen).',
-      'Komfort: [[einheit:spaeher|Späher]] können **automatisch erkunden**, Arbeiter **automatisch arbeiten**. Einheiten können **schlafen** oder sich **befestigen** – dann überspringt sie der Knopf „Nächste Aktion“.',
+      'Komfort: Jede Landeinheit und jedes Schiff kann **automatisch erkunden** (am besten der [[einheit:spaeher|Späher]]), Arbeiter **automatisch arbeiten**. Einheiten können **schlafen** oder sich **befestigen** – dann überspringt sie der Knopf „Nächste Aktion“.',
     ] },
     { id: 'kampf', titel: 'Kampf', sym: 'angriff', absaetze: () => [
       'Kämpfe passieren **nur auf deinen Befehl**. Treffen sich Einheiten, geschieht von allein nichts (Ausnahme: [[regel:raubtiere|Raubtiere]] und [[regel:barbaren|Barbaren]]).',
