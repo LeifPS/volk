@@ -112,3 +112,15 @@ test('Zivile Einheiten und Flak haben keinen Baum und sammeln keine EP', () => {
   assert.equal(s.epGeben(sied, 10, null), 0);
   assert.equal(s.befoerderungMoeglich(sied), false);
 });
+
+test('Beförderung klappt auch, wenn der Einheit das Feld "befoerderungen" fehlt (gespeicherte Spielstände)', () => {
+  const { s, A, e } = einheit();
+  delete e.befoerderungen;        // die Migration löscht leere Listen
+  delete e.ep;
+  s.epGeben(e, 100, null);
+  const w = s.befoerderungenVerfuegbar(e);
+  assert.ok(w.length > 0);
+  const r = s.befehl(A.v.id, { art: 'befoerdern', einheit: e.id, befoerderung: w[0].id });
+  assert.equal(r.ok, true, r.fehler);
+  assert.deepEqual(e.befoerderungen, [w[0].id]);
+});

@@ -592,6 +592,7 @@ export const einheiten = {
   },
   /** Beförderung vergeben: heilt 50 LP, setzt den EP-Balken zurück und kostet eine kurze Erholung. */
   befoerdern(e, bid) {
+    if (!e.befoerderungen) e.befoerderungen = [];   // ältere/gespeicherte Einheiten haben das Feld nicht
     const p = BEFOERDERUNG[bid];
     pruefe(p, 'Unbekannte Beförderung.');
     pruefe(this.befoerderungsBaum(e), 'Diese Einheit kann nicht befördert werden.');
