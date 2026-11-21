@@ -315,7 +315,7 @@ T.lexikon = {
     { id: 'bewegung', titel: 'Bewegung', sym: 'bewegen', absaetze: (R) => [
       'Wähle eine Einheit aus und gib per **Rechtsklick** (Tablet: **lange drücken**) ein Ziel an. Die Einheit läuft los, und du siehst sofort die **Ankunftszeit**.',
       `Ein Schritt auf flachem Land dauert für eine normale Einheit (Tempo 2) etwa ${Math.round(R.schrittDauer(1, 2) / 60000)} Minuten. Wald, Hügel, Sumpf und Gebirge kosten mehr, Straßen viel weniger. Schnelle Einheiten (Reiter, später Fahrzeuge) haben mehr Tempo.`,
-      'Auf einem Feld darf **eine Militäreinheit und eine zivile Einheit** stehen. Fremdes Gebiet darfst du nur mit **Offenen Grenzen** oder im Krieg betreten. Aufs Wasser kommen Landeinheiten erst nach der passenden Forschung (Einschiffen).',
+      'Auf einem Feld darf **eine Militäreinheit und eine zivile Einheit** stehen. **Händler** (Karawanen, Handelsschiffe) zählen nicht mit: Sie blockieren nie ein Feld. Fremdes Gebiet darfst du nur mit **Offenen Grenzen** oder im Krieg betreten. Aufs Wasser kommen Landeinheiten erst nach der passenden Forschung (Einschiffen).',
       'Komfort: Jede Landeinheit und jedes Schiff kann **automatisch erkunden** (am besten der [[einheit:spaeher|Späher]]), Arbeiter **automatisch arbeiten**. Einheiten können **schlafen** oder sich **befestigen** – dann überspringt sie der Knopf „Nächste Aktion“.',
     ] },
     { id: 'kampf', titel: 'Kampf', sym: 'angriff', absaetze: () => [

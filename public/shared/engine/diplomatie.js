@@ -416,7 +416,7 @@ export const diplomatie = {
     pruefe(heim, 'Du brauchst eine eigene Heimatstadt (eine andere als das Ziel).');
     pruefe(abstand(heim.feld, ziel.feld) <= HANDELSROUTE_MAX_FELDER, `Das Ziel ist zu weit weg (höchstens ${HANDELSROUTE_MAX_FELDER} Felder).`);
     const vor = e.route;
-    e.route = { von: heim.id, nach: ziel.id, aktiv: false, richtung: 'hin' };
+    e.route = { von: heim.id, nach: ziel.id, aktiv: false, richtung: 'hin', start: e.feld };
     if (!this.routeNeuPlanen(e, true)) { e.route = vor; pruefe(false, 'Es gibt keinen Weg zur Zielstadt (Händler ignorieren Grenzen, aber Wasser und Gelände können den Weg versperren).'); }
     e.route.felder = e.pfad.map((p) => p.f);   // Weg der ersten Reise: Hier entsteht bei Einrichtung der Route eine Straße
     this.markiere('e' + e.id);
@@ -437,9 +437,12 @@ export const diplomatie = {
       if (bes != null && bes !== e.volk && this.imKrieg(e.volk, bes)) continue;   // Straßen nützen allen, nur im Feindesland wird nicht gebaut
       const alt = this.z.felder[i]?.w;
       if (alt && (alt === wid || VERBESSERUNG[alt]?.stufe >= VERBESSERUNG[wid].stufe)) continue;
-      this.verbesserungSetzen(i, wid);
+      this.verbesserungSetzen(i, wid, { ohneVerbindung: true });
       n++;
     }
+    // Die Straße verbindet genau die Felder, über die die Karawane gelaufen ist (und nicht ihre Nachbarn)
+    const kette = [r.start, ...r.felder].filter((x) => x != null);
+    for (let q = 1; q < kette.length; q++) this.wegVerbinden(kette[q - 1], kette[q]);
     delete r.felder;
     if (n) this.meldung(e.volk, `Die Handelsroute hat auf ihrem Weg ${n === 1 ? 'ein Feld' : n + ' Felder'} mit ${VERBESSERUNG[wid].name} ausgebaut.`, { art: 'bau', feld: e.feld });
   },

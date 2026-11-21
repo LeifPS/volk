@@ -42,7 +42,7 @@ export function baueDemo(zeitalter = 3, start = Date.now()) {
     st.hp = s.stadtMaxHp(st);
   }
   // Straßen zwischen den Städten
-  for (let k = 1; k < staedte.length; k++) { const w = s.landWeg(staedte[0].feld, staedte[k].feld, v.id) || []; for (const i of w) if (s.besitzer(i) === v.id || s.besitzer(i) == null) s.setzeFeld(i, { w: zeitalter >= 4 ? 'eisenbahn' : zeitalter >= 1 ? 'strasse' : 'pfad' }); }
+  for (let k = 1; k < staedte.length; k++) { const w = s.landWeg(staedte[0].feld, staedte[k].feld, v.id) || []; for (const i of w) if (s.besitzer(i) === v.id || s.besitzer(i) == null) s.setzeFeld(i, { w: zeitalter >= 4 ? 'eisenbahn' : zeitalter >= 1 ? 'strasse' : 'pfad' }); const kette = [...w, staedte[k].feld]; for (let q = 1; q < kette.length; q++) s.wegVerbinden(kette[q - 1], kette[q]); }
   // Einheiten passend zum Zeitalter
   const passend = (klasse) => EINHEITEN.filter((d) => d.klasse === klasse && d.zeitalter <= zeitalter).sort((a, b) => b.zeitalter - a.zeitalter)[0];
   for (const kl of ['nahkampf', 'fernkampf', 'reiter', 'belagerung', 'nahkampf', 'spaeher', 'zivil']) {

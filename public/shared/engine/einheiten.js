@@ -15,7 +15,9 @@ const SEE = new Set(['see_zivil', 'see_nah', 'see_fern', 'u_boot', 'traeger', 't
 const LUFT = new Set(['jaeger', 'bomber', 'rakete', 'atom']);
 
 export function bereichVon(d) { return SEE.has(d.klasse) ? 'see' : LUFT.has(d.klasse) ? 'luft' : 'land'; }
-export function schichtVon(d) { return LUFT.has(d.klasse) ? 'luft' : ZIVIL.has(d.klasse) ? 'zivil' : 'militaer'; }
+/** Händler (Karawanen, Handelsschiffe) stehen auf keiner Stapelschicht: sie blockieren kein Feld und werden von keiner Einheit blockiert. */
+const ISTHANDEL = (d) => d.klasse === 'haendler' || (d.klasse === 'see_zivil' && !!d.faehigkeiten?.includes('handel'));
+export function schichtVon(d) { return LUFT.has(d.klasse) ? 'luft' : ISTHANDEL(d) ? 'handel' : ZIVIL.has(d.klasse) ? 'zivil' : 'militaer'; }
 export function istMilitaer(d) { return schichtVon(d) === 'militaer'; }
 
 function b64(u8) { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); }
@@ -78,7 +80,7 @@ export const einheiten = {
 
   platzFrei(vid, d, i, ausser = null) {
     const schicht = schichtVon(d);
-    if (schicht === 'luft') return true;
+    if (schicht === 'luft' || schicht === 'handel') return true;
     for (const u of this.einheitenAuf(i)) {
       if (u.id === ausser) continue;
       if (u.volk !== vid) return false;
@@ -261,7 +263,7 @@ export const einheiten = {
   stapelAufloesen(e) {
     const d = EINHEIT[e.typ];
     const sch = schichtVon(d);
-    if (sch === 'luft' || e.in) return;
+    if (sch === 'luft' || sch === 'handel' || e.in) return;
     const mit = this.einheitenAuf(e.feld).find((u) => u.id !== e.id && !u.in && u.volk === e.volk && schichtVon(EINHEIT[u.typ]) === sch && !u.pfad?.length);
     if (!mit) return;
     const f = this.freiesFeld(e.volk, d, e.feld);
@@ -287,7 +289,7 @@ export const einheiten = {
       for (const u of this.einheitenAuf(st.f)) {
         if (u.id === e.id) continue;
         if (u.volk !== e.volk && !(this.verbuendet(e.volk, u.volk) && schichtVon(EINHEIT[u.typ]) !== schichtVon(d))) { kosten = Infinity; break; }
-        if (letzter && u.volk === e.volk && schichtVon(EINHEIT[u.typ]) === schichtVon(d)) {
+        if (letzter && u.volk === e.volk && schichtVon(d) !== 'handel' && schichtVon(EINHEIT[u.typ]) === schichtVon(d)) {
           // Platztausch mit einer stehenden eigenen Einheit, sonst davor anhalten
           if (!u.pfad?.length && this.bewegungsKostenRoh(u.volk, EINHEIT[u.typ], st.f, e.feld) < Infinity && this.platzFrei(u.volk, EINHEIT[u.typ], e.feld, e.id)) tausch = u;
           else kosten = Infinity;

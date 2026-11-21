@@ -184,3 +184,53 @@ test('Händler ignorieren Grenzen, andere Einheiten nicht; Straßen der Route en
   s.routeWegeBauen(e, { von: A.stadt.id, nach: B.stadt.id, aktiv: true, richtung: 'hin', felder: [fremd] });
   assert.ok(s.z.felder[fremd]?.w, 'Pfad auch im fremden Gebiet');
 });
+
+test('Wege: kreuzende Straßen verbinden sich nicht an den Nachbarfeldern; Altspielstände bekommen gegenseitige Verbindungen', async () => {
+  const { nachbar } = await import('../public/shared/hex.js');
+  const s = neueWelt();
+  const M = 20 * 40 + 20;   // Mittelfeld irgendwo im Inneren
+  // waagerechte Straße (Richtung 0) und senkrechte (Richtung 1/4) kreuzen sich in M
+  const h = [nachbar(nachbar(M, 3), 3), nachbar(M, 3), M, nachbar(M, 0), nachbar(nachbar(M, 0), 0)];
+  const v = [nachbar(nachbar(M, 2), 2), nachbar(M, 2), M, nachbar(M, 5), nachbar(nachbar(M, 5), 5)];
+  for (const i of [...h, ...v.filter((x) => x !== M)]) s.verbesserungSetzen(i, 'pfad');
+  const bits = (i) => s.z.felder[i].wk || 0;
+  // jedes Feld der waagerechten Reihe hängt nur an seinen Reihennachbarn
+  assert.equal(bits(h[0]) & ~(1 << 0), 0, 'Endfeld nur nach Osten');
+  assert.equal(bits(h[1]), (1 << 0) | (1 << 3));
+  assert.equal(bits(h[3]), (1 << 0) | (1 << 3));
+  assert.equal(bits(v[1]) & (1 << 3), 0, 'senkrechter Arm hängt nicht an der waagerechten Reihe');
+  // keine Verbindung zwischen zwei Armfeldern, die nebeneinanderliegen
+  for (const a of [h[1], h[3]]) for (const b of [v[1], v[3]]) {
+    const r = s.richtungZu(a, b); if (r >= 0) assert.equal((bits(a) >> r) & 1, 0);
+  }
+  // Verbindungen sind gegenseitig
+  for (const i of [...h, ...v]) for (let r = 0; r < 6; r++) if ((bits(i) >> r) & 1) {
+    const n = nachbar(i, r); assert.ok(((s.z.felder[n].wk || 0) >> ((r + 3) % 6)) & 1, 'gegenseitig');
+  }
+  // Altspielstand: wk löschen und migrieren -> keine Dreiecke
+  for (const i of [...h, ...v]) if (s.z.felder[i]) delete s.z.felder[i].wk;
+  s.z.global.wege_v = 0; s.wegeMigrieren();
+  for (const i of [...h, ...v]) {
+    assert.ok((s.z.felder[i].wk || 0) !== 0, 'jedes Wegfeld bekommt eine Verbindung');
+    for (let r = 0; r < 6; r++) if ((s.z.felder[i].wk >> r) & 1) assert.ok(((s.z.felder[nachbar(i, r)].wk || 0) >> ((r + 3) % 6)) & 1, 'gegenseitig');
+  }
+});
+
+test('Händler blockieren kein Feld: Militär, Zivil und Händler stehen zusammen auf einem Feld', () => {
+  const s = neueWelt();
+  const A = spielerMitStadt(s, 'Alpha');
+  const f = s.z.staedte[A.stadt.id].feld;
+  const nf = s.freiesFeld(A.v.id, EINHEIT.arbeiter, f, 3);   // beliebiges Landfeld
+  const arb = s.einheitErzeugen(A.v.id, 'arbeiter', nf);
+  const krieger = s.einheitErzeugen(A.v.id, 'krieger', nf);
+  assert.equal(arb.feld, nf);
+  assert.equal(s.platzFrei(A.v.id, EINHEIT.karawane, arb.feld), true);
+  assert.equal(s.platzFrei(A.v.id, EINHEIT.karawane, krieger.feld), true);
+  const k1 = s.einheitErzeugen(A.v.id, 'karawane', arb.feld);
+  const k2 = s.einheitErzeugen(A.v.id, 'karawane', arb.feld);
+  assert.equal(k1.feld, arb.feld); assert.equal(k2.feld, arb.feld);
+  // Händler belegen den Platz für Arbeiter/Militär nicht
+  const arb2 = s.einheitErzeugen(A.v.id, 'arbeiter', nf);
+  assert.notEqual(arb2.feld, nf, 'zweiter Arbeiter weicht aus (Zivilschicht belegt), Händler nicht');
+  assert.equal(s.platzFrei(A.v.id, EINHEIT.arbeiter, k1.feld, arb.id), true, 'Händler auf dem Feld stören den Arbeiter nicht');
+});

@@ -1,6 +1,6 @@
 // Bauen: Stadtgebäude, Einheiten und Wunder in Städten (Bauplätze + Warteschlange) und Feldverbesserungen durch Arbeiter.
 import { karte } from '../karte.js';
-import { abstand, nachbarn, umkreis } from '../hex.js';
+import { abstand, nachbar, nachbarn, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { ROHSTOFFE } from '../daten/rohstoffe.js';
 import { GEB, WUNDER_NACH_ID, EINHEIT, VERBESSERUNG, FREIGESCHALTET_DURCH } from '../daten/index.js';
@@ -294,16 +294,51 @@ export const bau = {
     this.autoArbeitWeiter(e);
   },
 
-  verbesserungSetzen(i, id) {
+  verbesserungSetzen(i, id, opt = {}) {
     const vb = VERBESSERUNG[id];
     const vid = this.besitzer(i);
     if (vid != null) this.aendern(vid);
     const schicht = vb.schicht || 'feld';
-    if (schicht === 'weg') this.setzeFeld(i, { w: id });
+    if (schicht === 'weg') { const neu = !this.z.felder[i]?.w; this.setzeFeld(i, { w: id }); if (neu && !opt.ohneVerbindung) this.wegAutoVerbinden(i); }
     else if (schicht === 'bruecke') this.setzeFeld(i, { br: true });
     else this.setzeFeld(i, { v: id, pl: null });
     if (vb.sicht && vid != null) this.erkunde(vid, i, vb.sicht);
     if (vid != null) delete this._raten[vid];
+  },
+
+  // ---------- Wegverbindungen (nur sichtbar: welche Nachbarn ein Weg tatsächlich verbindet) ----------
+  /** Richtung (0..5) von Feld a zum Nachbarfeld b, sonst -1. */
+  richtungZu(a, b) { for (let r = 0; r < 6; r++) if (nachbar(a, r) === b) return r; return -1; },
+  /** Verbindet zwei benachbarte Felder (Weg oder Stadt) als Teil derselben Straße. */
+  wegVerbinden(a, b) {
+    const r = this.richtungZu(a, b); if (r < 0) return;
+    const fa = this.z.felder[a], fb = this.z.felder[b];
+    if (fa?.w) this.setzeFeld(a, { wk: (fa.wk || 0) | (1 << r) });
+    if (fb?.w) this.setzeFeld(b, { wk: (this.z.felder[b].wk || 0) | (1 << ((r + 3) % 6)) });
+  },
+  /**
+   * Ein neues Wegfeld schließt sich benachbarten Wegen oder Städten an, aber nie zwei Nachbarn, die selbst Nachbarn sind
+   * (sonst entstünden Dreiecke), und bevorzugt die geradlinige Fortsetzung. So verschmelzen kreuzende Straßen nicht.
+   */
+  wegAutoVerbinden(i) {
+    const kandidaten = [];
+    for (let r = 0; r < 6; r++) { const n = nachbar(i, r); if (n >= 0 && (this.z.felder[n]?.w || this.stadtAuf(n))) kandidaten.push({ n, r }); }
+    const gewaehlt = [];
+    for (let r = 0; r < 6; r++) { const n = nachbar(i, r); if (n >= 0 && ((this.z.felder[i]?.wk || 0) >> r) & 1) gewaehlt.push({ n, r }); }
+    const grad = (n) => { let b = this.z.felder[n]?.wk || 0, k = 0; while (b) { k += b & 1; b >>= 1; } return k; };
+    for (const c of kandidaten) c.fort = (((this.z.felder[c.n]?.wk || 0) >> c.r) & 1) ? 1 : 0;   // c läuft geradlinig in dieses Feld hinein weiter
+    kandidaten.sort((a, b) => b.fort - a.fort || grad(a.n) - grad(b.n) || a.r - b.r);
+    const nehmen = (c) => { if (gewaehlt.some((g) => g.n === c.n)) return; if (gewaehlt.some((g) => this.richtungZu(g.n, c.n) >= 0)) return; gewaehlt.push(c); this.wegVerbinden(i, c.n); };
+    if (!gewaehlt.length && kandidaten.length) nehmen(kandidaten[0]);
+    for (const c of kandidaten) if (gewaehlt.some((g) => g.r === (c.r + 3) % 6)) nehmen(c);
+    for (const c of kandidaten) nehmen(c);
+  },
+  /** Einmalig für ältere Spielstände: Wegverbindungen aus der Nachbarschaft ableiten (ohne Dreiecke). */
+  wegeMigrieren() {
+    if (this.z.global.wege_v >= 1) return;
+    this.z.global.wege_v = 1;
+    const ids = Object.keys(this.z.felder).map(Number).filter((i) => this.z.felder[i].w).sort((a, b) => a - b);
+    for (const i of ids) if (this.z.felder[i].wk == null) this.wegAutoVerbinden(i);
   },
 
   /** Landweg zwischen zwei Feldern durch eigenes oder neutrales Gebiet (für Straßen). */

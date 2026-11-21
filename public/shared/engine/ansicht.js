@@ -58,7 +58,7 @@ export const ansicht = {
       const x = {};
       if (f.s) x.s = f.s;
       if (f.v) x.v = f.v;
-      if (f.w) x.w = f.w;
+      if (f.w) { x.w = f.w; if (f.wk) x.wk = f.wk; }
       if (f.br) x.br = 1;
       if (f.pl > this.t) x.pl = f.pl;
       if (f.fo > this.t) x.fo = f.fo;

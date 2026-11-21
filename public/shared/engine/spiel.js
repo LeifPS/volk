@@ -41,6 +41,7 @@ export class Spiel {
     this._nebel = {};             // Volk -> Uint8Array erkundet (dekodiert)
     this.ausgehend = [];          // Ereignisse für Clients (z. B. Kampf-Animationen)
     this.befoerderungenMigrieren();
+    this.wegeMigrieren();
   }
 
   /** Alte Beförderungen (vor dem Civ-6-Umbau) sind weg: unbekannte IDs werden entfernt, EP auf den neuen Balken begrenzt. */

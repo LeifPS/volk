@@ -14,11 +14,11 @@ const SCHRITT = 0.5;
 // Aussehen je Wegart (Farben als [r, g, b]); breite = Gesamtbreite des Belags in Pixeln.
 const hex = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
 const ART = {
-  pfad: { breite: 4, rand: null, koerper: hex('#bf9f68'), dunkel: hex('#8f6c3c'), hell: hex('#d6bb84'), fleck: hex('#7d5f33') },
-  strasse: { breite: 5, rand: hex('#5f594f'), koerper: hex('#a39b8c'), dunkel: hex('#8a8275'), hell: hex('#bdb5a5') },
-  pflasterstrasse: { breite: 6, rand: hex('#4f4c47'), koerper: hex('#9b978e'), dunkel: hex('#76736c'), hell: hex('#aeaaa1') },
-  eisenbahn: { breite: 7, rand: hex('#3c3128'), koerper: hex('#85796a'), dunkel: hex('#6d6256'), hell: hex('#9a8e7e'), schwelle: hex('#4a3a2a'), schiene: hex('#d2d8df') },
-  autobahn: { breite: 9, rand: hex('#1d1f23'), koerper: hex('#3b3e44'), dunkel: hex('#32353a'), hell: hex('#464a51'), linie: hex('#dcdde2'), mitte: hex('#e8d36a') },
+  pfad: { breite: 3, rand: null, koerper: hex('#bf9f68'), dunkel: hex('#8f6c3c'), hell: hex('#d6bb84'), fleck: hex('#7d5f33') },
+  strasse: { breite: 4, rand: hex('#5f594f'), koerper: hex('#a39b8c'), dunkel: hex('#8a8275'), hell: hex('#bdb5a5') },
+  pflasterstrasse: { breite: 5, rand: hex('#4f4c47'), koerper: hex('#9b978e'), dunkel: hex('#76736c'), hell: hex('#aeaaa1') },
+  eisenbahn: { breite: 6, rand: hex('#3c3128'), koerper: hex('#85796a'), dunkel: hex('#6d6256'), hell: hex('#9a8e7e'), schwelle: hex('#4a3a2a'), schiene: hex('#d2d8df') },
+  autobahn: { breite: 8, rand: hex('#1d1f23'), koerper: hex('#3b3e44'), dunkel: hex('#32353a'), hell: hex('#464a51'), linie: hex('#dcdde2'), mitte: hex('#e8d36a') },
 };
 
 let version = 0;
@@ -49,32 +49,56 @@ function felderImChunk(cx, cy) {
   return l;
 }
 
+/** Anschlüsse eines Wegfeldes: nur die Richtungen, in denen der Weg wirklich weiterführt (Bitmaske wk vom Server). */
 function anschluesse(i, staedte) {
-  const felder = Z.ansicht.felder;
+  const wk = Z.ansicht.felder[i]?.wk || 0;
   const l = [];
   for (let r = 0; r < 6; r++) {
+    if (!((wk >> r) & 1)) continue;
     const n = nachbar(i, r); if (n < 0) continue;
-    const fn = felder[n];
-    if (fn && fn.w && erkundet(n)) l.push({ n, stadt: false });
-    else if (staedte.has(n)) l.push({ n, stadt: true });
+    l.push({ n, r, stadt: staedte.has(n) });
   }
   return l;
 }
 
-/** Wegstücke eines Feldes: Liste von { art, pkte: [[x, y], ...] } (Kontrollpunkte einer quadratischen Kurve). */
+const kreisAbstand = (a, b) => { const d = Math.abs(a - b) % 6; return Math.min(d, 6 - d); };
+
+/**
+ * Wegstücke eines Feldes: Liste von { art, pkte: [Anfang, Kontrollpunkt, Ende] } (quadratische Kurven).
+ * Zwei Anschlüsse: Kurve durch das Feld. Gegenüberliegende Anschlüsse: gerade durchgehende Straße (Kreuz bleibt ein Kreuz).
+ * Alle übrigen Anschlüsse (Abzweigungen) münden in einem weichen Bogen in den nächsten durchgehenden Arm.
+ */
 function stuecke(i, f, staedte) {
   const [mx, my] = feldMitte(i, R);
+  const m = [mx, my];
   const an_ = anschluesse(i, staedte);
   const art = ART[f.w] ? f.w : 'pfad';
-  const punkte = an_.map((a) => {
+  const P = new Map();
+  for (const a of an_) {
     const [nx, ny] = feldMitte(a.n, R);
-    return a.stadt ? [mx + (nx - mx) * 0.72, my + (ny - my) * 0.72] : [(mx + nx) / 2, (my + ny) / 2];
-  });
-  const m = [mx, my];
-  if (punkte.length === 0) return [{ art, pkte: [m, m, m] }];
-  if (punkte.length === 1) return [{ art, pkte: [punkte[0], [(punkte[0][0] + mx) / 2, (punkte[0][1] + my) / 2], m] }];
-  if (punkte.length === 2) return [{ art, pkte: [punkte[0], m, punkte[1]] }];
-  return punkte.map((p) => ({ art, pkte: [p, [(p[0] + mx) / 2, (p[1] + my) / 2], m] }));
+    P.set(a.r, a.stadt ? [mx + (nx - mx) * 0.72, my + (ny - my) * 0.72] : [(mx + nx) / 2, (my + ny) / 2]);
+  }
+  const rs = [...P.keys()];
+  if (rs.length === 0) return [{ art, pkte: [m, m, m] }];
+  if (rs.length === 1) { const p = P.get(rs[0]); return [{ art, pkte: [p, [(p[0] + mx) / 2, (p[1] + my) / 2], m] }]; }
+  if (rs.length === 2) return [{ art, pkte: [P.get(rs[0]), m, P.get(rs[1])] }];
+  const out = [];
+  const arme = new Set();
+  for (let r = 0; r < 3; r++) if (P.has(r) && P.has(r + 3)) { out.push({ art, pkte: [P.get(r), m, P.get(r + 3)] }); arme.add(r); arme.add(r + 3); }
+  if (!arme.size) {   // keine gerade Fortsetzung (z. B. Y): die beiden am weitesten auseinanderliegenden Anschlüsse bilden die Hauptkurve
+    let best = [rs[0], rs[1]], bd = -1;
+    for (let x = 0; x < rs.length; x++) for (let y = x + 1; y < rs.length; y++) { const d = kreisAbstand(rs[x], rs[y]); if (d > bd) { bd = d; best = [rs[x], rs[y]]; } }
+    out.push({ art, pkte: [P.get(best[0]), m, P.get(best[1])] }); arme.add(best[0]); arme.add(best[1]);
+  }
+  for (const r of rs) {
+    if (arme.has(r)) continue;
+    let ziel = null, zd = 9;
+    for (const a of arme) { const d = kreisAbstand(r, a); if (d < zd) { zd = d; ziel = a; } }
+    const p = P.get(r), q = P.get(ziel);
+    const t = 0.62;
+    out.push({ art, pkte: [p, m, [mx + (q[0] - mx) * t, my + (q[1] - my) * t]] });   // Bogen, der tangential in den Arm einläuft
+  }
+  return out;
 }
 
 /** Abtastpunkte einer quadratischen Kurve: [x, y, Bogenlänge, Normale x, Normale y]. */
@@ -144,12 +168,12 @@ function baueChunk(cx, cy, liste, staedte) {
     if (w.art === 'eisenbahn') {
       let letzte = -99;
       for (const p of w.pts) {
-        if (p[2] - letzte >= 3.5) { letzte = p[2]; for (let o = -3.1; o <= 3.1; o += 0.5) stempel(p[0] + p[3] * o, p[1] + p[4] * o, 0.55, A.schwelle); }
+        if (p[2] - letzte >= 3.5) { letzte = p[2]; for (let o = -2.6; o <= 2.6; o += 0.5) stempel(p[0] + p[3] * o, p[1] + p[4] * o, 0.55, A.schwelle); }
       }
-      for (const p of w.pts) for (const o of [-2, 2]) stempel(p[0] + p[3] * o, p[1] + p[4] * o, 0.55, A.schiene);
+      for (const p of w.pts) for (const o of [-1.7, 1.7]) stempel(p[0] + p[3] * o, p[1] + p[4] * o, 0.55, A.schiene);
     } else if (w.art === 'autobahn') {
       for (const p of w.pts) {
-        for (const o of [-3.7, 3.7]) stempel(p[0] + p[3] * o, p[1] + p[4] * o, 0.5, A.linie);
+        for (const o of [-3.1, 3.1]) stempel(p[0] + p[3] * o, p[1] + p[4] * o, 0.5, A.linie);
         if (Math.floor(p[2] / 4) % 2 === 0) stempel(p[0], p[1], 0.55, A.mitte);
       }
     }
