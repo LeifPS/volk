@@ -19,7 +19,7 @@ function einheit(e) {
   };
 }
 
-export const EINHEITEN = [
+const EINHEITEN_ROH = [
   // ===================== Antike (0) =====================
   einheit({ id: 'siedler', name: 'Siedler', zeitalter: 0, klasse: 'zivil', beschreibung: 'Gründet eine neue Stadt und wird dabei verbraucht. Schütze ihn unterwegs mit Soldaten.', staerke: 0, tempo: 2, kosten: { zeit: 40 * MIN, gold: 60, holz: 40 }, unterhalt: 0.5, abklingzeit: 0, faehigkeiten: ['gruenden'] }),
   einheit({ id: 'arbeiter', name: 'Arbeiter', zeitalter: 0, klasse: 'zivil', beschreibung: 'Baut Farmen, Minen, Straßen und andere Verbesserungen in deinen Grenzen.', staerke: 0, tempo: 2, kosten: { zeit: 15 * MIN, gold: 30, holz: 10 }, unterhalt: 0.5, abklingzeit: 0, upgrade: 'ingenieur', faehigkeiten: ['arbeiten'] }),
@@ -130,6 +130,17 @@ export const EINHEITEN = [
   einheit({ id: 'lenkrakete', name: 'Lenkrakete', zeitalter: 6, klasse: 'rakete', beschreibung: 'Eine präzise Langstreckenrakete. Trifft ein Ziel weit entfernt und wird dabei verbraucht.', staerke: 0, fern: 120, reichweite: 12, tempo: 0, sicht: 1, kosten: { zeit: 20 * STD, gold: 1400, aluminium: 1, oel: 1 }, unterhalt: 3, abklingzeit: 0, faehigkeiten: ['einmalig'] }),
   einheit({ id: 'atomwaffe', name: 'Atomwaffe', zeitalter: 6, klasse: 'atom', beschreibung: 'Die furchtbarste Waffe: verwüstet ein ganzes Gebiet, kann aber nie eine Stadt erobern. Extrem teuer, wird beim Einsatz verbraucht.', staerke: 0, fern: 200, reichweite: 12, tempo: 0, sicht: 1, kosten: { zeit: 60 * STD, gold: 8000, uran: 10, aluminium: 6, oel: 4 }, unterhalt: 8, abklingzeit: 3 * STD, faehigkeiten: ['einmalig', 'flaechenschaden'] }),
 ];
+
+/** Goldkurve: Einheiten späterer Zeitalter werden deutlich teurer (Faktor auf die Basiskosten oben).
+ *  Antike bleibt wie sie ist; Atomzeit kostet gut das Vierfache. Nur Gold, Rohstoffe und Bauzeit bleiben. */
+export const GOLD_FAKTOR_ZEITALTER = [1, 1.3, 1.8, 2.4, 3, 3.6, 4.2];
+
+export const EINHEITEN = EINHEITEN_ROH.map((e) => {
+  const gold = e.kosten.gold;
+  if (!gold) return e;
+  const g = gold * (GOLD_FAKTOR_ZEITALTER[e.zeitalter] ?? 1);
+  return { ...e, kosten: { ...e.kosten, gold: Math.round(g / 5) * 5 } };
+});
 
 export const EINHEIT_KLASSEN = ['zivil', 'spaeher', 'haendler', 'nahkampf', 'fernkampf', 'reiter', 'belagerung', 'flak', 'sanitaeter', 'see_zivil', 'see_nah', 'see_fern', 'u_boot', 'traeger', 'transport', 'jaeger', 'bomber', 'rakete', 'atom'];
 export const EINHEIT_FAEHIGKEITEN = ['gruenden', 'arbeiten', 'see_arbeiten', 'handel', 'erkunden', 'transport', 'traeger', 'tarnung', 'abfangen', 'heilen', 'einmalig', 'flaechenschaden', 'belagerung', 'kein_gegenschaden', 'tiefsee', 'gelaende_ignorieren'];
