@@ -5,7 +5,7 @@ import { T } from '../texte.js';
 import { Z, du, volk } from '../kern/zustand.js';
 import {
   EINHEITEN, EINHEIT, GEBAEUDE, GEB, WUNDER, WUNDER_NACH_ID, FORSCHUNGEN, FORSCHUNG, ROHSTOFFE, ROHSTOFF, VERBESSERUNGEN, VERBESSERUNG,
-  GELAENDE, GELAENDE_ID, BEFOERDERUNGEN, BEFOERDERUNG, ZEITALTER, KI_VOELKER, STADTSTAATEN, BARBARENLAGER, FREIGESCHALTET_DURCH, NACHFOLGER,
+  GELAENDE, GELAENDE_ID, BEFOERDERUNGEN, BEFOERDERUNG, BAUM, baumVon, ZEITALTER, KI_VOELKER, STADTSTAATEN, BARBARENLAGER, FREIGESCHALTET_DURCH, NACHFOLGER,
 } from '../../shared/daten/index.js';
 import { FLUSS } from '../../shared/daten/gelaende.js';
 import { LAGER_NAMEN } from '../../shared/daten/rohstoffe.js';
@@ -228,7 +228,7 @@ function eintraege(kat) {
     case 'rohstoff': return ROHSTOFFE.map((r) => ({ id: r.id, name: r.name, gruppe: L.rohstoffArten[r.art], kurz: r.zweck, text: r.zweck }));
     case 'gelaende': return [...GELAENDE.map((g) => ({ id: g.id, name: g.name, gruppe: g.wasser ? 'Wasser' : 'Land', kurz: g.beschreibung, text: g.beschreibung })), { id: 'fluss', name: L.fluss, gruppe: 'Land', kurz: FLUSS.beschreibung, text: FLUSS.beschreibung }];
     case 'verbesserung': return VERBESSERUNGEN.map((v) => ({ id: v.id, name: v.name, gruppe: v.schicht === 'weg' ? 'Wege' : v.verteidigung || v.sicht ? 'Militär' : 'Felder', kurz: v.beschreibung, text: v.beschreibung }));
-    case 'befoerderung': return BEFOERDERUNGEN.map((b) => ({ id: b.id, name: b.name, gruppe: b.klassen.slice(0, 2).map((k) => L.klassen[k]).join(', ') + (b.klassen.length > 2 ? ' …' : ''), kurz: b.beschreibung, text: b.beschreibung }));
+    case 'befoerderung': return BEFOERDERUNGEN.map((b) => ({ id: b.id, name: b.name, gruppe: (BAUM[b.baum]?.name || b.baum) + ' · Stufe ' + ['I', 'II', 'III', 'IV'][b.stufe - 1], kurz: b.beschreibung, text: b.beschreibung }));
     case 'zeitalter': return ZEITALTER.map((z) => ({ id: z.id, name: z.name, kurz: z.beschreibung, text: z.beschreibung }));
     case 'akteur': return [
       ...KI_VOELKER.map((x) => ({ id: x.id, name: x.name, gruppe: L.ki, kurz: L.persoenlichkeiten[x.persoenlichkeit] + ' · ' + x.herrscher, text: x.beschreibung })),
@@ -465,18 +465,14 @@ function verbesserungDetail(v) {
 
 function befoerderungDetail(b) {
   if (!b) return el('p', { text: L.keineTreffer });
-  const W = L.befWirkung, z = [];
-  for (const [k, v] of Object.entries(b.wirkung)) {
-    if (k === 'gelaende') { const gruppen = {}; for (const [g, n] of Object.entries(v)) (gruppen[n] ||= []).push(GELAENDE_ID[g]?.name || g); for (const [n, l] of Object.entries(gruppen)) z.push(W.gelaende(l.join(', '), n)); }
-    else if (k === 'gegen') for (const [g, n] of Object.entries(v)) z.push(W.gegen(L.gegen[g] || L.klassen[g] || g, n));
-    else z.push(W[k] ? W[k](v) : `${k}: ${v}`);
-  }
-  const danach = BEFOERDERUNGEN.filter((x) => x.voraussetzung === b.id);
+  const danach = BEFOERDERUNGEN.filter((x) => x.voraussetzung.includes(b.id));
+  const bm = BAUM[b.baum];
+  const einheiten = EINHEITEN.filter((d) => baumVon(d) === b.baum);
   return el('div',
-    kopf('befoerderung', b.id, b.name, '', b.beschreibung, { px: 96 }),
-    abschnitt(L.wirkung, el('ul.lex-liste', z.map((t) => el('li', { text: t })))),
-    abschnitt(L.klassenBef, chips(b.klassen.map((k) => el('span.lex-chip.text', { text: L.klassen[k] || k })))),
-    abschnitt(L.vorBef, b.voraussetzung ? chips([chip('befoerderung', b.voraussetzung)]) : null),
+    kopf('befoerderung', b.id, b.name, `${bm?.name || b.baum} · Stufe ${['I', 'II', 'III', 'IV'][b.stufe - 1]}`, b.beschreibung, { px: 96 }),
+    abschnitt(L.klassenBef, chips(einheiten.map((d) => chip('einheit', d.id)))),
+    abschnitt(L.vorBef, b.voraussetzung.length ? chips(b.voraussetzung.map((v) => chip('befoerderung', v))) : el('p.klein', { text: 'Nichts: Stufe I kann jede Einheit dieses Baums als Erstes lernen.' })),
+    b.voraussetzung.length > 1 ? el('p.klein', { text: 'Eine davon genügt.' }) : null,
     abschnitt(L.danachBef, danach.length ? chips(danach.map((x) => chip('befoerderung', x.id))) : null),
     el('p.klein', markup('[[regel:erfahrung|Wie bekommt man Beförderungen?]]')),
   );

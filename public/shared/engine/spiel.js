@@ -3,7 +3,8 @@
 // wenn jemand etwas anfragt oder der Alarm des Durable Objects feuert. Erträge werden als Rate × Zeit integriert.
 import { jetzt } from '../uhr.js';
 import { zufallsquelle } from '../zufall.js';
-import { STD } from '../regeln.js';
+import { STD, epFuerBefoerderung } from '../regeln.js';
+import { BEFOERDERUNG } from '../daten/index.js';
 import { wirtschaft } from './wirtschaft.js';
 import { bau } from './bau.js';
 import { forschung } from './forschung.js';
@@ -39,6 +40,21 @@ export class Spiel {
     this._stadtPos = null;        // Feld -> Stadt-ID
     this._nebel = {};             // Volk -> Uint8Array erkundet (dekodiert)
     this.ausgehend = [];          // Ereignisse für Clients (z. B. Kampf-Animationen)
+    this.befoerderungenMigrieren();
+  }
+
+  /** Alte Beförderungen (vor dem Civ-6-Umbau) sind weg: unbekannte IDs werden entfernt, EP auf den neuen Balken begrenzt. */
+  befoerderungenMigrieren() {
+    for (const e of Object.values(this.z.einheiten || {})) {
+      let geaendert = false;
+      if (e.befoerderungen) {
+        const neu = e.befoerderungen.filter((b) => BEFOERDERUNG[b]);
+        if (neu.length !== e.befoerderungen.length) { geaendert = true; if (neu.length) e.befoerderungen = neu; else delete e.befoerderungen; }
+      }
+      if (!e.befoerderungen && e.ep) { e.ep = Math.min(e.ep, epFuerBefoerderung(1)); geaendert = true; }
+      else if (e.befoerderungen && e.ep > epFuerBefoerderung(e.befoerderungen.length + 1)) { e.ep = epFuerBefoerderung(e.befoerderungen.length + 1); geaendert = true; }
+      if (geaendert) this.schmutzig.add('e' + e.id);
+    }
   }
 
   // ---------- Grundlagen ----------

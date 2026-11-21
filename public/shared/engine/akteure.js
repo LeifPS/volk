@@ -4,7 +4,7 @@ import { karte, startWert, stadtGelaendeOk } from '../karte.js';
 import { ANZAHL, abstand, nachbarn, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { EINHEIT, EINHEITEN, GEB, GEBAEUDE, FORSCHUNGEN, FORSCHUNG, BARBARENLAGER, VERBESSERUNG } from '../daten/index.js';
-import { STD, MIN, TAG, KAMPF, WIRTSCHAFT_TEMPO, BARBAREN } from '../regeln.js';
+import { STD, MIN, TAG, KAMPF, WIRTSCHAFT_TEMPO, BARBAREN, EP } from '../regeln.js';
 import { bereichVon, istMilitaer, schichtVon } from './einheiten.js';
 import { SpielFehler } from './spiel.js';
 
@@ -343,7 +343,8 @@ export const akteure = {
     const gold = (typ?.belohnung_gold || 50) + 20 * (v.zeitalter || 0);
     this.aendern(v.id);
     v.gold += gold;
-    e.ep = (e.ep || 0) + 8;
+    this.epGeben(e, EP.lager, null);
+    this.befoerderungPruefen(e);
     this.markiere('e' + e.id);
     for (const x of this.alleEinheiten()) if (x.lager === l.id) x.lager = null;
     this.meldung(v.id, `Barbarenlager zerstört! Du erbeutest ${gold} Gold, deine Einheit sammelt Erfahrung.`, { art: 'kampf', feld: l.feld, wichtig: true });

@@ -3,7 +3,7 @@ import { el, symbol, toast, fehler, zahl, vorzeichen, dauerText, uhrzeit, balken
 import { T } from '../texte.js';
 import { Z, an, du, volk, einheit, stadt, feldInfo, eigeneEinheiten, eigeneStaedte, aktuellesFeld, aktuelleHp, aktuellesGold, aktuellesLager, forschungsFortschritt, serverJetzt, stadtAuf, einheitenAuf, besitzerVon, erkundet } from '../kern/zustand.js';
 import { befehl, frage } from '../kern/netz.js';
-import { EINHEIT, GEB, FORSCHUNG, VERBESSERUNG, BEFOERDERUNG, BEFOERDERUNGEN, ROHSTOFF } from '../../shared/daten/index.js';
+import { EINHEIT, GEB, FORSCHUNG, VERBESSERUNG, BEFOERDERUNG, BEFOERDERUNGEN, BAUM, ROHSTOFF } from '../../shared/daten/index.js';
 import { GELAENDE } from '../../shared/daten/gelaende.js';
 import { LAGER_NAMEN } from '../../shared/daten/rohstoffe.js';
 import { ZEITALTER } from '../../shared/daten/zeitalter.js';
@@ -175,7 +175,11 @@ function einheitPanel(e) {
     if (e.arbeit) kinder.push(el('div', zeile('arbeiten', 'Baut ' + VERBESSERUNG[e.arbeit.id]?.name), balken((serverJetzt() - e.arbeit.start) / (e.arbeit.fertig_um - e.arbeit.start), 'gold'), el('div.klein', { text: 'fertig in ' + dauerText(e.arbeit.fertig_um - serverJetzt()) })));
     if (e.abkling_bis > serverJetzt()) kinder.push(zeile('zeit', 'Erholt sich vom Kampf: noch ' + dauerText(e.abkling_bis - serverJetzt()), 'Nach einem Angriff braucht jede Einheit eine Pause.'));
     if (e.route) kinder.push(zeile('handel', `Handelsroute ${stadt(e.route.von)?.name || '?'} ↔ ${stadt(e.route.nach)?.name || '?'}` + (e.route.aktiv ? '' : ' (unterwegs)')));
-    if (e.ep != null) kinder.push(zeile('befoerderung', `Erfahrung ${e.ep}` + (e.bef?.length ? ' · ' + e.bef.map((b) => BEFOERDERUNG[b]?.name).join(', ') : '')));
+    if (e.ep != null && e.baum) {
+      kinder.push(el('div', zeile('befoerderung', `Stufe ${e.stufe || 1}` + (e.ep_max != null ? ` · Erfahrung ${e.ep} / ${e.ep_max}` : ' · Höchststufe'), 'Wie in Civ 6: Der Balken füllt sich im Kampf. Ist er voll, wählst du eine Beförderung – danach beginnt er von vorn. Höchstens 5 Beförderungen je Einheit.'),
+        e.ep_max != null ? balken(Math.min(1, e.ep / e.ep_max), 'gold') : null));
+      if (e.bef?.length) kinder.push(el('div.klein', { text: e.bef.map((b) => BEFOERDERUNG[b]?.name).join(' · ') }));
+    }
     if (e.unterversorgt) kinder.push(el('div.rot-t', { text: 'Unterversorgt (Goldmangel): schwächer, heilt nicht.' }));
     if (d.unterhalt) kinder.push(el('div.klein', { text: `Unterhalt ${zahl(d.unterhalt * WIRTSCHAFT_TEMPO, 1)} Gold/h (ein Grundkontingent an Einheiten ist gratis)` }));
   }
@@ -238,11 +242,24 @@ async function verbesserungWaehlen(e) {
 }
 
 function befoerderungWaehlen(e) {
-  const d = EINHEIT[e.typ];
-  const l = BEFOERDERUNGEN.filter((p) => p.klassen.includes(d.klasse) && !(e.bef || []).includes(p.id) && (!p.voraussetzung || (e.bef || []).includes(p.voraussetzung)));
-  const f = fenster('Beförderung wählen', (i) => {
-    i.append(el('p.klein', { text: 'Erfahrene Einheiten werden befördert. Jede Beförderung heilt außerdem 25 Lebenspunkte.' }));
-    i.append(el('div.karte-liste', l.map((p) => el('div.eintrag', { onclick: async () => { f.schliessen(); await ausfuehren({ art: 'befoerdern', einheit: e.id, befoerderung: p.id }, p.name + '!'); } }, symbol('ui', 'befoerderung', { px: 24 }), el('div', el('b', { text: p.name }), el('div.klein', { text: p.beschreibung }))))));
+  const baum = e.baum;
+  const hat = new Set(e.bef || []);
+  const alle = BEFOERDERUNGEN.filter((p) => p.baum === baum);
+  const frei = (p) => !hat.has(p.id) && (p.voraussetzung.length === 0 || p.voraussetzung.some((v) => hat.has(v)));
+  const f = fenster('Beförderung wählen: ' + (BAUM[baum]?.name || ''), (i) => {
+    i.append(el('p.klein', { text: `Stufe ${e.stufe || 1} → ${(e.stufe || 1) + 1}. Wähle eine Beförderung: Stufe I ist frei wählbar, höhere Stufen brauchen eine der genannten Beförderungen. Sie heilt 50 Lebenspunkte und der Erfahrungsbalken beginnt von vorn.` }));
+    for (const st of [1, 2, 3, 4]) {
+      const l = alle.filter((p) => p.stufe === st);
+      if (!l.length) continue;
+      i.append(el('h4', { text: 'Stufe ' + ['I', 'II', 'III', 'IV'][st - 1] }));
+      i.append(el('div.karte-liste', l.map((p) => {
+        const ok = frei(p), hab = hat.has(p.id);
+        const braucht = p.voraussetzung.length ? 'Braucht: ' + p.voraussetzung.map((v) => BEFOERDERUNG[v]?.name).join(' oder ') : '';
+        return el('div.eintrag' + (ok ? '' : '.aus'), { onclick: ok ? async () => { f.schliessen(); await ausfuehren({ art: 'befoerdern', einheit: e.id, befoerderung: p.id }, p.name + '!'); } : null },
+          symbol('ui', 'befoerderung', { px: 24 }),
+          el('div', el('b', { text: p.name + (hab ? ' ✓' : '') }), el('div.klein', { text: p.beschreibung }), braucht && !hab ? el('div.klein', { text: braucht }) : null));
+      })));
+    }
   }, { breite: 'mittel' });
 }
 

@@ -131,9 +131,21 @@ export const STADT_GRUND_HP = 200;
 /** Heilung in HP pro Stunde (Grundwerte; die Engine multipliziert mit dem Wirtschaftstempo). */
 export const HEILUNG = { stadt: 35, eigen: 15, freund: 6, fremd: 0, stadtRegeneration: 60 };
 
-/** Erfahrung bis zur n-ten Beförderung (n ab 1). */
-export function epFuerBefoerderung(n) { return 10 * n * (n + 1) / 2; }
-export const EP = { angriff: 5, verteidigung: 4, fern: 3, sieg: 3, max_barbar: 30 };
+/** Erfahrung wie in Civ 6: Von Stufe L auf L+1 braucht eine Einheit 15 × L EP. Mit jeder Beförderung beginnt der Balken neu,
+ *  überschüssige EP verfallen. n = Nummer der nächsten Beförderung (n ab 1; Stufe = n). Eine Einheit hat höchstens 5 Beförderungen. */
+export function epFuerBefoerderung(n) { return 15 * n; }
+export const MAX_BEFOERDERUNGEN = 5;
+/** Kampf-EP (Civ 6): Basis = Stärke des Gegners / eigene Stärke (x2 bei Sieg), + Nahkampf 2 bzw. Fernkampf 1, + 1 beim Angreifen,
+ *  höchstens 8 je Kampf (außer gegen Städte), Prozentboni werden aufgerundet. Städte: feste Werte. */
+export const EP = { nah: 2, fern: 1, angriff: 1, max_kampf: 8, stadt_angriff: 3, stadt_beschossen: 2, stadt_erobert: 10, lager: 8, pluendern: 2, nach_beforderung_barbar: 1, start_max: 15, heilung_beforderung: 50, erholung_beforderung: 60 * 1000 };
+/** Erfahrung für einen Kampf gegen eine Einheit. eigen/gegner = Grundstärken, art 'nah'|'fern'|'luft', angriff = true beim Angreifer. */
+export function kampfEp(eigen, gegner, art, angriff, besiegt) {
+  let x = Math.max(0.1, gegner) / Math.max(1, eigen);
+  if (besiegt) x *= 2;
+  x += art === 'nah' ? EP.nah : EP.fern;
+  if (angriff) x += EP.angriff;
+  return Math.min(EP.max_kampf, x);
+}
 
 // --- Barbarenlager (Update 2026-11-17: deutlich mehr Lager, die laufend Einheiten hervorbringen) ---
 export const BARBAREN = {

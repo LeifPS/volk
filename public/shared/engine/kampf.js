@@ -2,8 +2,8 @@
 import { karte } from '../karte.js';
 import { abstand, nachbarn, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
-import { EINHEIT, BEFOERDERUNG, VERBESSERUNG, GEB, FREIGESCHALTET_DURCH } from '../daten/index.js';
-import { KAMPF, schaden, erwarteterSchaden, verwundungsMalus, stadtGrundStaerke, STADT_GRUND_HP, HEILUNG, WIRTSCHAFT_TEMPO, abklingFaktor, EP, STD, MIN, epFuerBefoerderung } from '../regeln.js';
+import { EINHEIT, BEFOERDERUNG, VERBESSERUNG, GEB, FREIGESCHALTET_DURCH, baumVon } from '../daten/index.js';
+import { KAMPF, schaden, erwarteterSchaden, verwundungsMalus, stadtGrundStaerke, STADT_GRUND_HP, HEILUNG, WIRTSCHAFT_TEMPO, abklingFaktor, EP, kampfEp, STD, MIN, epFuerBefoerderung } from '../regeln.js';
 import { pruefe, SpielFehler } from './spiel.js';
 import { bereichVon, schichtVon, istMilitaer } from './einheiten.js';
 
@@ -96,21 +96,43 @@ export const kampf = {
       if (e.modus === 'befestigt' && this.t - (e.modus_seit || 0) >= 10 * MIN) liste.push({ text: 'Befestigt', wert: KAMPF.befestigt });
     }
     if (rolle === 'verteidigung' && bereichVon(d) === 'land' && g.wasser) liste.push({ text: 'Eingeschifft (wehrlos auf dem Wasser)', wert: -Math.round(d.staerke * 0.4) });
-    if (rolle === 'angriff' && art === 'nah' && k.fluss[e.feld] && !(this.z.felder[e.feld]?.br)) liste.push({ text: 'Angriff aus einem Flussfeld', wert: -KAMPF.flussMalus });
+    if (rolle === 'angriff' && art === 'nah' && k.fluss[e.feld] && !(this.z.felder[e.feld]?.br) && !this.befMax(e, 'kein_flussmalus')) liste.push({ text: 'Angriff aus einem Flussfeld', wert: -KAMPF.flussMalus });
     if (this.besitzer(feld) === e.volk) liste.push({ text: 'Eigener Boden', wert: KAMPF.eigenerBoden });
     if (e.unterversorgt) liste.push({ text: 'Unterversorgt (Goldmangel)', wert: -KAMPF.unterversorgt });
-    // Beförderungen
+    // Beförderungen (Civ 6: Bedingungen je Wirkung)
     for (const bid of e.befoerderungen || []) {
-      const w = BEFOERDERUNG[bid]?.wirkung; if (!w) continue;
-      let x = (w.staerke || 0) + (art === 'fern' && rolle === 'angriff' ? (w.fern || 0) : 0);
-      if (rolle === 'angriff') x += w.angriff || 0; else x += w.verteidigung || 0;
-      if (w.gelaende && w.gelaende[g.id]) x += w.gelaende[g.id];
-      if (w.gegen && gegner) for (const [kl, wert] of Object.entries(w.gegen)) if (this.passtGegen(kl, gegner)) x += wert;
+      const w = BEFOERDERUNG[bid]?.wirkung; if (!w?.mods) continue;
+      let x = 0;
+      for (const mo of w.mods) if (this.befModPasst(mo, rolle, art, gegner, feld, g)) x += mo.w;
       if (x) liste.push({ text: 'Beförderung: ' + BEFOERDERUNG[bid].name, wert: x });
     }
     // Klassenvorteile
     for (const bo of d.boni || []) if (gegner && this.passtGegen(bo.gegen, gegner)) liste.push({ text: `Bonus gegen ${this.gegenText(bo.gegen)}`, wert: bo.wert });
     return { wert: Math.max(1, liste.reduce((a, x) => a + x.wert, 0)), liste };
+  },
+
+  /** Gilt eine Kampfbedingung einer Beförderung hier? mo = { w, rolle?, art?, gegen?, ort?, gelaende?, ziel? } */
+  befModPasst(mo, rolle, art, gegner, feld, g) {
+    if (mo.rolle && mo.rolle !== rolle) return false;
+    if (mo.art && mo.art !== art) return false;
+    if (mo.gelaende && !mo.gelaende.includes(g.id)) return false;
+    if (mo.ort) {
+      const f = this.z.felder[feld];
+      const ok = mo.ort.some((o) => (o === 'stadt' && !!this.stadtAuf(feld)) || (o === 'befestigung' && !!(f && f.v && ['fort', 'festung', 'bunkeranlage'].includes(f.v) && !(f.pl > this.t))));
+      if (!ok) return false;
+    }
+    if (mo.gegen) {
+      if (!gegner) return false;
+      const liste = Array.isArray(mo.gegen) ? mo.gegen : [mo.gegen];
+      if (!liste.some((k) => this.passtGegen(k, gegner))) return false;
+    }
+    if (mo.ziel) {
+      const z = gegner && gegner.einheit; if (!z) return false;
+      if (mo.ziel === 'befestigt' && z.modus !== 'befestigt') return false;
+      if (mo.ziel === 'verwundet' && this.aktuelleHp(z) >= 99.5) return false;
+      if (mo.ziel === 'in_stadt' && !this.stadtAuf(z.feld)) return false;
+    }
+    return true;
   },
 
   /** Passt ein Bonus-Schlüssel ("reiter", "stadt", "luft", ...) auf den Gegner? gegner = {einheit} | {stadt} */
@@ -119,6 +141,8 @@ export const kampf = {
     const d = EINHEIT[gegner.einheit.typ];
     if (!d) return false;
     if (schluessel === d.klasse) return true;
+    if (schluessel === 'land_ohne_reiter') return bereichVon(d) === 'land' && d.klasse !== 'reiter';
+    if (baumVon(d) === schluessel) return true;
     if (schluessel === 'luft') return bereichVon(d) === 'luft';
     if (schluessel === 'see') return bereichVon(d) === 'see';
     if (schluessel === 'land') return bereichVon(d) === 'land';
@@ -168,9 +192,10 @@ export const kampf = {
     else D = this.einheitStaerke(ziel.einheit, 'verteidigung', art, { einheit: e });
     if (art === 'nah' && !ziel.stadt) {
       const fl = this.flankenBonus(e, feld, ziel.volk);
-      if (fl.flanke) A.liste.push({ text: 'Flankenangriff', wert: fl.flanke });
-      if (fl.unterstuetzung) D.liste.push({ text: 'Unterstützung durch Nachbarn', wert: fl.unterstuetzung });
-      A.wert += fl.flanke; D.wert += fl.unterstuetzung;
+      const ffl = fl.flanke * (this.befMax(e, 'flanke_faktor') || 1), fun = fl.unterstuetzung * (this.befMax(ziel.einheit, 'unterstuetzung_faktor') || 1);
+      if (ffl) A.liste.push({ text: 'Flankenangriff' + (ffl > fl.flanke ? ' (doppelt durch Beförderung)' : ''), wert: ffl });
+      if (fun) D.liste.push({ text: 'Unterstützung durch Nachbarn' + (fun > fl.unterstuetzung ? ' (doppelt durch Beförderung)' : ''), wert: fun });
+      A.wert += ffl; D.wert += fun;
     }
     let anVert = erwarteterSchaden(A.wert, D.wert);
     let anAngr = art === 'nah' ? erwarteterSchaden(D.wert, A.wert) : 0;
@@ -277,7 +302,6 @@ export const kampf = {
     this.ausgehend.push({ art: 'kampf', von: vonFeld, nach: feld, fern: vs.art !== 'nah', schadenA: anAngr, schadenV: anVert, t: this.t });
     // Angreifer nimmt Schaden
     e.hp = Math.max(0, e.hp - anAngr);
-    e.ep = (e.ep || 0) + (vs.art === 'nah' ? EP.angriff : EP.fern);
     this.markiere('e' + e.id);
     let ergebnis = { schadenAnVerteidiger: anVert, schadenAnAngreifer: anAngr };
     if (ziel.stadt) {
@@ -291,22 +315,25 @@ export const kampf = {
         this.stadtErobern(s, e);
         ergebnis.erobert = true;
       } else if (e.hp > 0) this.stadtVergeltung(s, e);
+      if (e.hp > 0) this.epGeben(e, EP.stadt_angriff, zielVolk);
     } else {
       const z = ziel.einheit;
       this.hpAbrechnen(z);
       z.hp = Math.max(0, z.hp - anVert);
-      z.ep = Math.min((z.ep || 0) + EP.verteidigung, this.z.voelker[e.volk]?.art === 'barbar' ? EP.max_barbar : 9999);
+      if (z.hp > 0) this.epGeben(z, kampfEp(vs.verteidiger.wert, vs.angreifer.wert, vs.art, false, false), e.volk);
       if (this.z.voelker[zielVolk]?.art === 'tiere' && z.hp > 0) { /* Tiere fliehen nie */ }
       this.markiere('e' + z.id);
       if (z.hp <= 0) {
         ergebnis.besiegt = true;
-        e.ep += EP.sieg;
+        if (e.hp > 0) this.epGeben(e, kampfEp(vs.angreifer.wert, vs.verteidiger.wert, vs.art, true, true), zielVolk);
+        if (e.hp > 0) this.siegGold(e);
         const zn = EINHEIT[z.typ].name;
         this.meldung(zielVolk, `Deine Einheit ${zn} wurde besiegt.`, { art: 'kampf', feld, wichtig: true });
         this.meldung(e.volk, `Sieg! ${zn} wurde besiegt.`, { art: 'kampf', feld });
         this.einheitBesiegt(z, e);
         if (vs.art === 'nah' && e.hp > 0 && bereichVon(d) === 'land' && !this.stadtAuf(feld) && this.platzFrei(e.volk, d, feld, e.id) && this.bewegungsKostenRoh(e.volk, d, feld, feld, true) < Infinity) this.einheitZiehen(e, feld);
       } else {
+        if (e.hp > 0) this.epGeben(e, kampfEp(vs.angreifer.wert, vs.verteidiger.wert, vs.art, true, false), zielVolk);
         this.meldung(zielVolk, `Deine Einheit ${EINHEIT[z.typ].name} wurde angegriffen (${Math.round(z.hp)} LP übrig).`, { art: 'kampf', feld, wichtig: true });
       }
     }
@@ -315,8 +342,26 @@ export const kampf = {
       this.meldung(e.volk, `Deine Einheit ${d.name} ist im Kampf gefallen.`, { art: 'kampf', feld: vonFeld, wichtig: true });
       this.einheitEntfernen(e.id);
     }
-    if (this.z.voelker[e.volk]?.art === 'spieler' && e.hp > 0 && this.befoerderungMoeglich(e)) this.meldung(e.volk, `${d.name} kann befördert werden!`, { art: 'einheit', feld: e.feld });
+    if (e.hp > 0) this.befoerderungPruefen(e);
+    const zz = ziel.einheit; if (zz && zz.hp > 0 && this.z.einheiten[zz.id]) this.befoerderungPruefen(zz);
     return ergebnis;
+  },
+
+  /** Meldet dem Spieler, wenn eine Einheit befördert werden kann; die KI wählt selbst. */
+  befoerderungPruefen(e) {
+    if (!this.befoerderungMoeglich(e)) return;
+    const v = this.z.voelker[e.volk];
+    if (v?.art === 'spieler') { if (!e._befMeldung || e._befMeldung !== (e.befoerderungen || []).length + 1) { e._befMeldung = (e.befoerderungen || []).length + 1; this.meldung(e.volk, `${EINHEIT[e.typ].name} kann befördert werden!`, { art: 'einheit', feld: e.feld }); } }
+    else if (v?.art === 'ki' || v?.art === 'stadtstaat' || v?.art === 'barbar') {
+      const w = this.befoerderungenVerfuegbar(e);
+      if (w.length) this.befoerdern(e, w[Math.floor(this.zufall() * w.length)].id);
+    }
+  },
+
+  /** Siegprämie (Beförderung "sieg_gold"). */
+  siegGold(e) {
+    const g = this.befMax(e, 'sieg_gold');
+    if (g > 0 && this.z.voelker[e.volk]?.art === 'spieler') { this.z.voelker[e.volk].gold += g; this.aendern(e.volk); }
   },
 
   abklingzeit(e) {
@@ -399,7 +444,7 @@ export const kampf = {
     const n = EINHEIT[e.typ].name;
     this.meldung(s.volk, `${s.name} ${automatisch ? 'verteidigt sich und trifft' : 'beschießt'} ${n} (${dmg} Schaden).`, { art: 'kampf', feld: e.feld });
     if (e.hp <= 0) { this.meldung(e.volk, `Deine Einheit ${n} wurde von ${s.name} vernichtet.`, { art: 'kampf', feld: e.feld, wichtig: true }); this.einheitEntfernen(e.id); }
-    else this.meldung(e.volk, `${s.name} hat ${n} beschossen (${dmg} Schaden).`, { art: 'kampf', feld: e.feld });
+    else { this.epGeben(e, EP.stadt_beschossen, s.volk); this.befoerderungPruefen(e); this.meldung(e.volk, `${s.name} hat ${n} beschossen (${dmg} Schaden).`, { art: 'kampf', feld: e.feld }); }
     return dmg;
   },
 
@@ -426,6 +471,7 @@ export const kampf = {
   /** Eroberung: Die Stadt gehört dann dem Eroberer, ist aber zerstört. */
   stadtErobern(s, e) {
     const alt = s.volk, neu = e.volk;
+    this.epGeben(e, EP.stadt_erobert, alt);
     const va = this.z.voelker[alt], vn = this.z.voelker[neu];
     this.aendern(alt); this.aendern(neu);
     const g = this.garnison(s);
@@ -497,12 +543,14 @@ export const kampf = {
     this.aendern(bes); this.aendern(v.id);
     this.setzeFeld(e.feld, { pl: this.t + 12 * STD });
     this.ablaufPlanen(bes, this.t + 12 * STD);
-    v.gold += 30;
-    e.ep = (e.ep || 0) + 2;
+    const pg = Math.round(30 * (1 + this.befMax(e, 'pluendern_prozent') / 100));
+    v.gold += pg;
+    this.epGeben(e, EP.pluendern, bes);
+    this.befoerderungPruefen(e);
     this.kampfVermerken(v.id, bes);
     this.meldung(bes, `${v.name} hat ${VERBESSERUNG[f.v].name} geplündert.`, { art: 'kampf', feld: e.feld, wichtig: true });
     delete this._raten[bes]; delete this._raten[v.id];
-    return { gold: 30 };
+    return { gold: pg };
   },
 
   // ---------- Luft ----------
@@ -548,7 +596,8 @@ export const kampf = {
     const traeger = this.z.einheiten[b.traeger];
     if (traeger) {
       pruefe(traeger.volk === v.id && EINHEIT[traeger.typ]?.faehigkeiten?.includes('traeger'), 'Das ist kein eigener Flugzeugträger.');
-      pruefe(this.alleEinheiten().filter((x) => x.in === traeger.id).length < 3, 'Der Träger ist voll (3 Flugzeuge).');
+      const platz = 3 + this.befSumme(traeger, 'plaetze');
+      pruefe(this.alleEinheiten().filter((x) => x.in === traeger.id).length < platz, `Der Träger ist voll (${platz} Flugzeuge).`);
       pruefe(abstand(this.einheitOrt(e), traeger.feld) <= this.reichweite(e) * 2, 'Der Träger ist zu weit weg.');
       e.in = traeger.id; e.feld = traeger.feld;
     } else {

@@ -48,7 +48,7 @@ export const ansicht = {
       if (e.volk === vid) a.einheiten[e.id] = this.einheitAnsicht(e, true);
       else if (!e.in && sicht.has(e.feld)) {
         const d = EINHEIT[e.typ];
-        if (d?.faehigkeiten?.includes('tarnung') && !this.alleEinheiten().some((x) => x.volk === vid && abstand(x.feld, e.feld) <= 1)) continue;
+        if ((d?.faehigkeiten?.includes('tarnung') || this.befMax(e, 'tarnung')) && !this.alleEinheiten().some((x) => x.volk === vid && abstand(x.feld, e.feld) <= 1)) continue;
         a.einheiten[e.id] = this.einheitAnsicht(e, false, sicht);
       }
     }
@@ -103,7 +103,7 @@ export const ansicht = {
     if (e.befoerderungen?.length) x.bef = e.befoerderungen;
     if (e.in) x.in = e.in;
     if (eigen) {
-      x.ep = e.ep || 0; x.abkling_bis = e.abkling_bis || 0; x.arbeit = e.arbeit || null; x.route = e.route || null; x.angriff = e.angriff ?? null;
+      x.ep = e.ep || 0; x.ep_max = this.epBenoetigt(e); x.stufe = this.einheitStufe(e); x.baum = this.befoerderungsBaum(e); x.abkling_bis = e.abkling_bis || 0; x.arbeit = e.arbeit || null; x.route = e.route || null; x.angriff = e.angriff ?? null;
       x.unterversorgt = !!e.unterversorgt; x.einsatz = e.einsatz || null; x.befoerderbar = this.befoerderungMoeglich(e); x.sicht = this.sichtweite(e);
       if (EINHEIT[e.typ]?.upgrade) x.aufruesten = this.aufruestenKosten(e);
     }

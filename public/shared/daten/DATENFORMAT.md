@@ -61,12 +61,21 @@ Pflicht-Einheiten mit genau diesen IDs: `siedler`, `arbeiter`, `spaeher`, `krieg
 und alle Klassen (Land/See/Luft/Zivil). Spielerfahrung: wenige, wirkungsvolle Einheiten; Werte Civ-5/6-artig
 (Krieger 20, Speerträger 25, Schwertkämpfer 36, Ritter 48, Musketier 55, Gewehrschütze 70, Infanterie 80, Panzer 90, Moderner Kampfpanzer 110 ...).
 
-## Beförderungen (`befoerderungen.js`, `export const BEFOERDERUNGEN = [...]`), ≈ 30
+## Beförderungen (`befoerderungen.js`, `BAEUME`, `BEFOERDERUNGEN`), 13 Bäume mit je 7 Beförderungen (wie Civ 6)
+Jede Einheit gehört über `baumVon(einheit)` zu einem Baum (oder zu keinem: Zivil, Flak, Sanitäter, Raketen).
+Ein Baum hat 4 Stufen (I–IV). Stufe I hat keine Voraussetzung, höhere Stufen brauchen EINE der Beförderungen in `voraussetzung`
+(meist aus der Stufe darunter, manche Querverbindungen auf gleicher Stufe). Eine Einheit hat höchstens 5 Beförderungen.
 ```js
-{ id, name, beschreibung, klassen: ['nahkampf', ...], voraussetzung: 'id' | null,
-  wirkung: { staerke?, fern?, reichweite?, tempo?, sicht?, heilung?(HP/h zusätzlich),
-             gelaende?: { wald: 5, huegel: 5 }, gegen?: { reiter: 7, stadt: 10 }, verteidigung?, angriff?, abklingzeit_prozent? (-25 = schneller) } }
+{ id: '<baum>_<name>', baum, stufe: 1..4, name, beschreibung, voraussetzung: ['id', ...],   // eine davon genügt
+  wirkung: {
+    mods: [{ w, rolle?: 'angriff'|'verteidigung', art?: 'nah'|'fern'|'luft',
+             gegen?: Klasse | Bereich ('land'|'see'|'luft') | 'stadt' | Baum | 'land_ohne_reiter' | [Liste],
+             ort?: ['stadt','befestigung'], gelaende?: ['huegel', ...], ziel?: 'befestigt'|'verwundet'|'in_stadt' }],  // +w Stärke, wenn ALLE Bedingungen passen
+    tempo?, sicht?, sicht_gelaende?: { wald: 1 }, reichweite?, abklingzeit_prozent? (-25 = schneller), heilung? (HP/h), heilt_fremd?,
+    gelaende_leicht?: ['huegel'] (kostet nur 1 Bewegung), tarnung?, flanke_faktor?, unterstuetzung_faktor?, kein_flussmalus?,
+    plaetze? (Träger: +Flugzeugplätze), pluendern_prozent?, sieg_gold? } }
 ```
+Erfahrung: `regeln.js` (`epFuerBefoerderung(n)` = 15 × n, `kampfEp`, `EP`). Die Beförderung heilt 50 LP.
 
 ## Gebäude (`gebaeude.js`, `export const GEBAEUDE = [...]`), mindestens **64**
 ```js

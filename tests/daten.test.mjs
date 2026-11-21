@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import * as D from '../public/shared/daten/index.js';
 
 const {
-  ZEITALTER, GELAENDE, ROHSTOFFE, VERBESSERUNGEN, EINHEITEN, BEFOERDERUNGEN, GEBAEUDE, WUNDER, FORSCHUNGEN,
+  ZEITALTER, GELAENDE, ROHSTOFFE, VERBESSERUNGEN, EINHEITEN, BEFOERDERUNGEN, BAEUME, baumVon, GEBAEUDE, WUNDER, FORSCHUNGEN,
   KI_VOELKER, STADTSTAATEN, BARBARENLAGER, EINHEIT, GEB, WUNDER_NACH_ID, FORSCHUNG, BEFOERDERUNG, ROHSTOFF,
   VERBESSERUNG, GELAENDE_ID, FREIGESCHALTET_DURCH, NACHFOLGER, STARTFORSCHUNGEN,
 } = D;
@@ -92,7 +92,7 @@ test('Mindestanzahlen', () => {
   assert.ok(EINHEITEN.length >= 72, `Einheiten: ${EINHEITEN.length}`);
   assert.ok(GEBAEUDE.length >= 64, `Gebäude: ${GEBAEUDE.length}`);
   assert.equal(WUNDER.length, 8, 'genau 8 Wunder');
-  assert.ok(BEFOERDERUNGEN.length >= 28, `Beförderungen: ${BEFOERDERUNGEN.length}`);
+  assert.ok(BEFOERDERUNGEN.length >= 80, `Beförderungen: ${BEFOERDERUNGEN.length}`);
   assert.ok(ROHSTOFFE.length >= 35, `Rohstoffe: ${ROHSTOFFE.length}`);
   assert.ok(GELAENDE.length >= 16, `Gelände: ${GELAENDE.length}`);
   const ketten = new Set(VERBESSERUNGEN.map((v) => v.kette));
@@ -183,30 +183,60 @@ test('Einheiten: Felder, Klassen, Fähigkeiten, Kosten, Querverweise', () => {
   assert.ok(a.kosten.uran >= 5 && a.kosten.aluminium >= 3 && a.kosten.gold >= 5000);
 });
 
-test('Beförderungen: Klassen, Voraussetzungen, Wirkungen', () => {
+test('Beförderungen (Civ 6): Bäume, Stufen, Voraussetzungen, Wirkungen', () => {
+  const BAUM_IDS = BAEUME.map((x) => x.id);
+  const WIRK = ['mods', 'tempo', 'sicht', 'sicht_gelaende', 'reichweite', 'abklingzeit_prozent', 'heilung', 'heilt_fremd', 'gelaende_leicht', 'tarnung', 'flanke_faktor', 'unterstuetzung_faktor', 'kein_flussmalus', 'plaetze', 'pluendern_prozent', 'sieg_gold'];
+  const MOD = ['w', 'rolle', 'art', 'gegen', 'ort', 'gelaende', 'ziel'];
+  assert.equal(BAEUME.length, 13);
+  for (const bm of BAUM_IDS) {
+    const l = BEFOERDERUNGEN.filter((b) => b.baum === bm);
+    assert.ok(l.length >= 6, `Baum ${bm}: nur ${l.length} Beförderungen`);
+    for (const st of [1, 2, 3, 4]) assert.ok(l.some((b) => b.stufe === st), `Baum ${bm}: Stufe ${st} fehlt`);
+    assert.ok(l.filter((b) => b.stufe === 1).length >= 1);
+  }
   for (const b of BEFOERDERUNGEN) {
     const wo = `Beförderung ${b.id}`;
     assert.ok(b.name && b.beschreibung, `${wo}: Texte`);
-    assert.ok(Array.isArray(b.klassen) && b.klassen.length > 0, `${wo}: klassen`);
-    for (const k of b.klassen) assert.ok(KLASSEN.includes(k), `${wo}: Klasse ${k}`);
-    if (b.voraussetzung !== null) {
-      const v = BEFOERDERUNG[b.voraussetzung];
-      assert.ok(v, `${wo}: Voraussetzung ${b.voraussetzung} fehlt`);
-      for (const k of b.klassen) assert.ok(v.klassen.includes(k), `${wo}: Klasse ${k} kann Voraussetzung ${v.id} nicht erreichen`);
+    assert.ok(BAUM_IDS.includes(b.baum), `${wo}: Baum ${b.baum}`);
+    assert.ok(b.id.startsWith(b.baum + '_'), `${wo}: ID muss mit dem Baum beginnen`);
+    assert.ok([1, 2, 3, 4].includes(b.stufe), `${wo}: Stufe`);
+    assert.ok(Array.isArray(b.voraussetzung), `${wo}: Voraussetzung ist eine Liste`);
+    if (b.stufe === 1) assert.equal(b.voraussetzung.length, 0, `${wo}: Stufe I ohne Voraussetzung`);
+    else assert.ok(b.voraussetzung.length > 0, `${wo}: braucht Voraussetzung`);
+    for (const vid of b.voraussetzung) {
+      const v = BEFOERDERUNG[vid];
+      assert.ok(v, `${wo}: Voraussetzung ${vid} fehlt`);
+      assert.equal(v.baum, b.baum, `${wo}: Voraussetzung aus anderem Baum`);
+      assert.ok(v.stufe <= b.stufe, `${wo}: Voraussetzung ${vid} höher als die Beförderung`);
     }
     assert.ok(Object.keys(b.wirkung).length > 0, `${wo}: leere Wirkung`);
     for (const [k, v] of Object.entries(b.wirkung)) {
-      assert.ok(BEF_WIRKUNG.includes(k), `${wo}: Wirkung ${k}`);
-      if (k === 'gelaende') for (const g of Object.keys(v)) assert.ok(GELAENDE_ID[g], `${wo}: Gelände ${g}`);
-      else if (k === 'gegen') for (const g of Object.keys(v)) assert.ok(GEGEN.includes(g), `${wo}: gegen ${g}`);
+      assert.ok(WIRK.includes(k), `${wo}: Wirkung ${k}`);
+      if (k === 'mods') {
+        assert.ok(Array.isArray(v) && v.length > 0, `${wo}: mods`);
+        for (const m of v) {
+          assert.equal(typeof m.w, 'number');
+          for (const mk of Object.keys(m)) assert.ok(MOD.includes(mk), `${wo}: mod-Schlüssel ${mk}`);
+          for (const g of m.gelaende || []) assert.ok(GELAENDE_ID[g], `${wo}: Gelände ${g}`);
+        }
+      } else if (k === 'gelaende_leicht') for (const g of v) assert.ok(GELAENDE_ID[g], `${wo}: Gelände ${g}`);
+      else if (k === 'sicht_gelaende') for (const g of Object.keys(v)) assert.ok(GELAENDE_ID[g], `${wo}: Gelände ${g}`);
       else assert.equal(typeof v, 'number');
     }
   }
-  // zyklenfrei
+  // Jede Beförderung ist von Stufe I aus erreichbar (keine toten Äste)
   for (const b of BEFOERDERUNGEN) {
-    const s = new Set(); let x = b;
-    while (x && x.voraussetzung) { assert.ok(!s.has(x.id), `Zyklus bei ${b.id}`); s.add(x.id); x = BEFOERDERUNG[x.voraussetzung]; }
+    const gesehen = new Set(); const stack = [b];
+    let ok = false;
+    while (stack.length) {
+      const x = stack.pop(); if (gesehen.has(x.id)) continue; gesehen.add(x.id);
+      if (x.stufe === 1) { ok = true; break; }
+      for (const vid of x.voraussetzung) stack.push(BEFOERDERUNG[vid]);
+    }
+    assert.ok(ok, `${b.id}: von Stufe I aus nicht erreichbar`);
   }
+  // Jede kämpfende Einheitenklasse hat einen Baum, Zivil/Flak nicht
+  assert.equal(baumVon(EINHEIT.speertraeger), 'panzerabwehr');
 });
 
 test('Gebäude: Felder, Kosten, Wirkungen, Ketten', () => {

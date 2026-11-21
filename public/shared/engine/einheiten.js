@@ -2,9 +2,9 @@
 import { karte, stadtGelaendeOk } from '../karte.js';
 import { ANZAHL, abstand, nachbarn, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
-import { EINHEIT, BEFOERDERUNG, VERBESSERUNG, FREIGESCHALTET_DURCH } from '../daten/index.js';
+import { EINHEIT, BEFOERDERUNG, BEFOERDERUNGEN, VERBESSERUNG, FREIGESCHALTET_DURCH, baumVon } from '../daten/index.js';
 import { sucheWeg } from '../pfad.js';
-import { schrittDauer, WIRTSCHAFT_TEMPO, EINGESCHIFFT_TEMPO, STADT_MINDESTABSTAND, HEILUNG, STD, MIN, AUFLOESEN_ERSTATTUNG, AUFRUESTEN_FAKTOR, epFuerBefoerderung, STADT_GRUND_HP } from '../regeln.js';
+import { schrittDauer, WIRTSCHAFT_TEMPO, EINGESCHIFFT_TEMPO, STADT_MINDESTABSTAND, HEILUNG, STD, MIN, AUFLOESEN_ERSTATTUNG, AUFRUESTEN_FAKTOR, epFuerBefoerderung, MAX_BEFOERDERUNGEN, EP, STADT_GRUND_HP } from '../regeln.js';
 import { pruefe, SpielFehler } from './spiel.js';
 
 // Raubtiere sind keine baubare Einheit, sondern Teil der Welt (nicht in EINHEITEN, also nicht im Forschungsbaum).
@@ -55,7 +55,7 @@ export const einheiten = {
     if (o.stadt) {
       const s = this.z.staedte[o.stadt];
       const erf = s ? this.gebaeudeSumme(s, 'erfahrung') : 0;
-      e.ep = erf;
+      e.ep = Math.min(erf, EP.start_max);
     }
     if (o.ki) e.ki = o.ki;
     this.z.einheiten[id] = e;
@@ -153,9 +153,11 @@ export const einheiten = {
   /** Kosten-Funktion für die Wegsuche einer konkreten Einheit (fremde Einheiten blockieren). */
   kostenFunktion(e, ziel, sicht = null) {
     const d = EINHEIT[e.typ];
+    const leicht = new Set(); for (const bid of e.befoerderungen || []) for (const gid of BEFOERDERUNG[bid]?.wirkung?.gelaende_leicht || []) leicht.add(gid);
     return (von, nach) => {
-      const c = this.bewegungsKostenRoh(e.volk, d, von, nach);
+      let c = this.bewegungsKostenRoh(e.volk, d, von, nach);
       if (c === Infinity) return c;
+      if (c > 1 && leicht.size && leicht.has(karte().gelaende[nach])) c = 1;   // Beförderung: Waldläufer, Alpinist
       if (sicht && !sicht.has(nach)) return c;
       for (const u of this.einheitenAuf(nach)) {
         if (u.volk === e.volk) continue;
@@ -359,7 +361,7 @@ export const einheiten = {
     if (bereichVon(d) === 'land') s += g.sicht || 0;
     const v = this.z.voelker[e.volk];
     if (v && v.art === 'spieler') s += this.raten(e.volk).boni.sicht || 0;
-    for (const bid of e.befoerderungen || []) s += BEFOERDERUNG[bid]?.wirkung?.sicht || 0;
+    for (const bid of e.befoerderungen || []) { const w = BEFOERDERUNG[bid]?.wirkung; if (w) s += (w.sicht || 0) + (w.sicht_gelaende?.[g.id] || 0); }
     return Math.max(1, Math.min(6, s));
   },
 
@@ -424,6 +426,7 @@ export const einheiten = {
     if (s && s.volk === e.volk) r = HEILUNG.stadt + this.gebaeudeSumme(s, 'heilung');
     else { const bes = this.besitzer(e.feld); r = bes === e.volk ? HEILUNG.eigen : (bes != null && this.verbuendet(e.volk, bes)) ? HEILUNG.freund : HEILUNG.fremd; }
     if (e.modus === 'befestigt' && r === 0) r = 4;
+    if (r < HEILUNG.freund && this.befMax(e, 'heilt_fremd')) r = HEILUNG.freund;   // Beförderung: heilt auch außerhalb des eigenen Gebiets
     for (const bid of e.befoerderungen || []) r += BEFOERDERUNG[bid]?.wirkung?.heilung || 0;
     // Sanitäter in der Nähe
     for (const n of [e.feld, ...nachbarn(e.feld)]) for (const u of this.einheitenAuf(n)) if (u.volk === e.volk && EINHEIT[u.typ]?.faehigkeiten?.includes('heilen')) { r += 10; break; }
@@ -547,24 +550,63 @@ export const einheiten = {
     delete this._raten[v.id];
   },
 
+  // ---------- Erfahrung und Beförderungen (wie Civ 6) ----------
+  /** Größter Wert eines Wirkungsschlüssels über alle Beförderungen der Einheit (0, wenn keine ihn hat). */
+  befMax(e, schluessel) { let m = 0; for (const bid of e.befoerderungen || []) m = Math.max(m, BEFOERDERUNG[bid]?.wirkung?.[schluessel] || 0); return m; },
+  /** Summe eines Wirkungsschlüssels über alle Beförderungen. */
+  befSumme(e, schluessel) { let m = 0; for (const bid of e.befoerderungen || []) m += BEFOERDERUNG[bid]?.wirkung?.[schluessel] || 0; return m; },
+  /** Beförderungsbaum der Einheit (null = nicht befördbar). */
+  befoerderungsBaum(e) { return baumVon(EINHEIT[e.typ]); },
+  /** Stufe der Einheit: 1 + Anzahl der Beförderungen. */
+  einheitStufe(e) { return 1 + (e.befoerderungen || []).length; },
+  /** Beförderungen, die die Einheit jetzt wählen dürfte (Voraussetzung erfüllt, noch nicht vorhanden). */
+  befoerderungenVerfuegbar(e) {
+    const baum = this.befoerderungsBaum(e); if (!baum) return [];
+    const hat = new Set(e.befoerderungen || []);
+    return BEFOERDERUNGEN.filter((p) => p.baum === baum && !hat.has(p.id) && (p.voraussetzung.length === 0 || p.voraussetzung.some((v) => hat.has(v))));
+  },
+  /** EP, die bis zur nächsten Beförderung nötig sind (null = Höchststufe). */
+  epBenoetigt(e) { const n = (e.befoerderungen || []).length; return n >= MAX_BEFOERDERUNGEN ? null : epFuerBefoerderung(n + 1); },
   befoerderungMoeglich(e) {
-    const n = (e.befoerderungen || []).length;
-    return (e.ep || 0) >= epFuerBefoerderung(n + 1);
+    const need = this.epBenoetigt(e);
+    return need != null && !!this.befoerderungsBaum(e) && (e.ep || 0) >= need && this.befoerderungenVerfuegbar(e).length > 0;
+  },
+  /** Erfahrung gutschreiben. Prozentboni (Gebäude, Forschung) wirken einmal und werden aufgerundet; wartet die Einheit auf ihre Beförderung, verfällt der Rest. */
+  epGeben(e, x, gegnerVolk) {
+    const need = this.epBenoetigt(e);
+    if (need == null || !this.befoerderungsBaum(e)) return 0;
+    const gv = this.z.voelker[gegnerVolk];
+    if (gv && (gv.art === 'barbar' || gv.art === 'tiere') && (e.befoerderungen || []).length >= 1) x = EP.nach_beforderung_barbar;
+    const v = this.z.voelker[e.volk];
+    if (v && v.art === 'spieler') x *= 1 + (this.raten(e.volk).boni.erfahrung_prozent || 0) / 100;
+    x = Math.ceil(x - 1e-9);
+    const alt = e.ep || 0;
+    e.ep = Math.min(need, alt + x);
+    if (e.ep !== alt) this.markiere('e' + e.id);
+    return e.ep - alt;
   },
 
   befehl_befoerdern(v, b) {
     const e = this.eigeneEinheit(v, b.einheit);
-    const p = BEFOERDERUNG[b.befoerderung];
+    this.befoerdern(e, b.befoerderung);
+  },
+  /** Beförderung vergeben: heilt 50 LP, setzt den EP-Balken zurück und kostet eine kurze Erholung. */
+  befoerdern(e, bid) {
+    const p = BEFOERDERUNG[bid];
     pruefe(p, 'Unbekannte Beförderung.');
+    pruefe(this.befoerderungsBaum(e), 'Diese Einheit kann nicht befördert werden.');
     pruefe(this.befoerderungMoeglich(e), 'Die Einheit hat noch nicht genug Erfahrung.');
-    const d = EINHEIT[e.typ];
-    pruefe(p.klassen.includes(d.klasse), 'Diese Beförderung passt nicht zu dieser Einheit.');
+    pruefe(p.baum === this.befoerderungsBaum(e), 'Diese Beförderung passt nicht zu dieser Einheit.');
     pruefe(!(e.befoerderungen || []).includes(p.id), 'Diese Beförderung hat die Einheit schon.');
-    pruefe(!p.voraussetzung || e.befoerderungen.includes(p.voraussetzung), `Dafür braucht die Einheit zuerst "${BEFOERDERUNG[p.voraussetzung]?.name}".`);
+    pruefe(p.voraussetzung.length === 0 || p.voraussetzung.some((x) => e.befoerderungen.includes(x)), 'Dafür braucht die Einheit zuerst eine Beförderung aus der Stufe davor.');
     this.hpAbrechnen(e);
     e.befoerderungen.push(p.id);
-    e.hp = Math.min(100, e.hp + 25);
+    e.ep = 0;
+    e.hp = Math.min(100, e.hp + EP.heilung_beforderung);
+    e.abkling_bis = Math.max(e.abkling_bis || 0, this.t + EP.erholung_beforderung);
     this.markiere('e' + e.id);
+    delete this._raten[e.volk];
+    return p;
   },
 
   // ---------- Transport ----------
