@@ -162,3 +162,25 @@ test('Aufrüsten-Angebot erscheint erst, wenn die nächste Einheit erforscht ist
   for (const f of FORSCHUNGEN) A.v.forschung.erforscht[f.id] = 1;
   assert.ok(s.einheitAnsicht(e, true).aufruesten);
 });
+
+test('Händler ignorieren Grenzen, andere Einheiten nicht; Straßen der Route entstehen auch in fremdem Land', async () => {
+  const { umkreis } = await import('../public/shared/hex.js');
+  const { karte } = await import('../public/shared/karte.js');
+  const { GELAENDE, FREIGESCHALTET_DURCH } = await import('../public/shared/daten/index.js');
+  const s = neueWelt();
+  const A = spielerMitStadt(s, 'Alpha'), B = spielerMitStadt(s, 'Bruno');
+  const k = karte();
+  const fremd = umkreis(B.stadt.feld, 3).find((i) => s.besitzer(i) === B.v.id && !s.stadtAuf(i) && !GELAENDE[k.gelaende[i]].wasser);
+  assert.ok(fremd != null, 'fremdes Gebiet vorhanden');
+  const hand = EINHEIT.karawane, krieger = EINHEIT.krieger;
+  assert.equal(s.ignoriertGrenzen(hand), true);
+  assert.equal(s.ignoriertGrenzen(krieger), false);
+  assert.ok(s.bewegungsKostenRoh(A.v.id, hand, fremd, fremd, true) < Infinity, 'Karawane darf hinein');
+  assert.equal(s.bewegungsKostenRoh(A.v.id, krieger, fremd, fremd, true), Infinity, 'Krieger nicht ohne offene Grenzen');
+  // Straße in fremdem Land
+  const noetig = FREIGESCHALTET_DURCH['verbesserung:pfad'];
+  if (noetig) A.v.forschung.erforscht[noetig] = 1;
+  const e = s.einheitErzeugen(A.v.id, 'karawane', A.stadt.feld);
+  s.routeWegeBauen(e, { von: A.stadt.id, nach: B.stadt.id, aktiv: true, richtung: 'hin', felder: [fremd] });
+  assert.ok(s.z.felder[fremd]?.w, 'Pfad auch im fremden Gebiet');
+});

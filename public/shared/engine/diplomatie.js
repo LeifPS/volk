@@ -264,7 +264,7 @@ export const diplomatie = {
     // Einheiten verlassen fremdes Gebiet
     for (const e of this.alleEinheiten()) {
       const bes = this.besitzer(e.feld);
-      if ((e.volk === a && bes === b) || (e.volk === b && bes === a)) if (!this.darfBetreten(e.volk, bes)) this.einheitHeimschicken(e);
+      if ((e.volk === a && bes === b) || (e.volk === b && bes === a)) if (!this.ignoriertGrenzen(EINHEIT[e.typ]) && !this.darfBetreten(e.volk, bes)) this.einheitHeimschicken(e);
     }
     delete this._raten[a]; delete this._raten[b];
   },
@@ -417,13 +417,13 @@ export const diplomatie = {
     pruefe(abstand(heim.feld, ziel.feld) <= HANDELSROUTE_MAX_FELDER, `Das Ziel ist zu weit weg (höchstens ${HANDELSROUTE_MAX_FELDER} Felder).`);
     const vor = e.route;
     e.route = { von: heim.id, nach: ziel.id, aktiv: false, richtung: 'hin' };
-    if (!this.routeNeuPlanen(e, true)) { e.route = vor; pruefe(false, 'Es gibt keinen Weg zur Zielstadt (fremdes Gebiet braucht offene Grenzen; bei Stadtstaaten Freundschaft).'); }
+    if (!this.routeNeuPlanen(e, true)) { e.route = vor; pruefe(false, 'Es gibt keinen Weg zur Zielstadt (Händler ignorieren Grenzen, aber Wasser und Gelände können den Weg versperren).'); }
     e.route.felder = e.pfad.map((p) => p.f);   // Weg der ersten Reise: Hier entsteht bei Einrichtung der Route eine Straße
     this.markiere('e' + e.id);
     return { ankunft: e.pfad[e.pfad.length - 1]?.t };
   },
 
-  /** Wie in Civ 6: Eine eingerichtete Handelsroute legt auf ihrem Weg automatisch einen Pfad/eine Straße an (eigenes und neutrales Land). */
+  /** Wie in Civ 6: Eine eingerichtete Handelsroute legt auf ihrem Weg automatisch einen Pfad/eine Straße an (auch in fremdem Land: Straßen nützen allen). */
   routeWegeBauen(e, r) {
     const v = this.z.voelker[e.volk];
     if (!v || !r.felder?.length || EINHEIT[e.typ]?.klasse === 'see_zivil' || (EINHEIT[e.typ]?.faehigkeiten || []).includes('see_arbeiten')) return;
@@ -434,7 +434,7 @@ export const diplomatie = {
     for (const i of r.felder) {
       if (GELAENDE[k.gelaende[i]].wasser || this.stadtAuf(i)) continue;
       const bes = this.besitzer(i);
-      if (bes != null && bes !== e.volk) continue;
+      if (bes != null && bes !== e.volk && this.imKrieg(e.volk, bes)) continue;   // Straßen nützen allen, nur im Feindesland wird nicht gebaut
       const alt = this.z.felder[i]?.w;
       if (alt && (alt === wid || VERBESSERUNG[alt]?.stufe >= VERBESSERUNG[wid].stufe)) continue;
       this.verbesserungSetzen(i, wid);

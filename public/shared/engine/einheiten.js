@@ -105,6 +105,9 @@ export const einheiten = {
   },
 
   // ---------- Bewegung ----------
+  /** Händler (Karawanen, Handelsschiffe) ziehen überall durch: Grenzen gelten für sie nicht. */
+  ignoriertGrenzen(d) { return !!d?.faehigkeiten?.includes('handel'); },
+
   /** Darf Volk a das Gebiet von Volk b betreten? */
   darfBetreten(a, b) {
     if (a === b) return true;
@@ -123,7 +126,7 @@ export const einheiten = {
     const k = karte();
     const g = GELAENDE[k.gelaende[nach]];
     const bes = this.besitzer(nach);
-    if (bes != null && bes !== vid && !this.darfBetreten(vid, bes)) return Infinity;
+    if (bes != null && bes !== vid && !this.ignoriertGrenzen(d) && !this.darfBetreten(vid, bes)) return Infinity;
     const bereich = bereichVon(d);
     const st = this.stadtAuf(nach);
     if (st && st.volk !== vid && !this.verbuendet(vid, st.volk)) return Infinity;
@@ -200,7 +203,7 @@ export const einheiten = {
       pruefe(ziel !== e.feld || o.nachbar, 'Die Einheit steht schon dort.');
       if (!o.nachbar) {
         const bes = this.besitzer(ziel);
-        pruefe(bes == null || this.darfBetreten(e.volk, bes), 'Fremdes Gebiet darfst du nur mit "Offenen Grenzen" oder im Krieg betreten.');
+        pruefe(bes == null || this.ignoriertGrenzen(d) || this.darfBetreten(e.volk, bes), 'Fremdes Gebiet darfst du nur mit "Offenen Grenzen" oder im Krieg betreten.');
         pruefe(this.bewegungsKostenRoh(e.volk, d, ziel, ziel, true) < Infinity, bereichVon(d) === 'see' ? 'Schiffe können nur auf Wasser fahren (Tiefsee erst mit späteren Schiffen).' : 'Dorthin kann diese Einheit nicht (Wasser erst mit der Forschung zum Einschiffen).');
         const fremd = this.einheitenAuf(ziel).find((u) => u.volk !== e.volk && !this.verbuendet(e.volk, u.volk));
         pruefe(!fremd, 'Dort steht eine fremde Einheit. Zum Kämpfen nutze "Angreifen".');

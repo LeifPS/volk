@@ -87,7 +87,7 @@ export const T = {
     letzterKampf: (d) => `Letzter Kampf vor ${d}.`, vorschlagIn: (d) => `Ohne weitere Kämpfe schlägt das Spiel in ${d} Frieden vor.`, vorschlagBald: 'Das Spiel schlägt bald Frieden vor.',
     waffenruheText: (n) => `${n} ist seit über 30 Minuten offline: Waffenruhe. Niemand darf gerade angreifen. Kommt ${n} zurück, gilt nach 10 Minuten Schonfrist wieder Krieg.`,
     friedenText: 'Ihr lebt in Frieden. Eure Einheiten dürfen das Gebiet des anderen nicht betreten.',
-    grenzenText: 'Offene Grenzen: Eure Einheiten dürfen durch das Gebiet des anderen ziehen.',
+    grenzenText: 'Offene Grenzen: Eure Einheiten dürfen durch das Gebiet des anderen ziehen (Händler dürfen das immer).',
     buendnisText: 'Bündnis: Ihr teilt eure Sicht und habt offene Grenzen.',
     schutzAndere: (n, d) => `${n} steht noch ${d} unter Neulingsschutz und kann nicht angegriffen werden.`,
     aktionen: 'Was möchtest du tun?', angeboteMit: (n) => `Offene Angebote: ${n}`,
@@ -229,7 +229,7 @@ T.lexikon = {
   gegen: { reiter: 'Reiter', stadt: 'Städte', nahkampf: 'Nahkämpfer', luft: 'Flugzeuge', see: 'Schiffe', u_boot: 'U-Boote', bomber: 'Bomber', rakete: 'Raketen', fernkampf: 'Fernkämpfer', belagerung: 'Belagerungswaffen' },
   faehigkeitText: {
     gruenden: 'Gründet eine Stadt (wird dabei verbraucht).', arbeiten: 'Baut Verbesserungen auf Landfeldern.', see_arbeiten: 'Baut Verbesserungen auf dem Wasser.',
-    handel: 'Richtet Handelsrouten ein.', transport: 'Trägt bis zu 2 Landeinheiten über das Meer.', traeger: 'Trägt bis zu 3 Flugzeuge.',
+    handel: 'Richtet Handelsrouten ein und zieht frei durch fremdes Gebiet (Grenzen gelten für Händler nicht).', transport: 'Trägt bis zu 2 Landeinheiten über das Meer.', traeger: 'Trägt bis zu 3 Flugzeuge.',
     tarnung: 'Getarnt: nur von Nachbarfeldern aus sichtbar.', abfangen: 'Fängt feindliche Bomber ab.', heilen: 'Benachbarte Einheiten heilen schneller.',
     einmalig: 'Wird beim Angriff verbraucht.', flaechenschaden: 'Schaden im Umkreis von 2 Feldern.', belagerung: 'Stark gegen Städte, schwach im offenen Feld.',
     kein_gegenschaden: 'Greift aus der Ferne an und nimmt dabei keinen Schaden.', tiefsee: 'Darf auf die Tiefsee.', gelaende_ignorieren: 'Jedes Feld kostet nur 1 Bewegung.',
