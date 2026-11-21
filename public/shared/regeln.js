@@ -176,6 +176,8 @@ export const STADTSTAAT = { freund: 30, verbuendet: 60, verfallProStunde: 0.5, g
 export const AUFLOESEN_ERSTATTUNG = 0.25;
 export const ABBRUCH_ERSTATTUNG = 0.5;
 export const AUFRUESTEN_FAKTOR = 0.6; // Anteil der Goldkosten-Differenz
+/** Längste Handelsroute (Luftlinie zwischen Heimat- und Zielstadt, in Feldern). */
+export const HANDELSROUTE_MAX_FELDER = 50;
 export const AUFRUESTEN_ZEIT_FAKTOR = 1.25; // Aufrüsten dauert 25 % länger als die schnellste Eigenproduktion der neuen Einheit
 
 /** Gesamtwert für die Rangliste aus den Einzelkategorien. */

@@ -3,7 +3,7 @@ import { abstand, umkreis } from '../hex.js';
 import { EINHEIT, FREIGESCHALTET_DURCH, VERBESSERUNG } from '../daten/index.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { karte } from '../karte.js';
-import { SCHUTZ, OFFLINE, STD, MIN, FORSCHUNGSABKOMMEN, STADTSTAAT, TAG } from '../regeln.js';
+import { SCHUTZ, OFFLINE, STD, MIN, FORSCHUNGSABKOMMEN, STADTSTAAT, TAG, HANDELSROUTE_MAX_FELDER } from '../regeln.js';
 import { LAGERGUETER, LAGER_NAMEN, ROHSTOFF_NACH_ID } from '../daten/rohstoffe.js';
 import { pruefe } from './spiel.js';
 import { istMilitaer } from './einheiten.js';
@@ -414,7 +414,7 @@ export const diplomatie = {
     pruefe(ziel.volk === v.id || !this.imKrieg(v.id, ziel.volk), 'Mit Kriegsgegnern wird nicht gehandelt.');
     const heim = this.staedteVon(v.id).filter((s) => s.id !== ziel.id).sort((a, c) => abstand(a.feld, e.feld) - abstand(c.feld, e.feld))[0];
     pruefe(heim, 'Du brauchst eine eigene Heimatstadt (eine andere als das Ziel).');
-    pruefe(abstand(heim.feld, ziel.feld) <= 30, 'Das Ziel ist zu weit weg (höchstens 30 Felder).');
+    pruefe(abstand(heim.feld, ziel.feld) <= HANDELSROUTE_MAX_FELDER, `Das Ziel ist zu weit weg (höchstens ${HANDELSROUTE_MAX_FELDER} Felder).`);
     const vor = e.route;
     e.route = { von: heim.id, nach: ziel.id, aktiv: false, richtung: 'hin' };
     if (!this.routeNeuPlanen(e, true)) { e.route = vor; pruefe(false, 'Es gibt keinen Weg zur Zielstadt (fremdes Gebiet braucht offene Grenzen; bei Stadtstaaten Freundschaft).'); }
