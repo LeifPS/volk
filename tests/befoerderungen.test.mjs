@@ -124,3 +124,32 @@ test('Beförderung klappt auch, wenn der Einheit das Feld "befoerderungen" fehlt
   assert.equal(r.ok, true, r.fehler);
   assert.deepEqual(e.befoerderungen, [w[0].id]);
 });
+
+test('Aufrüsten dauert länger als der Neubau, Einheit ist solange gebunden, behält Erfahrung', async () => {
+  const { vorspulen } = await import('./hilfen.mjs');
+  const { FORSCHUNGEN } = await import('../public/shared/daten/index.js');
+  const { s, A, e } = einheit();
+  s.aendern(A.v.id);
+  for (const f of FORSCHUNGEN) A.v.forschung.erforscht[f.id] = 1;
+  const alt = EINHEIT[e.typ];
+  const neu = EINHEIT[alt.upgrade];
+  assert.ok(neu, 'Krieger hat einen Nachfolger');
+  A.v.gold = 100000; for (const g of ['eisen', 'holz', 'stein', 'kohle', 'oel', 'aluminium']) A.v.lager[g] = 1000;
+  e.ep = 7;
+  const stadt = s.z.staedte[A.stadt.id];
+  const direkt = s.bauDauerMs(stadt, 'einheit', neu.id);
+  const r = s.befehl(A.v.id, { art: 'aufruesten', einheit: e.id });
+  assert.equal(r.ok, true, r.fehler);
+  assert.equal(e.typ, alt.id, 'Typ ändert sich erst am Ende');
+  const dauer = e.umruestung.fertig_um - s.t;
+  assert.ok(dauer > direkt, `Aufrüsten (${dauer}) muss länger dauern als Neubau (${direkt})`);
+  // währenddessen gesperrt, außer Auflösen
+  assert.equal(s.befehl(A.v.id, { art: 'modus', einheit: e.id, modus: 'befestigt' }).ok, false);
+  assert.equal(s.befehl(A.v.id, { art: 'aufruesten', einheit: e.id }).ok, false);
+  vorspulen(s, dauer - 5000);
+  assert.equal(e.typ, alt.id);
+  vorspulen(s, 10000);
+  assert.equal(e.typ, neu.id);
+  assert.equal(e.umruestung, undefined);
+  assert.equal(e.ep, 7);
+});

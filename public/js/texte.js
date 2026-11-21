@@ -36,7 +36,7 @@ export const T = {
     befestigen: 'Die Einheit gräbt sich ein: +4 Verteidigung (nach 10 Minuten).',
     schlafen: 'Die Einheit wartet und wird bei "Nächste Aktion" übersprungen.',
     aufloesen: 'Löst die Einheit auf. Du bekommst einen Teil des Goldes zurück.',
-    aufruesten: 'Rüstet die Einheit gegen Gold auf die neuere Version auf (nur im eigenen Gebiet).',
+    aufruesten: 'Rüstet die Einheit gegen Gold auf die neuere Version auf (nur im eigenen Gebiet). Das dauert länger als der Neubau in der Stadt; solange ist die Einheit nicht einsatzbereit. Dafür behält sie Erfahrung und Beförderungen und braucht keinen Bauplatz.',
     handel: 'Wähle eine Zielstadt. Die Karawane pendelt dann und bringt dauerhaft Gold.',
     pluendern: 'Zerstört die feindliche Verbesserung auf diesem Feld vorübergehend und bringt Gold (nur im Krieg).',
   },

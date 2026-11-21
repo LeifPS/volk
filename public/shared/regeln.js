@@ -176,6 +176,7 @@ export const STADTSTAAT = { freund: 30, verbuendet: 60, verfallProStunde: 0.5, g
 export const AUFLOESEN_ERSTATTUNG = 0.25;
 export const ABBRUCH_ERSTATTUNG = 0.5;
 export const AUFRUESTEN_FAKTOR = 0.6; // Anteil der Goldkosten-Differenz
+export const AUFRUESTEN_ZEIT_FAKTOR = 1.25; // Aufrüsten dauert 25 % länger als die schnellste Eigenproduktion der neuen Einheit
 
 /** Gesamtwert für die Rangliste aus den Einzelkategorien. */
 export function gesamtWertung(k) {

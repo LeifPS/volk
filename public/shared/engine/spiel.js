@@ -152,6 +152,7 @@ export class Spiel {
     for (const e of this.alleEinheiten()) {
       if (e.pfad && e.pfad.length) k(e.pfad[0].t, 'schritt' + e.id, () => this.schritt(e.id), () => { e.pfad = []; });
       if (e.arbeit) k(e.arbeit.fertig_um, 'arbeit' + e.id, () => this.arbeitFertig(e.id), () => { e.arbeit = null; });
+      if (e.umruestung) k(e.umruestung.fertig_um, 'umruest' + e.id, () => this.umruestungFertig(e.id), () => { delete e.umruestung; });
       if (e.einsatz) k(e.einsatz.zurueck_um, 'einsatz' + e.id, () => this.einsatzZurueck(e.id), () => { e.einsatz = null; });
     }
     for (const s of this.alleStaedte()) {

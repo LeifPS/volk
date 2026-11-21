@@ -105,7 +105,8 @@ export const ansicht = {
     if (eigen) {
       x.ep = e.ep || 0; x.ep_max = this.epBenoetigt(e); x.stufe = this.einheitStufe(e); x.baum = this.befoerderungsBaum(e); x.abkling_bis = e.abkling_bis || 0; x.arbeit = e.arbeit || null; x.route = e.route || null; x.angriff = e.angriff ?? null;
       x.unterversorgt = !!e.unterversorgt; x.einsatz = e.einsatz || null; x.befoerderbar = this.befoerderungMoeglich(e); x.sicht = this.sichtweite(e);
-      if (EINHEIT[e.typ]?.upgrade) x.aufruesten = this.aufruestenKosten(e);
+      x.umruestung = e.umruestung || null;
+      if (EINHEIT[e.typ]?.upgrade && !e.umruestung) { x.aufruesten = this.aufruestenKosten(e); x.aufruesten_dauer = this.aufruestenDauerMs(e); }
     }
     return x;
   },

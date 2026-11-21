@@ -4,7 +4,7 @@ import { ANZAHL, abstand, nachbarn, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { EINHEIT, BEFOERDERUNG, BEFOERDERUNGEN, VERBESSERUNG, FREIGESCHALTET_DURCH, baumVon } from '../daten/index.js';
 import { sucheWeg } from '../pfad.js';
-import { schrittDauer, WIRTSCHAFT_TEMPO, EINGESCHIFFT_TEMPO, STADT_MINDESTABSTAND, HEILUNG, STD, MIN, AUFLOESEN_ERSTATTUNG, AUFRUESTEN_FAKTOR, epFuerBefoerderung, MAX_BEFOERDERUNGEN, EP, STADT_GRUND_HP } from '../regeln.js';
+import { schrittDauer, WIRTSCHAFT_TEMPO, EINGESCHIFFT_TEMPO, STADT_MINDESTABSTAND, HEILUNG, STD, MIN, AUFLOESEN_ERSTATTUNG, AUFRUESTEN_FAKTOR, AUFRUESTEN_ZEIT_FAKTOR, produktionTempo, epFuerBefoerderung, MAX_BEFOERDERUNGEN, EP, STADT_GRUND_HP } from '../regeln.js';
 import { pruefe, SpielFehler } from './spiel.js';
 
 // Raubtiere sind keine baubare Einheit, sondern Teil der Welt (nicht in EINHEITEN, also nicht im Forschungsbaum).
@@ -29,9 +29,10 @@ export const einheiten = {
   bereich(d) { return bereichVon(d); },
   schicht(d) { return schichtVon(d); },
 
-  eigeneEinheit(v, id) {
+  eigeneEinheit(v, id, waehrendUmruestung = false) {
     const e = this.z.einheiten[id];
     pruefe(e && e.volk === v.id, 'Das ist nicht deine Einheit.');
+    pruefe(!e.umruestung || waehrendUmruestung, `Die Einheit wird gerade aufgerüstet (fertig in ${Math.ceil((e.umruestung?.fertig_um - this.t) / MIN)} min).`);
     return e;
   },
 
@@ -513,7 +514,7 @@ export const einheiten = {
 
   // ---------- Verwaltung ----------
   befehl_aufloesen(v, b) {
-    const e = this.eigeneEinheit(v, b.einheit);
+    const e = this.eigeneEinheit(v, b.einheit, true);
     const d = EINHEIT[e.typ];
     const gold = Math.floor((d.kosten.gold || 0) * AUFLOESEN_ERSTATTUNG);
     this.aendern(v.id);
@@ -532,6 +533,19 @@ export const einheiten = {
     return k;
   },
 
+  /**
+   * Dauer des Aufrüstens: 25 % länger als die schnellste Eigenproduktion der neuen Einheit in einer eigenen Stadt,
+   * damit Aufrüsten nie schneller ist als direkt neu zu bauen. Die Einheit ist währenddessen nicht einsatzbereit.
+   */
+  aufruestenDauerMs(e) {
+    const n = EINHEIT[EINHEIT[e.typ]?.upgrade];
+    if (!n) return null;
+    let best = Infinity;
+    for (const s of this.alleStaedte()) if (s.volk === e.volk) best = Math.min(best, this.bauDauerMs(s, 'einheit', n.id));
+    if (!Number.isFinite(best)) best = Math.max(30 * 1000, Math.round(n.kosten.zeit * 1000 / produktionTempo(n.zeitalter || 0)));
+    return Math.round(best * AUFRUESTEN_ZEIT_FAKTOR);
+  },
+
   befehl_aufruesten(v, b) {
     const e = this.eigeneEinheit(v, b.einheit);
     const d = EINHEIT[e.typ];
@@ -540,14 +554,31 @@ export const einheiten = {
     pruefe(this.freigeschaltet(v, 'einheit', d.upgrade), `Für ${EINHEIT[d.upgrade].name} fehlt die Forschung "${this.forschungsName(FREIGESCHALTET_DURCH['einheit:' + d.upgrade])}".`);
     pruefe(this.besitzer(e.feld) === v.id, 'Aufrüsten geht nur im eigenen Gebiet.');
     pruefe(!e.pfad?.length, 'Die Einheit ist unterwegs.');
+    pruefe(!e.arbeit && !e.route, 'Die Einheit ist beschäftigt.');
     const k = this.aufruestenKosten(e);
     this.bezahle(v, k);
     this.hpAbrechnen(e);
-    e.typ = d.upgrade;
+    e.angriff = null; e.nach_arbeit = null;
+    if (e.modus === 'erkunden' || e.modus === 'auto_arbeit') e.modus = 'wach';
+    const dauer = this.aufruestenDauerMs(e);
+    e.umruestung = { zu: d.upgrade, fertig_um: this.t + dauer };
+    this.markiere('e' + e.id);
+    this.meldung(v.id, `${d.name} wird zu ${EINHEIT[d.upgrade].name} aufgerüstet (dauert ${Math.ceil(dauer / MIN)} min, bis dahin nicht einsatzbereit).`, { feld: e.feld });
+    return { fertig_um: e.umruestung.fertig_um };
+  },
+
+  umruestungFertig(id) {
+    const e = this.z.einheiten[id];
+    if (!e?.umruestung) return;
+    const alt = EINHEIT[e.typ], neu = EINHEIT[e.umruestung.zu];
+    delete e.umruestung;
+    if (!neu) return;
+    this.hpAbrechnen(e);
+    e.typ = neu.id;
     e.hp = Math.max(e.hp, 50);
     this.markiere('e' + e.id);
-    this.meldung(v.id, `${d.name} wurde zu ${EINHEIT[e.typ].name} aufgerüstet.`, { feld: e.feld });
-    delete this._raten[v.id];
+    this.meldung(e.volk, `${alt.name} wurde zu ${neu.name} aufgerüstet.`, { art: 'einheit', feld: e.feld });
+    delete this._raten[e.volk];
   },
 
   // ---------- Erfahrung und Beförderungen (wie Civ 6) ----------
