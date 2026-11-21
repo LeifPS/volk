@@ -153,3 +153,12 @@ test('Aufrüsten dauert länger als der Neubau, Einheit ist solange gebunden, be
   assert.equal(e.umruestung, undefined);
   assert.equal(e.ep, 7);
 });
+
+test('Aufrüsten-Angebot erscheint erst, wenn die nächste Einheit erforscht ist', async () => {
+  const { FORSCHUNGEN } = await import('../public/shared/daten/index.js');
+  const { s, A, e } = einheit();
+  assert.equal(s.einheitAnsicht(e, true).aufruesten, undefined);
+  s.aendern(A.v.id);
+  for (const f of FORSCHUNGEN) A.v.forschung.erforscht[f.id] = 1;
+  assert.ok(s.einheitAnsicht(e, true).aufruesten);
+});

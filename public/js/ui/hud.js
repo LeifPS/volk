@@ -3,7 +3,7 @@ import { el, symbol, toast, fehler, zahl, vorzeichen, dauerText, uhrzeit, balken
 import { T } from '../texte.js';
 import { Z, an, du, volk, einheit, stadt, feldInfo, eigeneEinheiten, eigeneStaedte, aktuellesFeld, aktuelleHp, aktuellesGold, aktuellesLager, forschungsFortschritt, serverJetzt, stadtAuf, einheitenAuf, besitzerVon, erkundet } from '../kern/zustand.js';
 import { befehl, frage } from '../kern/netz.js';
-import { EINHEIT, GEB, FORSCHUNG, VERBESSERUNG, BEFOERDERUNG, BEFOERDERUNGEN, BAUM, ROHSTOFF } from '../../shared/daten/index.js';
+import { EINHEIT, GEB, FORSCHUNG, FREIGESCHALTET_DURCH, VERBESSERUNG, BEFOERDERUNG, BEFOERDERUNGEN, BAUM, ROHSTOFF } from '../../shared/daten/index.js';
 import { GELAENDE } from '../../shared/daten/gelaende.js';
 import { LAGER_NAMEN } from '../../shared/daten/rohstoffe.js';
 import { ZEITALTER } from '../../shared/daten/zeitalter.js';
@@ -231,7 +231,8 @@ function einheitAktionen(e) {
     k.push(aktKnopf(e.modus === 'schlafen' ? 'tag' : 'schlafen', e.modus === 'schlafen' ? B.wach : B.schlafen, () => ausfuehren({ art: 'modus', einheit: e.id, modus: e.modus === 'schlafen' ? 'wach' : 'schlafen' }), { tip: BT.schlafen }));
   }
   if (e.befoerderbar) k.push(aktKnopf('befoerderung', B.befoerdern, () => befoerderungWaehlen(e), { gold: true }));
-  if (e.aufruesten) k.push(aktKnopf('aufruesten', B.aufruesten + ' (' + Object.entries(e.aufruesten).map(([g, n]) => n + ' ' + (LAGER_NAMEN[g] || g)).join(', ') + (e.aufruesten_dauer ? ', ' + dauerText(e.aufruesten_dauer) : '') + ')', () => ausfuehren({ art: 'aufruesten', einheit: e.id }), { tip: BT.aufruesten }));
+  const hat = (art, id) => { const f = FREIGESCHALTET_DURCH[art + ':' + id]; return !f || !!du().forschung.erforscht[f]; };
+  if (e.aufruesten && d.upgrade && hat('option', 'aufruesten') && hat('einheit', d.upgrade)) k.push(aktKnopf('aufruesten', B.aufruesten + ' (' + Object.entries(e.aufruesten).map(([g, n]) => n + ' ' + (LAGER_NAMEN[g] || g)).join(', ') + (e.aufruesten_dauer ? ', ' + dauerText(e.aufruesten_dauer) : '') + ')', () => ausfuehren({ art: 'aufruesten', einheit: e.id }), { tip: BT.aufruesten }));
   k.push(aktKnopf('aufloesen', B.aufloesen, async () => { if (await frageJaNein('Einheit auflösen?', `${d.name} wird aufgelöst. Du bekommst einen kleinen Teil des Goldes zurück.`, 'Auflösen')) ausfuehren({ art: 'aufloesen', einheit: e.id }); }, { tip: BT.aufloesen }));
   aktionenEl.replaceChildren(...k);
 }
