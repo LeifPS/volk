@@ -7,6 +7,7 @@ import { ROHSTOFFE } from '../../shared/daten/rohstoffe.js';
 import { EINHEIT, VERBESSERUNG } from '../../shared/daten/index.js';
 import { hash01 } from '../../shared/zufall.js';
 import { sprite, hatSprite } from '../grafik/sprites.js';
+import { zeichneWege } from './wege.js';
 import { R, FELD_B, ZEILE_H, WELT_B, WELT_H, chunkCanvas, CHUNK_GROESSE, feldUnter } from './gelaende.js';
 import { Z, erkundet, aktuellesFeld, aktuelleHp, serverJetzt, volk, stadt, feldInfo, an } from '../kern/zustand.js';
 
@@ -146,13 +147,8 @@ function zeichne(t) {
   const forscht = a.du?.forschung?.erforscht || {};
   const za = a.du?.zeitalter || 0;
   const anim = Math.floor(t / 600);
-  // 2) Wege (unter allem)
-  for (let z = b.z0; z <= b.z1; z++) for (let sp = b.s0; sp <= b.s1; sp++) {
-    const i = idx(sp, z);
-    const f = a.felder[i];
-    if (!f || !f.w || !erkundet(i)) continue;
-    zeichneWeg(i, f, s);
-  }
+  // 2) Wege (unter allem), pixelgenau mit Kurven
+  zeichneWege(ctx, b, weltZuSchirm);
   // 3) Grenzen
   zeichneGrenzen(b, s);
   // 4) zeilenweise: Verbesserungen, Deko, Rohstoffe, Städte, Einheiten
@@ -229,26 +225,6 @@ function male(bild, x, y, s, alpha = 1) {
 export function volkFarbe(vid) { return volk(vid)?.farbe || '#888888'; }
 
 // ---------- Wege ----------
-const WEG_FARBE = { pfad: ['#9c7a4a', '#b8935c'], strasse: ['#8c8478', '#aaa294'], pflasterstrasse: ['#7d7a74', '#a9a59c'], eisenbahn: ['#4a3a2a', '#9aa5b1'], autobahn: ['#3a3d42', '#e8d36a'] };
-function zeichneWeg(i, f, s) {
-  const [mx, my] = feldMitte(i, R);
-  const [x, y] = weltZuSchirm(mx, my);
-  const [c1, c2] = WEG_FARBE[f.w] || WEG_FARBE.pfad;
-  let verbunden = false;
-  for (let r = 0; r < 6; r++) {
-    const n = nachbar(i, r); if (n < 0) continue;
-    const fn = Z.ansicht.felder[n];
-    if (!((fn && fn.w) || stadtAufFeld(n))) continue;
-    verbunden = true;
-    const [nx, ny] = feldMitte(n, R);
-    const [x2, y2] = weltZuSchirm((mx + nx) / 2, (my + ny) / 2);
-    dickeLinie(x, y, x2, y2, Math.max(2, Math.round(4 * s)), c1);
-    if (f.w === 'eisenbahn') { dickeLinie(x, y, x2, y2, Math.max(1, Math.round(1 * s)), c2); }
-    else dickeLinie(x, y, x2, y2, Math.max(1, Math.round(2 * s)), c2);
-  }
-  if (!verbunden) { ctx.fillStyle = c1; ctx.fillRect(Math.round(x - 3 * s), Math.round(y - 2 * s), Math.round(6 * s), Math.round(4 * s)); }
-}
-function stadtAufFeld(i) { for (const st of Object.values(Z.ansicht.staedte)) if (st.feld === i) return st; return null; }
 function dickeLinie(x0, y0, x1, y1, w, farbe) { ctx.strokeStyle = farbe; ctx.lineWidth = w; ctx.lineCap = 'square'; ctx.beginPath(); ctx.moveTo(Math.round(x0), Math.round(y0)); ctx.lineTo(Math.round(x1), Math.round(y1)); ctx.stroke(); }
 
 // ---------- Grenzen ----------
@@ -502,6 +478,48 @@ function zeichneEinheiten(liste, feld, s, t) {
 }
 
 // ---------- Overlay ----------
+/**
+ * Laufweg im Pixelstil: Punkte-Kette aus 2×2-Weltpixel-Quadraten im festen Abstand (mit dunklem Schatten) auf dem Pixelraster,
+ * die Kurven laufen weich durch die Feldmitten. Am Ziel steht ein Zielkreuz aus vier Eckwinkeln.
+ */
+function pixelWeg(punkte, farbe, puls, mitZiel) {
+  if (punkte.length < 2) return;
+  const s = skala();
+  // Kurve durch die Feldmitten: zwischen den Mittelpunkten der Teilstücke, Feldmitte als Kontrollpunkt (wie bei den Straßen)
+  const pfad = [];
+  const mitte = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  let start = punkte[0];
+  for (let k = 1; k < punkte.length; k++) {
+    const ende = k === punkte.length - 1 ? punkte[k] : mitte(punkte[k], punkte[k + 1]);
+    const kontroll = punkte[k];
+    const len = Math.hypot(kontroll[0] - start[0], kontroll[1] - start[1]) + Math.hypot(ende[0] - kontroll[0], ende[1] - kontroll[1]);
+    const n = Math.max(1, Math.ceil(len));
+    for (let q = (k === 1 ? 0 : 1); q <= n; q++) { const u = q / n, v = 1 - u; pfad.push([v * v * start[0] + 2 * v * u * kontroll[0] + u * u * ende[0], v * v * start[1] + 2 * v * u * kontroll[1] + u * u * ende[1]]); }
+    start = ende;
+  }
+  const quad = (wx, wy, c, dx = 0, dy = 0, g = 2) => { const [x, y] = weltZuSchirm(Math.floor(wx) + dx, Math.floor(wy) + dy); ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(g * s)), Math.max(1, Math.round(g * s))); };
+  let letzter = -99, lauf = 0, vor = pfad[0];
+  const punktListe = [];
+  for (const p of pfad) {
+    lauf += Math.hypot(p[0] - vor[0], p[1] - vor[1]); vor = p;
+    if (lauf - letzter >= 5) { letzter = lauf; punktListe.push(p); }
+  }
+  ctx.save();
+  for (const p of punktListe) quad(p[0], p[1], 'rgba(0,0,0,0.55)', 1, 1);
+  for (const p of punktListe) quad(p[0], p[1], farbe);
+  for (const p of punktListe) quad(p[0], p[1], 'rgba(255,255,255,0.55)', 0, 0, 1);
+  if (mitZiel) {
+    const [zx, zy] = punkte[punkte.length - 1];
+    const off = 7 + Math.round(puls * 1.5);
+    ctx.globalAlpha = 0.7 + 0.3 * puls;
+    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      for (let q = 0; q < 4; q++) { quad(zx + sx * off - (sx > 0 ? q : -q), zy * 1 + sy * off, 'rgba(0,0,0,0.55)', 1, 1, 1); quad(zx + sx * off, zy + sy * off - (sy > 0 ? q : -q) * 1, 'rgba(0,0,0,0.55)', 1, 1, 1); }
+      for (let q = 0; q < 4; q++) { quad(zx + sx * off - (sx > 0 ? q : -q), zy + sy * off, farbe, 0, 0, 1); quad(zx + sx * off, zy + sy * off - (sy > 0 ? q : -q), farbe, 0, 0, 1); }
+    }
+  }
+  ctx.restore();
+}
+
 function zeichneOverlay(s, t) {
   const puls = 0.55 + 0.45 * Math.sin(t / 250);
   if (overlay.reichweite) {
@@ -513,32 +531,18 @@ function zeichneOverlay(s, t) {
   }
   if (overlay.pfad && overlay.pfad.felder) {
     const pf = overlay.pfad;
-    ctx.fillStyle = pf.ok === false ? '#e0533d' : '#ffe066';
-    for (const i of pf.felder) { const [mx, my] = feldMitte(i, R); const [x, y] = weltZuSchirm(mx, my); ctx.fillRect(Math.round(x - 2 * s), Math.round(y - 2 * s), Math.round(4 * s), Math.round(4 * s)); }
+    const aus0 = Z.auswahl?.art === 'einheit' ? Z.ansicht.einheiten[Z.auswahl.id] : null;
+    const punkte = [];
+    if (aus0 && pf.ok !== false) punkte.push(einheitPosition(aus0, t));
+    for (const i of pf.felder) punkte.push(feldMitte(i, R));
+    pixelWeg(punkte, pf.ok === false ? '#e0533d' : '#ffe066', puls, pf.ok !== false);
   }
   // Verbleibender Weg der ausgewählten, laufenden Einheit
   const sel = Z.auswahl?.art === 'einheit' ? Z.ansicht.einheiten[Z.auswahl.id] : null;
   if (sel && sel.pfad && sel.pfad.length && !(overlay.pfad && overlay.pfad.felder)) {
     const jetzt = serverJetzt();
     const rest = sel.pfad.filter((p) => p.t > jetzt);
-    if (rest.length) {
-      const [px, py] = einheitPosition(sel, t);
-      const punkte = [weltZuSchirm(px, py), ...rest.map((p) => { const [mx, my] = feldMitte(p.f, R); return weltZuSchirm(mx, my); })];
-      ctx.save();
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = Math.max(3, 4 * s); ctx.setLineDash([Math.max(4, 7 * s), Math.max(4, 6 * s)]);
-      ctx.beginPath(); punkte.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke();
-      ctx.strokeStyle = '#ffe066'; ctx.lineWidth = Math.max(2, 2.5 * s);
-      ctx.beginPath(); punkte.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = '#ffe066';
-      for (let k = 1; k < punkte.length - 1; k++) ctx.fillRect(Math.round(punkte[k][0] - 2 * s), Math.round(punkte[k][1] - 2 * s), Math.round(4 * s), Math.round(4 * s));
-      const [zx, zy] = punkte[punkte.length - 1];
-      ctx.strokeStyle = `rgba(255,224,102,${puls})`; ctx.lineWidth = Math.max(2, 2 * s);
-      ctx.beginPath(); ctx.arc(zx, zy, Math.max(5, 8 * s), 0, Math.PI * 2); ctx.stroke();
-      ctx.restore();
-      schmutzig = true;
-    }
+    if (rest.length) { pixelWeg([einheitPosition(sel, t), ...rest.map((p) => feldMitte(p.f, R))], '#ffe066', puls, true); schmutzig = true; }
   }
   if (overlay.hover >= 0) {
     const [mx, my] = feldMitte(overlay.hover, R);
