@@ -450,7 +450,10 @@ function effektNoten(art) { // [verzögerung s, instrument, midi, dauer s, pegel
     case 'gruendung': return [[0, 'puls', 67, 0.09, 0.4], [0.1, 'puls', 72, 0.09, 0.4], [0.2, 'puls', 76, 0.09, 0.4], [0.3, 'floete', 79, 0.35, 0.55], [0.3, 'lyra', 67, 0.35, 0.4]];
     case 'warnung': return [[0, 'rund', 81, 0.1, 0.3], [0.13, 'rund', 77, 0.1, 0.3], [0.26, 'rund', 81, 0.1, 0.3], [0.39, 'rund', 77, 0.14, 0.3]];
     case 'fehler': return [[0, 'puls', 50, 0.07, 0.45], [0.09, 'puls', 46, 0.13, 0.45]];
-    case 'zeitalter': return [[0, 'puls', 60, 0.12, 0.4], [0.14, 'puls', 64, 0.12, 0.4], [0.28, 'puls', 67, 0.12, 0.4], [0.42, 'floete', 72, 0.9, 0.55], [0.42, 'lyra', 64, 0.9, 0.4], [0.42, 'bass', 48, 0.9, 0.6], ['@', 'trommel', 0.42, 0.6], [0.7, 'glocke', 84, 0.8, 0.3]];
+    case 'zeitalter': return [ // Trommelwirbel, dann ein großer Schlag mit Bläsern
+      ['@', 'trommel', 0, 0.35], ['@', 'trommel', 0.16, 0.4], ['@', 'trommel', 0.32, 0.45], ['@', 'trommel', 0.46, 0.55], ['@', 'trommel', 0.58, 0.6], ['@', 'trommel', 0.68, 0.7], ['@', 'trommel', 0.77, 0.8],
+      ['@', 'trommel', 0.9, 1.0], ['@', 'kick', 0.9, 0.9], ['@', 'tamb', 0.9, 0.3],
+      [0.9, 'floete', 67, 1.5, 0.55], [0.9, 'floete', 72, 1.5, 0.5], [0.9, 'lyra', 60, 1.5, 0.4], [0.9, 'bass', 48, 1.5, 0.6], [1.35, 'glocke', 84, 0.8, 0.3]];
     case 'sieg': return [[0, 'puls', 67, 0.1, 0.4], [0.12, 'puls', 67, 0.1, 0.4], [0.24, 'puls', 67, 0.1, 0.4], [0.36, 'floete', 72, 0.35, 0.55], [0.36, 'bass', 48, 0.35, 0.6], [0.72, 'puls', 70, 0.12, 0.4], [0.86, 'floete', 74, 0.12, 0.5], [1.0, 'floete', 79, 1.0, 0.6], [1.0, 'lyra', 67, 1.0, 0.45], [1.0, 'bass', 43, 1.0, 0.6], ['@', 'trommel', 1.0, 0.7], ['@', 'tamb', 1.0, 0.3]];
   }
   return null;

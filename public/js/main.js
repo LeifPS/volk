@@ -9,6 +9,7 @@ import './grafik/alle.js';
 import * as render from './karte/render.js';
 import * as eingabe from './eingabe.js';
 import * as hud from './ui/hud.js';
+import { starteZeitalterAnimation } from './ui/zeitalter.js';
 import * as F from './ui/fenster.js';
 import { tonStarten, ton, musikZeitalter, einstellungenSetzen } from './audio.js';
 
@@ -111,6 +112,7 @@ export function spielAufbauen(neu = false) {
   startWeg();
   Z.volk = Z.volk || du().id;
   hud.aufbauen();
+  starteZeitalterAnimation();
   eingabe.init(document.getElementById('karte'));
   einstellungenSetzen(du().einstellungen || {});
   musikZeitalter(du().zeitalter || 0);

@@ -142,7 +142,7 @@ export const forschung = {
       const schluessel = FORSCHUNGEN.find((f) => f.zeitalter === z + 1 && f.schluessel);
       if (erforscht / imZ.length >= 0.6 && schluessel && v.forschung.erforscht[schluessel.id]) {
         v.zeitalter = z + 1;
-        this.meldung(v.id, `Dein Volk tritt in ein neues Zeitalter ein: ${ZEITALTER[z + 1].name}! Städte, Straßen und Einheiten bekommen ein neues Aussehen.`, { art: 'zeitalter', wichtig: true });
+        this.meldung(v.id, `Dein Volk tritt in ein neues Zeitalter ein: ${ZEITALTER[z + 1].name}! Städte, Straßen und Einheiten bekommen ein neues Aussehen.`, { art: 'zeitalter', wichtig: true, zeitalter: z + 1 });
         this.markiere('v' + v.id);
         this.positionenNeu();
       } else return;

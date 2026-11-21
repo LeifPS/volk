@@ -44,7 +44,7 @@ export function aufbauen() {
   document.body.append(leiste, forschungsEl, auswahlEl, aktionenEl, miniEl, naechsteEl, el('div#meldungsleiste'));
   minikarteEingabe();
   an('aenderung', (x) => { aktualisieren(); if (!x.gruppen || x.gruppen.has('nebel') || x.gruppen.has('felder') || x.gruppen.has('staedte') || x.voll) minikarteZeichnen(); });
-  an('meldungen', (l) => { for (const m of l) { toast(m.text, m.art === 'warnung' || m.art === 'krieg' ? 'warnung' : 'info', { onclick: m.feld != null ? () => springe(m.feld) : null }); ton(m.art === 'forschung' ? 'forschung' : m.art === 'bau' ? 'bau' : m.art === 'kampf' || m.art === 'krieg' ? 'warnung' : m.art === 'stadt' ? 'gruendung' : 'meldung'); } });
+  an('meldungen', (l) => { for (const m of l) { toast(m.text, m.art === 'warnung' || m.art === 'krieg' ? 'warnung' : 'info', { onclick: m.feld != null ? () => springe(m.feld) : null }); if (m.art !== 'zeitalter') ton(m.art === 'forschung' ? 'forschung' : m.art === 'bau' ? 'bau' : m.art === 'kampf' || m.art === 'krieg' ? 'warnung' : m.art === 'stadt' ? 'gruendung' : 'meldung'); } });
   setInterval(() => { if (Z.ansicht) { leisteZeichnen(); forschungZeichnen(); if (Z.auswahl) auswahlZeichnen(false); } }, 1000);
   setInterval(() => { if (Z.ansicht) minikarteRahmen(); }, 300);
   minikarteZeichnen();

@@ -95,7 +95,7 @@ export class Spiel {
     const v = this.z.voelker[vid];
     if (!v || v.art !== 'spieler') return;
     v.meldungen = v.meldungen || [];
-    v.meldungen.push({ id: this.neueId(), t: this.t, text, art: o.art || 'info', feld: o.feld ?? null, wichtig: !!o.wichtig });
+    v.meldungen.push({ id: this.neueId(), t: this.t, text, art: o.art || 'info', feld: o.feld ?? null, wichtig: !!o.wichtig, ...(o.zeitalter != null ? { zeitalter: o.zeitalter } : {}) });
     if (v.meldungen.length > 120) v.meldungen.splice(0, v.meldungen.length - 120);
     this.markiere('v' + vid);
   }
