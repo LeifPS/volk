@@ -126,8 +126,8 @@ export function erwarteterSchaden(a, d) { return Math.round(KAMPF.basisSchaden *
 export function verwundungsMalus(hp) { return 0 - Math.floor((100 - Math.max(0, Math.min(100, hp))) / 10); }
 
 /** Stadt: Grundstärke und Lebenspunkte. */
-export function stadtGrundStaerke(zeitalter, bev) { return 14 + 9 * zeitalter + Math.min(10, Math.floor(bev / 3)); }
-export const STADT_GRUND_HP = 300;
+export function stadtGrundStaerke(zeitalter, bev) { return 12 + 8 * zeitalter + Math.min(10, Math.floor(bev / 3)); }
+export const STADT_GRUND_HP = 200;
 /** Heilung in HP pro Stunde (Grundwerte; die Engine multipliziert mit dem Wirtschaftstempo). */
 export const HEILUNG = { stadt: 35, eigen: 15, freund: 6, fremd: 0, stadtRegeneration: 60 };
 

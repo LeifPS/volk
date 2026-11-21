@@ -122,7 +122,7 @@ test('Stadt: viel LP, Eroberung durch Nahkampf -> gehört dem Eroberer, ist zers
   s.befehl(A.v.id, { art: 'krieg_erklaeren', volk: B.v.id });
   const st = B.stadt;
   st.bev = 8; st.gebaeude.kornspeicher = 1; st.gebaeude.schrein = 1;
-  assert.ok(s.stadtMaxHp(st) >= 300);
+  assert.ok(s.stadtMaxHp(st) >= 200);
   const feld = nachbarn(st.feld).find((n) => !GELAENDE[karte().gelaende[n]].wasser && !s.einheitenAuf(n).length);
   const a = s.einheitErzeugen(A.v.id, 'schwertkaempfer', feld);
   for (const u of s.einheitenAuf(st.feld)) s.einheitEntfernen(u.id);
