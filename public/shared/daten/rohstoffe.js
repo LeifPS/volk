@@ -56,11 +56,16 @@ export const ROHSTOFFE = [
   { id: 'bernstein', name: 'Bernstein', art: 'luxus', gelaende: ['wald', 'kueste', 'tundra'], dichte: 0.005, verbesserung: 'steinbruch', ertrag: { g: 2, k: 1 }, glueck: 1, zweck: 'Zufriedenheit und Kultur, Handelsware.' },
   { id: 'kristalle', name: 'Leuchtkristalle', art: 'luxus', gelaende: ['kristallgebirge'], dichte: 0.6, verbesserung: 'mine', ertrag: { g: 2, w: 2 }, glueck: 1, zweck: 'Zufriedenheit, Wissen und Gold. Nur in Kristallhöhlen-Gebirgen.' },
   { id: 'irrlichter', name: 'Irrlicht-Essenz', art: 'luxus', gelaende: ['irrlichtmoor'], dichte: 0.5, verbesserung: 'irrlichtschrein', ertrag: { k: 2, g: 1 }, glueck: 1, zweck: 'Zufriedenheit und viel Kultur. Nur in Mooren mit Irrlichtern.' },
+  // --- Ausbau (seit dem KI-Zeitalter): Zusatzschicht der Karte ---
+  // zusatzschicht: wird NICHT von der Grundkarte verteilt (deren Hash bleibt so gleich, die Live-Welt behält ihre Karte),
+  // sondern danach nur auf Feldern ohne Rohstoff (siehe karte.js, zusatzRohstoffe). Neue Rohstoffe immer hinten anhängen.
+  { id: 'seltene_erden', name: 'Seltene Erden', art: 'strategisch', gelaende: ['huegel', 'gebirge', 'kristallgebirge', 'wueste'], dichte: 0.022, zusatzschicht: true, verbesserung: 'mine', ertrag: { p: 2 }, liefert: { seltene_erden: 1 }, sichtbar_durch: 'lernende_maschinen', zweck: 'Roboter, Drohnen, KI-Gebäude und fast alles Spätere.' },
+  { id: 'deuterium', name: 'Deuterium', art: 'strategisch', gelaende: ['kueste', 'meer', 'tiefsee'], dichte: 0.008, zusatzschicht: true, verbesserung: 'deuterium', ertrag: { p: 1 }, liefert: { deuterium: 1 }, sichtbar_durch: 'kernfusion', zweck: 'Brennstoff für Fusionsreaktoren, Plasmawaffen und Raumschiffe.' },
 ];
 
 export const ROHSTOFF_NACH_ID = Object.assign(Object.create(null), Object.fromEntries(ROHSTOFFE.map((r, i) => [r.id, { ...r, nr: i }])));
 export const ROHSTOFF_NR = Object.fromEntries(ROHSTOFFE.map((r, i) => [r.id, i]));
 
 /** Lagerbare Güter des Reichslagers (außer Gold). */
-export const LAGERGUETER = ['holz', 'stein', 'marmor', 'salz', 'lehm', 'kupfer', 'zinn', 'eisen', 'pferde', 'salpeter', 'kohle', 'oel', 'aluminium', 'uran', 'elefanten'];
-export const LAGER_NAMEN = { gold: 'Gold', holz: 'Holz', stein: 'Stein', marmor: 'Marmor', salz: 'Salz', lehm: 'Lehm', kupfer: 'Kupfer', zinn: 'Zinn', eisen: 'Eisen', pferde: 'Pferde', salpeter: 'Salpeter', kohle: 'Kohle', oel: 'Öl', aluminium: 'Aluminium', uran: 'Uran', elefanten: 'Elefanten' };
+export const LAGERGUETER = ['holz', 'stein', 'marmor', 'salz', 'lehm', 'kupfer', 'zinn', 'eisen', 'pferde', 'salpeter', 'kohle', 'oel', 'aluminium', 'uran', 'elefanten', 'seltene_erden', 'deuterium', 'titan', 'helium3', 'antimaterie'];
+export const LAGER_NAMEN = { gold: 'Gold', holz: 'Holz', stein: 'Stein', marmor: 'Marmor', salz: 'Salz', lehm: 'Lehm', kupfer: 'Kupfer', zinn: 'Zinn', eisen: 'Eisen', pferde: 'Pferde', salpeter: 'Salpeter', kohle: 'Kohle', oel: 'Öl', aluminium: 'Aluminium', uran: 'Uran', elefanten: 'Elefanten', seltene_erden: 'Seltene Erden', deuterium: 'Deuterium', titan: 'Titan', helium3: 'Helium-3', antimaterie: 'Antimaterie' };

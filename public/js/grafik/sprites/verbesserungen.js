@@ -243,6 +243,47 @@ def('industriemine', (p) => {
   });
 });
 
+// KI-Zeitalter: automatisierte Mine mit Roboterarm und fahrerloser Lore
+def('robotermine', (p) => {
+  fleck(p, 24, 27, 20, 3, '#5e6266');
+  obj(p, (q) => {
+    felsen(q, 12, 27, 11, 8, '#8a857a');
+    // schimmernde Erzadern im Fels
+    q.px(6, 20, '#c070ff').px(9, 17, '#4ad8ff').px(15, 22, '#ff7aa8').px(12, 15, '#7af07a').px(17, 18, '#4ad8ff');
+  });
+  obj(p, (q) => {
+    // Stollen mit Leuchtrahmen
+    q.rect(9, 21, 6, 6, '#1a1e26');
+    q.rect(8, 20, 8, 1, '#dfe6ea').rect(8, 21, 1, 6, '#dfe6ea').rect(15, 21, 1, 6, '#8a96a2');
+    q.px(11, 20, '#5b8cff').px(12, 20, '#5b8cff');
+  });
+  obj(p, (q) => {
+    // weiße Steuerhalle mit Glasband und Solardach
+    q.rect(29, 14, 15, 13, '#dfe6ea').rect(29, 14, 15, 1, '#f4f8fa').rect(41, 14, 3, 13, '#aab4bc');
+    q.rect(30, 17, 11, 2, '#7ec4f0').rect(30, 17, 11, 1, '#b8e4ff');
+    q.rect(32, 22, 6, 5, '#3a4250').rect(32, 22, 6, 1, '#5b8cff');
+    for (let x = 29; x < 44; x += 3) q.rect(x, 12, 2, 2, '#1f2f6a').px(x, 12, '#4c6ad6');
+    q.rect(42, 8, 1, 4, '#8a96a2').px(42, 7, '#5b8cff');
+  });
+  obj(p, (q) => {
+    // Roboterarm (Industrieorange) auf Drehsockel, greift über der Lore
+    q.rect(17, 25, 6, 3, '#4a505a').rect(17, 25, 6, 1, '#6a7280').px(19, 26, '#5b8cff');
+    q.rect(19, 23, 2, 2, '#3a3e46');
+    q.linie(19, 22, 17, 14, '#f0a020').linie(20, 22, 18, 14, '#f0a020').linie(21, 22, 19, 14, '#c87a10');
+    q.kreis(18, 13, 1.6, '#3a3e46'); q.px(17, 12, '#8a96a2');
+    q.linie(19, 12, 27, 16, '#f0a020').linie(19, 13, 27, 17, '#f0a020').linie(19, 14, 27, 18, '#c87a10');
+    q.kreis(28, 17, 1.2, '#3a3e46');
+    q.rect(28, 18, 1, 2, '#8a96a2'); q.px(27, 20, '#8a96a2').px(29, 20, '#8a96a2').px(28, 21, '#c070ff');
+  });
+  schienen(p, 20, 46, 29);
+  obj(p, (q) => {
+    // fahrerlose Lore mit Erz
+    lore(q, 25, 29, '#5a6a80');
+    q.px(26, 24, '#c070ff').px(28, 24, '#4ad8ff').px(27, 24, '#7af07a');
+    q.px(30, 26, '#5b8cff');
+  });
+});
+
 // ---------- Steinbruch ----------
 function bruchwand(q, x, yb, b, stufen, c) {
   for (let s = 0; s < stufen; s++) {
@@ -455,6 +496,39 @@ def('oelplattform', (p) => {
     q.linie(40, 15, 45, 9, '#6b7682');
   });
   obj(p, (q) => { q.px(45, 6, '#ffde7a').rect(44, 7, 3, 2, '#f39c12').px(45, 8, '#ffde7a').px(46, 5, '#f39c12'); });
+});
+// Fusionszeitalter: Anlage, die Deuterium aus dem Meerwasser gewinnt
+def('deuteriumfabrik', (p) => {
+  wellen(p, [[2, 28, 9], [36, 29, 10], [18, 30, 8]]);
+  obj(p, (q) => {
+    // Stelzen und Plattform
+    for (const x of [8, 16, 30, 38]) { q.rect(x, 20, 2, 9, '#9aa5b1'); q.px(x, 20, '#c8d0d8'); q.rect(x, 26, 2, 1, '#f2a33a'); }
+    q.rect(5, 17, 38, 4, '#c8d0d8').rect(5, 17, 38, 1, '#eef2f4').rect(5, 20, 38, 1, '#6b7682');
+    for (let x = 6; x < 43; x += 4) q.px(x, 19, '#7af0ff');
+  });
+  obj(p, (q) => {
+    // Kugeltanks mit Leuchtband
+    for (const [cx, r] of [[12, 5], [23, 4]]) {
+      q.kreis(cx, 16 - r, r, '#e8eef2');
+      q.ellipse(cx + 1, 17 - r, r - 1, r - 1, '#c4ced6');
+      q.ellipse(cx - 1, 15 - r, r - 2, r - 2, '#f6fafc');
+      q.rect(cx - r, 16 - r, 2 * r + 1, 1, '#4aa8ff'); q.px(cx - r + 1, 16 - r, '#b8f4ff').px(cx, 16 - r, '#b8f4ff');
+      q.px(cx - 2, 13 - r * 2 + 3, '#ffffff');
+    }
+  });
+  obj(p, (q) => {
+    // Trennturm mit Lichtbändern
+    q.rect(31, 4, 7, 13, '#eef2f4').rect(31, 4, 1, 13, '#ffffff').rect(36, 4, 2, 13, '#b4bec8');
+    q.ellipse(34, 4, 3, 1, '#ffffff');
+    for (const y of [7, 11, 15]) { q.rect(31, y, 7, 1, '#4aa8ff'); q.px(32, y, '#b8f4ff').px(33, y, '#7af0ff'); q.px(37, y, '#2a6ac0'); }
+    q.rect(34, 1, 1, 3, '#9aa5b1'); q.px(34, 0, '#7af0ff');
+  });
+  obj(p, (q) => {
+    // Ansaugrohr ins Meer
+    q.rect(41, 18, 3, 2, '#9aa5b1'); q.rect(43, 20, 2, 9, '#9aa5b1'); q.rect(43, 20, 1, 9, '#c8d0d8');
+    q.rect(42, 27, 4, 1, '#6b7682');
+  });
+  p.rect(41, 29, 6, 1, '#bfe2ff');
 });
 def('aquakultur', (p) => {
   wellen(p, [[2, 13, 6], [40, 28, 6]]);
@@ -787,6 +861,40 @@ def('radarstation', (p) => {
   obj(p, (q) => { q.rect(32, 20, 11, 7, '#c8ccce').rect(32, 20, 11, 1, '#e4e8ea').rect(40, 20, 3, 7, PAL.betonD).rect(34, 22, 2, 2, PAL.glas).rect(37, 23, 2, 4, '#3a3a40'); fahne(q, 42, 19, 8); });
   obj(p, (q) => { q.rect(6, 23, 8, 5, PAL.tarn).rect(6, 23, 8, 1, '#8a9a5a').rect(8, 25, 3, 3, '#3a3a40'); });
 });
+/** Kleine Quadrocopter-Drohne (7x3) mit blauem Licht. */
+function drohne(q, x, y) {
+  q.px(x - 3, y, '#dfe8f0').px(x - 2, y, '#dfe8f0').px(x + 2, y, '#dfe8f0').px(x + 3, y, '#dfe8f0');
+  q.rect(x - 2, y + 1, 5, 1, '#3a4458'); q.rect(x - 1, y, 3, 1, '#3a4458'); q.px(x, y + 1, '#6a7a90');
+  q.px(x, y + 2, '#5b8cff');
+}
+// KI-Zeitalter: Turm mit Drohnen-Landeplattform
+def('drohnenwarte', (p) => {
+  fleck(p, 24, 26, 17, 4, '#6a6e66');
+  obj(p, (q) => {
+    // schlanker Turm
+    q.poly([[20, 28], [28, 28], [26, 11], [22, 11]], '#dfe6ea');
+    q.poly([[25, 28], [28, 28], [26, 11], [25, 11]], '#aab4bc');
+    q.rect(21, 28, 7, 1, '#8a96a2');
+    for (const y of [15, 19, 23]) { q.rect(23, y, 2, 1, '#7ec4f0'); q.px(25, y, '#4a86c8'); }
+    q.rect(22, 25, 3, 3, '#3a4250');
+    // Landeplattform mit Markierung
+    q.ellipse(24, 10, 11, 2.5, '#6b7682');
+    q.ellipse(24, 9, 11, 2, '#c8d0d8');
+    q.rect(14, 9, 21, 1, '#dfe6ea');
+    q.ellipse(24, 9, 4, 1, '#f1c40f'); q.ellipse(24, 9, 3, 0.5, '#c8d0d8'); q.px(24, 9, '#f1c40f');
+    for (const x of [13, 35]) q.px(x, 10, '#5b8cff');
+  });
+  obj(p, (q) => drohne(q, 24, 5));
+  obj(p, (q) => drohne(q, 8, 7));
+  obj(p, (q) => drohne(q, 40, 3));
+  obj(p, (q) => {
+    // Sensorkuppel und Ladestation
+    q.rect(33, 21, 9, 7, '#dfe6ea').rect(33, 21, 9, 1, '#f4f8fa').rect(39, 21, 3, 7, '#aab4bc');
+    q.ellipse(37, 20, 3, 2.5, '#eef2f4'); q.px(36, 18, '#ffffff'); q.px(37, 17, '#5b8cff');
+    q.rect(34, 24, 3, 2, '#7ec4f0');
+  });
+  obj(p, (q) => fahne(q, 10, 27, 10));
+});
 def('leuchtturm_feld', (p) => {
   obj(p, (q) => {
     felsen(q, 24, 29, 15, 4, '#7a756c');
@@ -862,4 +970,14 @@ weg('autobahn', (p) => {
   p.linie(2, 14, 6, 1, "#f4f1ea").linie(14, 14, 10, 1, '#f4f1ea');
   for (let y = 2; y < 14; y += 4) p.rect(8, y, 1, 2, '#f1c40f');
   p.px(4, 9, '#5a6068').px(12, 6, '#5a6068');
+});
+weg('magnetbahn', (p) => {
+  // schlanker weißer Fahrweg ohne Schwellen und Räder, leuchtendes Magnetband in der Mitte
+  p.poly([[3, 14], [7, 1], [9, 1], [13, 14]], '#dfe6ee');
+  p.linie(3, 14, 7, 1, '#8a96a8').linie(13, 14, 9, 1, '#6a768a');
+  p.linie(5, 14, 8, 1, '#f6fafc');
+  p.linie(8, 14, 8, 1, '#4fd0f0');
+  for (let y = 2; y < 14; y += 3) p.px(8, y, '#e0fcff');
+  p.linie(10, 14, 8, 2, '#b4bed0');
+  p.px(2, 14, '#5b8cff').px(14, 14, '#5b8cff');
 });

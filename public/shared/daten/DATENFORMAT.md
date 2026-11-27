@@ -6,11 +6,14 @@ Alle Texte deutsch, mit Umlauten. IDs: nur `a-z0-9_`, eindeutig innerhalb ihrer 
 Zeiten immer in **Sekunden** (Grundwerte, ohne Beschleunigung). Erträge sind Grundwerte "pro Stunde"
 (die Engine multipliziert mit `ERTRAG_FAKTOR`). Gold-Unterhalt in Gold pro Stunde.
 
-## Zeitalter (`zeitalter.js`, Index 0..6)
-`antike, klassik, mittelalter, renaissance, industrie, moderne, atom`
+## Zeitalter (`zeitalter.js`, Index 0..10)
+`antike, klassik, mittelalter, renaissance, industrie, moderne, atom, ki, fusion, weltraum, sterne` (7 bis 10 seit dem Ausbau, Endgame)
 
 ## Lagergüter (Reichslager, Schlüssel in `kosten`)
-`gold, holz, stein, marmor, salz, lehm, kupfer, zinn, eisen, pferde, salpeter, kohle, oel, aluminium, uran, elefanten`
+`gold, holz, stein, marmor, salz, lehm, kupfer, zinn, eisen, pferde, salpeter, kohle, oel, aluminium, uran, elefanten`,
+seit dem Ausbau zusätzlich `seltene_erden, deuterium, titan, helium3, antimaterie` (Titan, Helium-3 und Antimaterie gibt es nur aus dem All bzw. aus Fabriken).
+
+**Neue Rohstoffe der Karte** werden immer **hinten** an `ROHSTOFFE` angehängt und tragen `zusatzschicht: true`: Die Grundkarte (und ihr Hash) bleibt dadurch bitgleich, die Live-Welt behält ihre Karte.
 
 ## Gelände-IDs (`gelaende.js`)
 grasland, ebene, wald, dschungel, savanne, huegel, gebirge, wueste, tundra, schnee, sumpf, kueste, meer, tiefsee, see,
@@ -57,7 +60,7 @@ kohle: `kohleabbau`, oel: `erdoelfoerderung`, aluminium: `elektrizitaet`, uran: 
 `kein_gegenschaden` (nur für Fernkämpfer üblich), `tiefsee` (darf Tiefsee befahren), `gelaende_ignorieren` (alle Felder kosten 1).
 
 Pflicht-Einheiten mit genau diesen IDs: `siedler`, `arbeiter`, `spaeher`, `krieger`, `karawane`, `handelsschiff`,
-`atomwaffe`, `fregatte`, `galeone`, `zerstoerer`, `u_boot`, `kreuzer`. Mindestens **72** Einheiten, gut verteilt auf alle 7 Zeitalter
+`atomwaffe`, `fregatte`, `galeone`, `zerstoerer`, `u_boot`, `kreuzer`. Mindestens **72** Einheiten, gut verteilt auf alle Zeitalter
 und alle Klassen (Land/See/Luft/Zivil). Spielerfahrung: wenige, wirkungsvolle Einheiten; Werte Civ-5/6-artig
 (Krieger 20, Speerträger 25, Schwertkämpfer 36, Ritter 48, Musketier 55, Gewehrschütze 70, Infanterie 80, Panzer 90, Moderner Kampfpanzer 110 ...).
 

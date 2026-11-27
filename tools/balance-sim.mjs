@@ -13,8 +13,10 @@ const TAGE = +(process.argv[2] || 32);
 const still = process.argv.includes('--still');
 const STD = 3600e3, TAG = 24 * STD;
 // Effektive Tage je Zeitalter (Tempo-Update 2026-11-17: alles schneller, nur gegen Ende langsamer).
-// Atomzeit: 2,5 Tage gemessen nach dem Tempo-Update (der alte Zielwert 7,7 war nicht nachgezogen worden).
-const ZIEL_TAGE = [0.3, 0.9, 1.1, 1.5, 3, 6.7, 2.5];
+// Atomzeit: gilt seit dem Ausbau bis zum Eintritt ins KI-Zeitalter (vorher bis zum Ende des Baums).
+// Neue Zeitalter (Endgame, Leifs Vorgabe: zusammen etwa 3 bis 5 Wochen für einen guten Spieler): KI, Fusion, Weltraum, Sterne.
+const ZIEL_TAGE = [0.3, 0.9, 1.1, 1.5, 3, 6.7, 6, 6, 7, 8, 9];
+const NZ = ZEITALTER.length;
 
 const s = new Spiel(leererZustand(uhr.jetzt()));
 s.t = uhr.jetzt();
@@ -35,10 +37,10 @@ for (let h = 1; h <= TAGE * 24; h++) {
   const unterhalt = r.unterhalt.einheiten + r.unterhalt.gebaeude;
   if (h > 24) { minGold = Math.min(minGold, v.gold); maxUnterhaltAnteil = Math.max(maxUnterhaltAnteil, unterhalt / Math.max(1, r.einnahmen)); }
   if (h % 24 === 0) protokoll.push({ tag: h / 24, zeitalter: ZEITALTER[z].name, forschungen: s.forschungsAnzahl(v), wissenschaft: Math.round(r.wissenschaft), staedte: s.staedteVon(v.id).length, bev: s.staedteVon(v.id).reduce((a, x) => a + x.bev, 0), gold: Math.round(v.gold), netto: Math.round(r.gold), unterhalt: Math.round(unterhalt), einheiten: s.einheitenVon(v.id).length });
-  if (s.forschungsAnzahl(v) >= FORSCHUNGEN.filter((f) => !f.wiederholbar).length && zeitalterAb.length === 7) { if (!protokoll.fertig) protokoll.fertig = h / 24; }
+  if (s.forschungsAnzahl(v) >= FORSCHUNGEN.filter((f) => !f.wiederholbar).length && zeitalterAb.length === NZ) { if (!protokoll.fertig) protokoll.fertig = h / 24; }
 }
 const ergebnisse = [];
-for (let z = 0; z < 7; z++) {
+for (let z = 0; z < NZ; z++) {
   const von = zeitalterAb[z], bis = zeitalterAb[z + 1] ?? (protokoll.fertig || null);
   ergebnisse.push({ zeitalter: ZEITALTER[z].name, start_tag: von?.toFixed(1), dauer_tage: bis != null && von != null ? +(bis - von).toFixed(1) : null, ziel: ZIEL_TAGE[z] });
 }

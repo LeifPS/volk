@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 await import('../public/js/grafik/alle.js');
 const { hatSprite, pinselFuer, alleSprites } = await import('../public/js/grafik/sprites.js');
 const D = await import('../public/shared/daten/index.js');
+const { ZEITALTER } = D;
 
 test('Jede Einheit, jedes Gebäude, Wunder, jeder Rohstoff und jede Verbesserung hat ein Sprite', () => {
   const fehlt = [];
@@ -34,15 +35,15 @@ test('Alle in der Oberfläche benutzten UI-Symbole existieren', () => {
 test('Sprites sind nicht leer und nicht abgeschnitten; Zeitalter-Stufen der Städte unterscheiden sich', () => {
   const probleme = [];
   for (const s of alleSprites()) {
-    const zs = s.zeitalterVarianten ? [0, 1, 2, 3, 4, 5, 6] : [0];
+    const zs = s.zeitalterVarianten ? ZEITALTER.map((_, z) => z) : [0];
     for (const z of zs) {
       const p = pinselFuer(s.kategorie, s.id, { zeitalter: z, variante: 0, groesse: s.groessen || 1 });
       if (p.deckend() < 12) probleme.push(`${s.kategorie}:${s.id} fast leer`);
     }
   }
   assert.deepEqual(probleme, []);
-  const stadt = [0, 1, 2, 3, 4, 5, 6].map((z) => pinselFuer('stadt', 'stadt', { zeitalter: z, groesse: 2 }).feld.join(','));
-  assert.equal(new Set(stadt).size, 7, 'Städte je Zeitalter verschieden');
+  const stadt = ZEITALTER.map((_, z) => z).map((z) => pinselFuer('stadt', 'stadt', { zeitalter: z, groesse: 2 }).feld.join(','));
+  assert.equal(new Set(stadt).size, ZEITALTER.length, 'Städte je Zeitalter verschieden');
 });
 
 test('Keine zwei Einheiten sehen gleich aus', () => {

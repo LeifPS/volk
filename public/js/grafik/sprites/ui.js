@@ -39,7 +39,8 @@ function schwert(p, x0, y0, x1, y1, griff = PAL.leder, klinge = '#c8d0d8') {
 
 // ---------- Lagergüter ----------
 ico('gold', (p) => muenze(p, 8, 8, 6.4));
-for (const id of ['holz', 'stein', 'marmor', 'salz', 'lehm', 'kupfer', 'zinn', 'eisen', 'pferde', 'salpeter', 'kohle', 'oel', 'aluminium', 'uran', 'elefanten']) ico(id, (p) => FORM[id](p));
+for (const id of ['holz', 'stein', 'marmor', 'salz', 'lehm', 'kupfer', 'zinn', 'eisen', 'pferde', 'salpeter', 'kohle', 'oel', 'aluminium', 'uran', 'elefanten',
+  'seltene_erden', 'deuterium', 'titan', 'helium3', 'antimaterie']) ico(id, (p) => FORM[id](p));
 
 // ---------- Erträge ----------
 ico('nahrung', (p) => {

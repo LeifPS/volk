@@ -10,7 +10,7 @@ const {
 } = D;
 
 // ---------- Erlaubte Listen laut DATENFORMAT.md ----------
-const LAGERGUETER = ['gold', 'holz', 'stein', 'marmor', 'salz', 'lehm', 'kupfer', 'zinn', 'eisen', 'pferde', 'salpeter', 'kohle', 'oel', 'aluminium', 'uran', 'elefanten'];
+const LAGERGUETER = ['gold', 'holz', 'stein', 'marmor', 'salz', 'lehm', 'kupfer', 'zinn', 'eisen', 'pferde', 'salpeter', 'kohle', 'oel', 'aluminium', 'uran', 'elefanten', 'seltene_erden', 'deuterium', 'titan', 'helium3', 'antimaterie'];
 const KLASSEN = ['zivil', 'spaeher', 'haendler', 'nahkampf', 'fernkampf', 'reiter', 'belagerung', 'flak', 'sanitaeter', 'see_zivil', 'see_nah', 'see_fern', 'u_boot', 'traeger', 'transport', 'jaeger', 'bomber', 'rakete', 'atom'];
 const FAEHIGKEITEN = ['gruenden', 'arbeiten', 'see_arbeiten', 'handel', 'erkunden', 'transport', 'traeger', 'tarnung', 'abfangen', 'heilen', 'einmalig', 'flaechenschaden', 'belagerung', 'kein_gegenschaden', 'tiefsee', 'gelaende_ignorieren'];
 const GEGEN = [...KLASSEN, 'stadt', 'luft', 'see', 'land'];
@@ -24,7 +24,7 @@ const ZWEIGE = ['wirtschaft', 'militaer', 'see', 'wissen', 'staat', 'industrie',
 const FREI_ARTEN = ['einheit', 'gebaeude', 'wunder', 'verbesserung', 'rohstoff', 'option', 'bonus'];
 const PERSOENLICHKEITEN = ['haendler', 'forscher', 'bauer', 'krieger', 'seefahrer'];
 const SCHWERPUNKTE = ['handel', 'forschung', 'militaer', 'kultur', 'seefahrt', 'nahrung'];
-const STRATEGISCH_SICHTBAR = { kupfer: 'bergbau', zinn: 'bergbau', pferde: 'tierzucht', eisen: 'eisenverarbeitung', salpeter: 'schiesspulver', kohle: 'kohleabbau', oel: 'erdoelfoerderung', aluminium: 'elektrizitaet', uran: 'atomtheorie' };
+const STRATEGISCH_SICHTBAR = { kupfer: 'bergbau', zinn: 'bergbau', pferde: 'tierzucht', eisen: 'eisenverarbeitung', salpeter: 'schiesspulver', kohle: 'kohleabbau', oel: 'erdoelfoerderung', aluminium: 'elektrizitaet', uran: 'atomtheorie', seltene_erden: 'lernende_maschinen', deuterium: 'kernfusion' };
 const PFLICHT_EINHEITEN = ['siedler', 'arbeiter', 'spaeher', 'krieger', 'karawane', 'handelsschiff', 'atomwaffe', 'fregatte', 'galeone', 'zerstoerer', 'u_boot', 'kreuzer'];
 const PFLICHT_GEBAEUDE = ['palast', 'kornspeicher', 'bibliothek', 'campus', 'universitaet', 'forschungslabor', 'markt', 'bank', 'boerse', 'kaserne', 'stall', 'werft', 'hafen', 'schrein', 'tempel', 'theater', 'kolosseum', 'aquaedukt', 'werkstatt', 'manufaktur', 'fabrik', 'kraftwerk', 'flughafen', 'raketenbasis', 'krankenhaus', 'lager', 'depot', 'stadtmauer_holz', 'stadtmauer_stein', 'festungsmauer', 'betonbunker', 'wachturm', 'burgturm', 'flakstellung', 'grosshafen', 'containerhafen'];
 const PFLICHT_KETTEN = [['stadtmauer_holz', 'stadtmauer_stein', 'festungsmauer', 'betonbunker'], ['wachturm', 'burgturm', 'flakstellung'], ['hafen', 'grosshafen', 'containerhafen']];
@@ -32,10 +32,13 @@ const PFLICHT_KETTEN = [['stadtmauer_holz', 'stadtmauer_stein', 'festungsmauer',
 const STD = 3600;
 const TAG = 24 * STD;
 // Richtwerte Forschungsdauer je Zeitalter (Sekunden)
-const DAUER_BEREICH = [[3 * 60, STD], [STD, 3 * STD], [3 * STD, 8 * STD], [6 * STD, 16 * STD], [12 * STD, 30 * STD], [TAG, 3 * TAG], [2 * TAG, 4 * TAG]];
+// Neue Zeitalter (Endgame): KI ~3 Tage, Fusion ~3,5, Weltraum ~4, Sterne ~4,5 (Plan, Abschnitt 3); Zukunftstechnologien bis 5 Tage.
+const DAUER_BEREICH = [[3 * 60, STD], [STD, 3 * STD], [3 * STD, 8 * STD], [6 * STD, 16 * STD], [12 * STD, 30 * STD], [TAG, 3 * TAG], [2 * TAG, 4 * TAG], [2.5 * TAG, 3.5 * TAG], [3 * TAG, 4 * TAG], [3.5 * TAG, 4.5 * TAG], [4 * TAG, 5 * TAG]];
 // Bauzeit-Richtwerte Einheiten / Gebäude je Zeitalter (Sekunden)
-const EINHEIT_BAUZEIT = [[5 * 60, 30 * 60], [30 * 60, 90 * 60], [STD, 3 * STD], [2 * STD, 5 * STD], [4 * STD, 10 * STD], [8 * STD, 20 * STD], [16 * STD, 48 * STD]];
-const GEB_BAUZEIT = [[10 * 60, 45 * 60], [45 * 60, 2 * STD], [90 * 60, 4 * STD], [3 * STD, 7 * STD], [5 * STD, 12 * STD], [9 * STD, 20 * STD], [TAG, 2 * TAG]];
+const EINHEIT_BAUZEIT = [[5 * 60, 30 * 60], [30 * 60, 90 * 60], [STD, 3 * STD], [2 * STD, 5 * STD], [4 * STD, 10 * STD], [8 * STD, 20 * STD], [16 * STD, 48 * STD], [22 * STD, 56 * STD], [28 * STD, 66 * STD], [30 * STD, 80 * STD], [38 * STD, 96 * STD]];
+const GEB_BAUZEIT = [[10 * 60, 45 * 60], [45 * 60, 2 * STD], [90 * 60, 4 * STD], [3 * STD, 7 * STD], [5 * STD, 12 * STD], [9 * STD, 20 * STD], [TAG, 2 * TAG], [1.5 * TAG, 3 * TAG], [2 * TAG, 3.5 * TAG], [2.5 * TAG, 4.5 * TAG], [3 * TAG, 5.5 * TAG]];
+/** Zahl der Zeitalter (wächst mit dem Ausbau) und Index der Atomzeit. */
+const NZ = ZEITALTER.length, ATOM = 6;
 
 const ID_MUSTER = /^[a-z0-9_]+$/;
 const median = (a) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
@@ -91,7 +94,7 @@ test('Mindestanzahlen', () => {
   assert.ok(FORSCHUNGEN.length >= 225, `Forschungen: ${FORSCHUNGEN.length}`);
   assert.ok(EINHEITEN.length >= 72, `Einheiten: ${EINHEITEN.length}`);
   assert.ok(GEBAEUDE.length >= 64, `Gebäude: ${GEBAEUDE.length}`);
-  assert.equal(WUNDER.length, 8, 'genau 8 Wunder');
+  assert.equal(WUNDER.length, 8 + (NZ - 7), 'je neuem Zeitalter genau 1 Wunder dazu');
   assert.ok(BEFOERDERUNGEN.length >= 80, `Beförderungen: ${BEFOERDERUNGEN.length}`);
   assert.ok(ROHSTOFFE.length >= 35, `Rohstoffe: ${ROHSTOFFE.length}`);
   assert.ok(GELAENDE.length >= 16, `Gelände: ${GELAENDE.length}`);
@@ -100,7 +103,7 @@ test('Mindestanzahlen', () => {
   assert.equal(KI_VOELKER.length, 5);
   assert.equal(STADTSTAATEN.length, 12);
   assert.ok(BARBARENLAGER.length >= 5);
-  assert.equal(ZEITALTER.length, 7);
+  assert.ok(ZEITALTER.length >= 7 && ZEITALTER.length <= 11);
 });
 
 test('eindeutige IDs', () => {
@@ -140,10 +143,11 @@ test('Einheiten: Felder, Klassen, Fähigkeiten, Kosten, Querverweise', () => {
     const wo = `Einheit ${e.id}`;
     assert.ok(typeof e.name === 'string' && e.name.length > 1, `${wo}: name`);
     assert.ok(typeof e.beschreibung === 'string' && e.beschreibung.length >= 15, `${wo}: beschreibung`);
-    assert.ok(Number.isInteger(e.zeitalter) && e.zeitalter >= 0 && e.zeitalter <= 6, `${wo}: zeitalter`);
+    assert.ok(Number.isInteger(e.zeitalter) && e.zeitalter >= 0 && e.zeitalter < NZ, `${wo}: zeitalter`);
     assert.ok(KLASSEN.includes(e.klasse), `${wo}: Klasse "${e.klasse}"`);
     for (const k of ['staerke', 'fern', 'reichweite', 'tempo', 'sicht', 'unterhalt', 'abklingzeit']) assert.equal(typeof e[k], 'number', `${wo}: ${k}`);
-    assert.ok(e.unterhalt >= 0.5 && e.unterhalt <= 8, `${wo}: unterhalt ${e.unterhalt}`);
+    // Unterhalt bis 8, für Endgame-Einheiten (ab KI-Zeitalter) bis 12: sie sind stärker und das Reich reicher.
+    assert.ok(e.unterhalt >= 0.5 && e.unterhalt <= (e.zeitalter > ATOM ? 12 : 8), `${wo}: unterhalt ${e.unterhalt}`);
     assert.ok(Array.isArray(e.faehigkeiten) && Array.isArray(e.boni), `${wo}: faehigkeiten/boni`);
     for (const f of e.faehigkeiten) assert.ok(FAEHIGKEITEN.includes(f), `${wo}: Fähigkeit "${f}"`);
     for (const b of e.boni) {
@@ -176,7 +180,7 @@ test('Einheiten: Felder, Klassen, Fähigkeiten, Kosten, Querverweise', () => {
   }
   // Alle Klassen werden genutzt, alle Zeitalter haben Einheiten
   for (const k of KLASSEN) assert.ok(EINHEITEN.some((e) => e.klasse === k), `keine Einheit der Klasse ${k}`);
-  for (let z = 0; z < 7; z++) assert.ok(EINHEITEN.filter((e) => e.zeitalter === z).length >= 6, `zu wenige Einheiten im Zeitalter ${z}`);
+  for (let z = 0; z < NZ; z++) assert.ok(EINHEITEN.filter((e) => e.zeitalter === z).length >= 6, `zu wenige Einheiten im Zeitalter ${z}`);
   // Atomwaffe extrem teuer
   const a = EINHEIT.atomwaffe;
   assert.equal(a.klasse, 'atom');
@@ -246,10 +250,11 @@ test('Gebäude: Felder, Kosten, Wirkungen, Ketten', () => {
   for (const g of GEBAEUDE) {
     const wo = `Gebäude ${g.id}`;
     assert.ok(g.name && g.beschreibung && g.beschreibung.length >= 15, `${wo}: Texte`);
-    assert.ok(Number.isInteger(g.zeitalter) && g.zeitalter >= 0 && g.zeitalter <= 6, `${wo}: zeitalter`);
+    assert.ok(Number.isInteger(g.zeitalter) && g.zeitalter >= 0 && g.zeitalter < NZ, `${wo}: zeitalter`);
     assert.ok(GEB_KATEGORIEN.includes(g.kategorie), `${wo}: kategorie ${g.kategorie}`);
     pruefeKosten(g.kosten, wo);
-    assert.ok(g.unterhalt >= 0 && g.unterhalt <= 10, `${wo}: unterhalt`);
+    // Unterhalt bis 10, Endgame-Gebäude (ab KI-Zeitalter) bis 14.
+    assert.ok(g.unterhalt >= 0 && g.unterhalt <= (g.zeitalter > ATOM ? 14 : 10), `${wo}: unterhalt`);
     if (g.zeitalter === 0) assert.ok(g.unterhalt <= 0.5, `${wo}: frühes Gebäude zu teuer im Unterhalt`);
     pruefeGebWirkung(g.wirkung, wo);
     assert.ok(Array.isArray(g.benoetigt), `${wo}: benoetigt`);
@@ -276,25 +281,27 @@ test('Gebäude: Felder, Kosten, Wirkungen, Ketten', () => {
   const kettenStarts = GEBAEUDE.filter((g) => !g.ersetzt && ersetztVon[g.id]);
   assert.ok(kettenStarts.length >= 9, `nur ${kettenStarts.length} Upgrade-Ketten`);
   const mitBauplatz = GEBAEUDE.filter((g) => g.wirkung.bauplaetze);
-  assert.ok(mitBauplatz.length <= 2 && mitBauplatz.every((g) => g.zeitalter >= 5), 'bauplaetze nur bei 1-2 späten Gebäuden');
+  // Bauplätze nur in der Fabrik-Kette (Roboterfabrik und ihre Nachfolger, die sie ersetzen: also nie mehr als einer gleichzeitig)
+  for (const g of mitBauplatz) assert.ok(g.zeitalter >= 5 && (g.ersetzt || g.zeitalter === 5 || g.id === 'robotfabrik'), `${g.id}: bauplaetze`);
+  assert.ok(mitBauplatz.length <= 2 + (NZ - 7), 'bauplaetze nur bei wenigen späten Gebäuden');
 });
 
-test('Wunder: genau 8, je Zeitalter 1-2, Marmor, reich-Boni', () => {
-  const jeZeitalter = [0, 0, 0, 0, 0, 0, 0];
+test('Wunder: je Zeitalter 1-2, Marmor, reich-Boni', () => {
+  const jeZeitalter = new Array(NZ).fill(0);
   for (const w of WUNDER) {
     const wo = `Wunder ${w.id}`;
     jeZeitalter[w.zeitalter]++;
     assert.ok(w.name && w.beschreibung, `${wo}: Texte`);
     pruefeKosten(w.kosten, wo);
     assert.ok(w.kosten.marmor >= 10, `${wo}: zu wenig Marmor`);
-    assert.ok(w.kosten.zeit >= 5 * STD && w.kosten.zeit <= 4 * TAG, `${wo}: Bauzeit`);
+    assert.ok(w.kosten.zeit >= 5 * STD && w.kosten.zeit <= (w.zeitalter > ATOM ? 8 : 4) * TAG, `${wo}: Bauzeit`);
     assert.ok(Object.keys(w.reich).length > 0, `${wo}: kein reich-Bonus`);
     pruefeBonus(w.reich, wo);
     pruefeGebWirkung(w.wirkung, wo);
     for (const b of w.benoetigt || []) assert.ok(GEB[b], `${wo}: benoetigt ${b}`);
   }
-  for (let z = 0; z < 7; z++) assert.ok(jeZeitalter[z] >= 1 && jeZeitalter[z] <= 2, `Zeitalter ${z}: ${jeZeitalter[z]} Wunder`);
-  assert.equal(jeZeitalter[6], 1, 'Atomzeit genau 1 Wunder');
+  for (let z = 0; z < NZ; z++) assert.ok(jeZeitalter[z] >= 1 && jeZeitalter[z] <= 2, `Zeitalter ${z}: ${jeZeitalter[z]} Wunder`);
+  for (let z = ATOM; z < NZ; z++) assert.equal(jeZeitalter[z], 1, `Zeitalter ${z}: genau 1 Wunder`);
 });
 
 test('Rohstoffe: Zweck, Verbesserungsketten, Sichtbarkeit', () => {
@@ -320,7 +327,7 @@ test('Forschungen: Felder, Querverweise, Spalten, Zyklen, Erreichbarkeit', () =>
     assert.ok(f.name && typeof f.beschreibung === 'string' && f.beschreibung.length >= 10, `${wo}: Texte`);
     assert.ok(ZWEIGE.includes(f.zweig), `${wo}: zweig ${f.zweig}`);
     assert.ok(Number.isInteger(f.spalte) && f.spalte >= 0, `${wo}: spalte`);
-    assert.ok(Number.isInteger(f.zeitalter) && f.zeitalter >= 0 && f.zeitalter <= 6, `${wo}: zeitalter`);
+    assert.ok(Number.isInteger(f.zeitalter) && f.zeitalter >= 0 && f.zeitalter < NZ, `${wo}: zeitalter`);
     jeSpalte[f.spalte] = (jeSpalte[f.spalte] || 0) + 1;
     if (f.voraussetzungen.length === 0) {
       assert.equal(f.spalte, 0, `${wo}: Startforschung nicht in Spalte 0`);
@@ -340,7 +347,7 @@ test('Forschungen: Felder, Querverweise, Spalten, Zyklen, Erreichbarkeit', () =>
       else if (x.art === 'option') assert.ok(OPTIONEN.includes(x.id), `${wo}: Option ${x.id}`);
       else assert.ok(ziele[x.art][x.id], `${wo}: ${x.art} ${x.id} existiert nicht`);
     }
-    if (f.wiederholbar) assert.equal(f.zeitalter, 6, `${wo}: Zukunftstechnologie muss Zeitalter 6 haben`);
+    if (f.wiederholbar) assert.equal(f.zeitalter, NZ - 1, `${wo}: Zukunftstechnologie muss im letzten Zeitalter liegen`);
   }
   for (const [s, n] of Object.entries(jeSpalte)) assert.ok(n <= 9, `Spalte ${s}: ${n} Forschungen (max 9)`);
   // Spalten steigen mit den Zeitaltern
@@ -374,7 +381,7 @@ test('Forschungen: Felder, Querverweise, Spalten, Zyklen, Erreichbarkeit', () =>
 });
 
 test('Forschungen: Schlüssel, Dauern, Zeitalter-Umfang', () => {
-  for (let z = 1; z <= 6; z++) {
+  for (let z = 1; z < NZ; z++) {
     const s = FORSCHUNGEN.filter((f) => f.schluessel && f.zeitalter === z);
     assert.equal(s.length, 1, `Zeitalter ${z}: ${s.length} Schlüsselforschungen`);
     const ersteSpalte = Math.min(...FORSCHUNGEN.filter((f) => f.zeitalter === z).map((f) => f.spalte));
@@ -382,14 +389,16 @@ test('Forschungen: Schlüssel, Dauern, Zeitalter-Umfang', () => {
   }
   assert.equal(FORSCHUNGEN.filter((f) => f.schluessel && f.zeitalter === 0).length, 0);
   const mediane = [];
-  for (let z = 0; z < 7; z++) {
+  for (let z = 0; z < NZ; z++) {
     const liste = FORSCHUNGEN.filter((f) => f.zeitalter === z);
-    assert.ok(liste.length >= 25 && liste.length <= 42, `Zeitalter ${z}: ${liste.length} Forschungen`);
+    // Alte Zeitalter 25-42 Forschungen; die Endgame-Zeitalter 20-24 plus die 5 Zukunftstechnologien im letzten.
+    const [mi, ma] = z > ATOM ? [20, 24 + (z === NZ - 1 ? 5 : 0)] : [25, 42];
+    assert.ok(liste.length >= mi && liste.length <= ma, `Zeitalter ${z}: ${liste.length} Forschungen`);
     const [lo, hi] = DAUER_BEREICH[z];
     for (const f of liste) assert.ok(f.dauer >= lo && f.dauer <= hi, `Forschung ${f.id}: Dauer ${f.dauer}s außerhalb ${lo}-${hi}`);
     mediane.push(median(liste.map((f) => f.dauer)));
   }
-  for (let z = 1; z < 7; z++) assert.ok(mediane[z] > mediane[z - 1], `Median Zeitalter ${z} nicht größer als ${z - 1}`);
+  for (let z = 1; z < NZ; z++) assert.ok(mediane[z] > mediane[z - 1], `Median Zeitalter ${z} nicht größer als ${z - 1}`);
   // Dauer steigt mit der Spalte (nie fallend), Übergänge ohne großen Sprung
   const spalten = [...new Set(FORSCHUNGEN.map((f) => f.spalte))].sort((a, b) => a - b);
   const dauerVon = (s) => Math.max(...FORSCHUNGEN.filter((f) => f.spalte === s).map((f) => f.dauer));
@@ -398,12 +407,14 @@ test('Forschungen: Schlüssel, Dauern, Zeitalter-Umfang', () => {
     assert.ok(b >= a, `Dauer fällt von Spalte ${spalten[i - 1]} zu ${spalten[i]}`);
     if (spalten[i] > 1) assert.ok(b <= a * 1.6, `Dauersprung bei Spalte ${spalten[i]}`);
   }
-  // Atomwaffe ganz am Ende, hinter mehreren Atomzeit-Forschungen
+  // Atomwaffe am Ende der Atomzeit, hinter mehreren Atomzeit-Forschungen (seit dem Ausbau folgen weitere Zeitalter)
   const fa = FORSCHUNG[FREIGESCHALTET_DURCH['einheit:atomwaffe']];
   assert.ok(fa.freischaltet.some((x) => x.art === 'option' && x.id === 'atomschlag'), 'atomschlag bei der Atomwaffen-Forschung');
   const atomVorfahren = [...vorfahren(fa.id)].filter((id) => FORSCHUNG[id].zeitalter === 6 && id !== fa.id);
   assert.ok(atomVorfahren.length >= 5, 'Atomwaffe hinter mehreren Atomzeit-Forschungen');
-  assert.ok(fa.spalte >= Math.max(...FORSCHUNGEN.filter((f) => !f.wiederholbar).map((f) => f.spalte)));
+  assert.ok(fa.spalte >= Math.max(...FORSCHUNGEN.filter((f) => f.zeitalter === ATOM).map((f) => f.spalte)));
+  // Die einzige Flächenwaffe bleibt die Atomwaffe
+  assert.deepEqual(EINHEITEN.filter((e) => e.faehigkeiten.includes('flaechenschaden')).map((e) => e.id), ['atomwaffe']);
 });
 
 test('Freischaltungen: alles ist erforschbar, Optionen genau einmal', () => {
@@ -445,7 +456,9 @@ test('Freischaltungen passen zu Zeitalter und Rohstoffen', () => {
   assert.ok(EINHEIT.ritter.kosten.pferde > 0 && EINHEIT.ritter.kosten.eisen > 0);
   assert.ok(EINHEIT.musketier.kosten.salpeter > 0);
   assert.ok(EINHEIT.panzer.kosten.oel > 0 && EINHEIT.panzer.kosten.eisen > 0);
-  for (const e of EINHEITEN.filter((x) => ['jaeger', 'bomber'].includes(x.klasse))) assert.ok(e.kosten.aluminium > 0 && e.kosten.oel > 0, `${e.id}: Aluminium+Öl`);
+  // Flugzeuge bis zur Atomzeit brauchen Aluminium und Öl; die Endgame-Flieger fliegen mit Seltenen Erden, Deuterium oder Helium-3.
+  for (const e of EINHEITEN.filter((x) => ['jaeger', 'bomber'].includes(x.klasse) && x.zeitalter <= ATOM)) assert.ok(e.kosten.aluminium > 0 && e.kosten.oel > 0, `${e.id}: Aluminium+Öl`);
+  for (const e of EINHEITEN.filter((x) => ['jaeger', 'bomber'].includes(x.klasse) && x.zeitalter > ATOM)) assert.ok(e.kosten.aluminium > 0 && (e.kosten.seltene_erden || e.kosten.deuterium || e.kosten.helium3 || e.kosten.antimaterie), `${e.id}: Endgame-Treibstoff`);
   assert.ok(EINHEIT.kriegselefant.kosten.elefanten > 0);
   assert.ok(EINHEITEN.some((e) => e.kosten.kupfer > 0 && e.kosten.zinn > 0), 'Bronze-Einheit mit Kupfer+Zinn');
 });

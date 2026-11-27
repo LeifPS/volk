@@ -190,7 +190,7 @@ function erzeuge() {
   const rohstoff = new Uint8Array(ANZAHL); // 0 = keiner, sonst Nummer+1
   const proGelaende = GELAENDE.map(() => []);
   ROHSTOFFE.forEach((r, nr) => {
-    if (r.flaeche) return;
+    if (r.flaeche || r.zusatzschicht) return; // Zusatzschicht kommt erst nach dem Karten-Hash (siehe zusatzRohstoffe)
     for (const gid of r.gelaende) proGelaende[G[gid]].push([nr, r.dichte]);
   });
   for (let i = 0; i < ANZAHL; i++) {
@@ -222,8 +222,29 @@ function erzeuge() {
   }
 
   const k = { gelaende: gel, fluss, rohstoff, variante, landmasse, landmasseGroesse: groessen, hoehe };
-  k.hash = kartenHash(k);
+  k.hash = kartenHash(k);   // Hash der Grundkarte: seit der ersten Fassung unverändert (die Live-Welt steht darauf)
+  zusatzRohstoffe(k);
+  k.hashZusatz = kartenHash(k);
   return k;
+}
+
+/**
+ * Zusatzschicht für Rohstoffe, die nach der ersten Fassung dazugekommen sind (z. B. Seltene Erden, Deuterium).
+ * Sie belegt nur Felder ohne Rohstoff und nutzt eigene Hash-Kanäle, damit die Grundkarte bitgleich bleibt.
+ * Ein Nachbar mit Rohstoff halbiert die Chance (wie bei der Grundverteilung).
+ */
+function zusatzRohstoffe(k) {
+  const liste = [];
+  ROHSTOFFE.forEach((r, nr) => { if (r.zusatzschicht) liste.push([nr, r]); });
+  liste.forEach(([nr, r], j) => {
+    const erlaubt = new Set(r.gelaende.map((gid) => G[gid]));
+    for (let i = 0; i < ANZAHL; i++) {
+      if (k.rohstoff[i] || !erlaubt.has(k.gelaende[i])) continue;
+      let w = hash01(i, 151 + j * 7);
+      if (nachbarn(i).some((n) => k.rohstoff[n])) w *= 1.6;
+      if (w < r.dichte) k.rohstoff[i] = nr + 1;
+    }
+  });
 }
 
 function bfsAbstand(istZiel) {

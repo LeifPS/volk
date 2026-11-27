@@ -79,3 +79,26 @@ test('Migration: ein zu neuer Spielstand wird nicht angefasst', () => {
   assert.throws(() => migriere({ version: ZUSTAND_VERSION + 1 }), /neuer als der Code/);
 });
 
+test('Migration 1->2: laufende Zukunftstechnologie ohne neue Voraussetzungen wird geparkt, nichts geht verloren', async () => {
+  const { FORSCHUNGEN } = await import('../public/shared/daten/index.js');
+  const zeilen = { ...ALT.zeilen };
+  const schluessel = Object.keys(zeilen).find((k) => k.startsWith('v:') && JSON.parse(zeilen[k]).art === 'spieler');
+  const v = JSON.parse(zeilen[schluessel]);
+  // Ein Spieler in der Atomzeit, der schon zweimal Zukunft: Wissen erforscht hat und gerade die dritte Stufe erforscht
+  for (const f of FORSCHUNGEN) if (f.zeitalter <= 6 && !f.wiederholbar) v.forschung.erforscht[f.id] = 1;
+  v.forschung.erforscht.zukunft_wissen = 2;
+  v.zeitalter = 6;
+  v.forschung.aktiv = 'zukunft_wissen'; v.forschung.fortschritt = 0.5;
+  v.forschung.schlange = ['gibt_es_nicht', 'zukunft_kultur', 'lernende_maschinen'];
+  zeilen[schluessel] = JSON.stringify(v);
+  uhr.setze(ALT.spielzeit);
+  const srv = new WeltServer(speicherAttrappe(new Map(Object.entries(zeilen))), { __eigeneUhr: true }, socketAttrappe());
+  const n = srv.spiel.z.voelker[v.id];
+  assert.deepEqual(srv.spiel.migrationen, ['1->2']);
+  assert.equal(n.forschung.erforscht.zukunft_wissen, 2, 'erforschte Stufen bleiben');
+  assert.equal(n.forschung.teil.zukunft_wissen, 0.5, 'Fortschritt bleibt als Teilfortschritt');
+  assert.equal(n.forschung.aktiv, 'lernende_maschinen', 'die nächste mögliche Forschung läuft');
+  assert.ok(!n.forschung.schlange.includes('gibt_es_nicht'));
+  assert.ok(srv.spiel.boni(n).wissenschaft_prozent >= 4, 'Boni der erforschten Zukunftsstufen wirken weiter');
+  assert.deepEqual(zustandPruefen(srv.spiel), []);
+});

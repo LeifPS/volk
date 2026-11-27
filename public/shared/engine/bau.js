@@ -55,7 +55,7 @@ export const bau = {
     if (art === 'wunder') {
       if (this.z.wunder[id]?.fertig) return `Dieses Wunder hat bereits ${this.volk(this.z.wunder[id].volk)?.name || 'jemand'} gebaut.`;
       for (const st of this.staedteVon(v.id)) if ([...(st.bau || []), ...(st.schlange || [])].some((b) => b.art === 'wunder' && b.id === id)) return `Dieses Wunder wird schon in ${st.name} gebaut.`;
-      for (const n of d.benoetigt || []) if (!s.gebaeude[n]) return `Zuerst wird "${GEB[n]?.name || n}" gebraucht.`;
+      for (const n of d.benoetigt || []) if (!this.hatGebaeude(s, n)) return `Zuerst wird "${GEB[n]?.name || n}" gebraucht.`;
     }
     if (d.braucht_kueste && !this.istKuestenstadt(s)) return 'Das geht nur in einer Stadt an der Küste.';
     if (d.braucht_fluss && !this.istFlussstadt(s)) return 'Das geht nur in einer Stadt an einem Fluss oder See.';
@@ -66,6 +66,13 @@ export const bau = {
       if (d.faehigkeiten?.includes('gruenden') && s.bev < 2) return 'Siedler brauchen eine Stadt mit mindestens 2 Einwohnern (1 Einwohner zieht mit).';
     }
     return null;
+  },
+
+  /** Hat die Stadt das Gebäude oder eine spätere Ausbaustufe davon (z. B. Sternenhafen statt Raumhafen)? */
+  hatGebaeude(s, gid) {
+    if (s.gebaeude?.[gid]) return true;
+    for (const g of Object.keys(s.gebaeude || {})) if (this.ersetztKette(g).includes(gid)) return true;
+    return false;
   },
 
   ersetztKette(gid) { const l = []; let d = GEB[gid]; while (d && d.ersetzt) { l.push(d.ersetzt); d = GEB[d.ersetzt]; } return l; },
@@ -420,7 +427,7 @@ export const bau = {
       // Wege zwischen den eigenen Städten (Pfad/Straße)
       if (!see) for (const s2 of this.staedteVon(v.id)) {
         if (s2.id <= s.id || abstand(s.feld, s2.feld) > 12) continue;
-        for (const wid of ['autobahn', 'eisenbahn', 'pflasterstrasse', 'strasse', 'pfad']) {
+        for (const wid of ['magnetbahn', 'autobahn', 'eisenbahn', 'pflasterstrasse', 'strasse', 'pfad']) {
           if (!this.freigeschaltet(v, 'verbesserung', wid)) continue;
           const weg = this.landWeg(s.feld, s2.feld, v.id);
           if (!weg) break;

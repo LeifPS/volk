@@ -1,4 +1,4 @@
-// Der Forschungsbaum von Volk: ein großer, zusammenhängender Baum in 7 Zeitaltern. Format siehe DATENFORMAT.md.
+// Der Forschungsbaum von Volk: ein großer, zusammenhängender Baum in 11 Zeitaltern. Format siehe DATENFORMAT.md.
 //
 // Die Tabelle unten ist kompakt geschrieben und wird beim Laden in das Standardformat umgewandelt:
 //   [id, name, zweig, spalte, voraussetzungen, freischaltet, beschreibung]
@@ -10,8 +10,9 @@
 const MIN = 60;
 const STD = 3600;
 
-/** Erste Spalte jedes Zeitalters (Antike 0-5, Klassik 6-10, Mittelalter 11-16, Renaissance 17-22, Industrie 23-29, Moderne 30-36, Atomzeit ab 37). */
-export const SPALTEN_ZEITALTER = [0, 6, 11, 17, 23, 30, 37];
+/** Erste Spalte jedes Zeitalters (Antike 0-5, Klassik 6-10, Mittelalter 11-16, Renaissance 17-22, Industrie 23-29, Moderne 30-36, Atomzeit 37-43,
+ *  KI-Zeitalter 44-49, Fusionszeitalter ab 50). */
+export const SPALTEN_ZEITALTER = [0, 6, 11, 17, 23, 30, 37, 44, 50];
 
 /** Basisdauer in Sekunden je Spalte. */
 export const DAUER_JE_SPALTE = [
@@ -22,11 +23,13 @@ export const DAUER_JE_SPALTE = [
   16 * STD, 17.5 * STD, 19 * STD, 21 * STD, 23 * STD, 26 * STD, 29 * STD, // Industrie: 12 bis 30 h
   30 * STD, 33 * STD, 37 * STD, 41 * STD, 45 * STD, 49 * STD, 53 * STD, // Moderne: 1 bis 3 Tage (per Balance-Simulation eingestellt)
   55 * STD, 57 * STD, 59 * STD, 61 * STD, 63 * STD, 65 * STD, 67 * STD, // Atomzeit: 2 bis 4 Tage (per Balance-Simulation eingestellt)
-  70 * STD, // Zukunftstechnologien
+  70 * STD, 72 * STD, 74 * STD, 76 * STD, 78 * STD, 80 * STD, // KI-Zeitalter
+  82 * STD, 84 * STD, 86 * STD, 88 * STD, 90 * STD, 92 * STD, // Fusionszeitalter
+  94 * STD, // Zukunftstechnologien
 ];
 
-/** Schlüsselforschung je Zeitalter 1..6 (eröffnet den Zeitalter-Aufstieg). */
-const SCHLUESSEL = new Set(['eisenverarbeitung', 'feudalismus', 'schiesspulver', 'dampfmaschine', 'massenproduktion', 'atomtheorie']);
+/** Schlüsselforschung je Zeitalter 1..10 (eröffnet den Zeitalter-Aufstieg). */
+const SCHLUESSEL = new Set(['eisenverarbeitung', 'feudalismus', 'schiesspulver', 'dampfmaschine', 'massenproduktion', 'atomtheorie', 'lernende_maschinen', 'kernfusion']);
 /** Wiederholbare Zukunftstechnologien. */
 const WIEDERHOLBAR = new Set(['zukunft_verteidigung', 'zukunft_wissen', 'zukunft_wirtschaft', 'zukunft_industrie', 'zukunft_kultur']);
 
@@ -326,12 +329,73 @@ const ROH = [
   ['atomwaffen', 'Atomwaffen', 'raumfahrt', 43, ['kernwaffenforschung', 'fernlenkwaffen', 'tarnkappentechnik'], ['e:atomwaffe', 'o:atomschlag'], 'Die zerstörerischste Waffe der Geschichte. Möge sie nie eingesetzt werden.'],
   ['fusionsforschung', 'Fusionsforschung', 'raumfahrt', 43, ['kuenstliche_intelligenz', 'teilchenphysik'], ['b:produktion_prozent=5'], 'Eine kleine Sonne auf der Erde: fast unbegrenzte Energie.'],
 
-  // ======================= ZUKUNFT (wiederholbar) =======================
-  ['zukunft_wissen', 'Zukunftstechnologie: Wissen', 'wissen', 44, ['kuenstliche_intelligenz', 'fusionsforschung'], ['b:wissenschaft_prozent=2'], 'Jede Antwort wirft neue Fragen auf. Beliebig oft erforschbar.'],
-  ['zukunft_wirtschaft', 'Zukunftstechnologie: Wirtschaft', 'wirtschaft', 44, ['kuenstliche_intelligenz', 'klimaforschung'], ['b:gold_prozent=2'], 'Neue Märkte und neue Ideen. Beliebig oft erforschbar.'],
-  ['zukunft_industrie', 'Zukunftstechnologie: Industrie', 'industrie', 44, ['fusionsforschung', 'robotik'], ['b:produktion_prozent=2'], 'Noch schneller, noch effizienter. Beliebig oft erforschbar.'],
-  ['zukunft_verteidigung', 'Zukunftstechnologie: Verteidigung', 'militaer', 44, ['verbundpanzerung', 'boden_luft_raketen', 'marinelenkwaffen'], ['b:stadt_staerke=1', 'b:erfahrung_prozent=2'], 'Schutzschilde für Städte und Truppen. Beliebig oft erforschbar.'],
-  ['zukunft_kultur', 'Zukunftstechnologie: Kultur', 'staat', 44, ['klimaforschung', 'kuenstliche_intelligenz'], ['b:kultur_prozent=2', 'b:zufriedenheit=1'], 'Kunst und Gemeinschaft für eine friedliche Welt. Beliebig oft erforschbar.'],
+  // ======================= KI-ZEITALTER (7) =======================
+  // Spalte 44
+  ['lernende_maschinen', 'Lernende Maschinen', 'wissen', 44, ['kuenstliche_intelligenz', 'vernetzung'], ['r:seltene_erden', 'b:wissenschaft_prozent=5'], 'Programme, die aus Erfahrung klüger werden. Ihre Chips brauchen Seltene Erden: Jetzt weißt du, wo sie liegen.'],
+  ['seltene_erden_abbau', 'Roboterbergbau', 'industrie', 44, ['nanotechnologie', 'robotik'], ['v:robotermine'], 'Roboter fördern Erze, Stein und Seltene Erden rund um die Uhr.'],
+  ['drohnentechnik', 'Drohnentechnik', 'luft', 44, ['tarnkappentechnik', 'robotik'], ['v:drohnenwarte'], 'Kleine Fluggeräte sehen weiter als jeder Wachturm.'],
+  // Spalte 45
+  ['sprachverstehen', 'Sprachverstehen', 'wissen', 45, ['lernende_maschinen'], ['g:ki_labor', 'b:wissenschaft_prozent=5'], 'Maschinen verstehen, was wir sagen, und antworten klug.'],
+  ['autonome_fahrzeuge', 'Autonome Fahrzeuge', 'industrie', 45, ['lernende_maschinen', 'seltene_erden_abbau'], ['e:lieferdrohnen'], 'Fahrzeuge finden ihren Weg ganz allein.'],
+  ['kampfroboter_technik', 'Kampfroboter', 'militaer', 45, ['lernende_maschinen', 'infanterietaktik'], ['e:kampfroboter'], 'Stählerne Soldaten, die nie müde werden.'],
+  ['exoskelette', 'Exoskelette', 'militaer', 45, ['lernende_maschinen', 'seltene_erden_abbau', 'verbundpanzerung'], ['e:exoskelett_infanterie'], 'Kraftverstärkte Anzüge machen aus Soldaten kleine Riesen.'],
+  ['schwarmdrohnen', 'Schwarmdrohnen', 'luft', 45, ['drohnentechnik', 'lernende_maschinen'], ['e:drohnenschwarm'], 'Hunderte kleiner Drohnen handeln wie ein einziger Vogelschwarm.'],
+  // Spalte 46
+  ['intelligente_netze', 'Intelligente Netze', 'industrie', 46, ['autonome_fahrzeuge', 'solartechnik'], ['g:intelligentes_stromnetz'], 'Das Stromnetz lernt, wann und wo Energie gebraucht wird.'],
+  ['genom_bearbeitung', 'Genom-Bearbeitung', 'wissen', 46, ['sprachverstehen', 'moderne_medizin'], ['g:genlabor', 'b:heilung_prozent=10'], 'Krankheiten werden an der Wurzel geheilt.'],
+  ['vertikale_landwirtschaft', 'Vertikale Landwirtschaft', 'wirtschaft', 46, ['autonome_fahrzeuge', 'landtechnik'], ['g:vertikalfarm', 'b:nahrung_prozent=5'], 'Felder stapeln sich in Türmen mitten in der Stadt.'],
+  ['laserabwehr_technik', 'Laserabwehr', 'militaer', 46, ['schwarmdrohnen', 'boden_luft_raketen'], ['g:laserturm', 'e:laserabwehr'], 'Lichtstrahlen holen Drohnen und Raketen vom Himmel.'],
+  ['autonome_panzer_technik', 'Autonome Panzer', 'militaer', 46, ['kampfroboter_technik', 'verbundpanzerung'], ['e:autonomer_panzer'], 'Panzer ohne Besatzung, gesteuert von wachsamer Software.'],
+  // Spalte 47
+  ['virtuelle_welten', 'Virtuelle Welten', 'staat', 47, ['sprachverstehen', 'massenmedien'], ['g:virtuelles_forum', 'b:kultur_prozent=5'], 'Menschen treffen sich in Welten, die nur im Rechner existieren.'],
+  ['autonome_fertigung', 'Autonome Fertigung', 'industrie', 47, ['intelligente_netze', 'robotik'], ['g:autonome_fabrik', 'b:produktion_prozent=5'], 'Fabriken planen, bauen und reparieren sich selbst.'],
+  ['unterwasserdrohnen_technik', 'Unterwasserdrohnen', 'see', 47, ['schwarmdrohnen', 'marinelenkwaffen'], ['e:unterwasserdrohne'], 'Unbemannte Tauchboote lauern in der Tiefe.'],
+  ['drohnenlogistik', 'Drohnenlogistik', 'wirtschaft', 47, ['autonome_fahrzeuge', 'containerlogistik'], ['g:drohnenhafen', 'b:handel_gold_prozent=10'], 'Pakete fliegen von selbst über Meere und Grenzen.'],
+  ['ki_medizin', 'KI-Medizin', 'wissen', 47, ['genom_bearbeitung'], ['e:medi_drohne'], 'Ärzte bekommen einen Kollegen, der jedes Fachbuch auswendig kennt.'],
+  // Spalte 48
+  ['quantenalgorithmen', 'Quantenalgorithmen', 'wissen', 48, ['sprachverstehen', 'teilchenphysik'], ['b:wissenschaft_prozent=5'], 'Rechenwege, die viele Möglichkeiten zugleich prüfen.'],
+  ['gefechts_ki', 'Gefechts-KI', 'militaer', 48, ['laserabwehr_technik', 'autonome_panzer_technik'], ['b:erfahrung_prozent=10'], 'Jedes Gefecht wird ausgewertet, jede Einheit lernt mit.'],
+  ['jagddrohnen', 'Jagddrohnen', 'luft', 48, ['schwarmdrohnen', 'duesentriebwerk'], ['e:drohnenjaeger', 'e:angriffsdrohne'], 'Unbemannte Jäger und Bomber beherrschen den Himmel.'],
+  ['digitale_verwaltung', 'Digitale Verwaltung', 'staat', 48, ['virtuelle_welten', 'autonome_fertigung'], ['b:unterhalt_rabatt=10'], 'Behördengänge erledigen sich in Sekunden.'],
+  // Spalte 49
+  ['weltgehirn_technik', 'Weltgehirn', 'wissen', 49, ['quantenalgorithmen', 'digitale_verwaltung'], ['w:weltgehirn'], 'Ein gewaltiges Netz verbindet das Wissen aller Städte.'],
+
+  // ======================= FUSIONSZEITALTER (8) =======================
+  // Spalte 50
+  ['kernfusion', 'Kernfusion', 'raumfahrt', 50, ['fusionsforschung', 'quantenalgorithmen'], ['r:deuterium', 'b:produktion_prozent=5'], 'Die Kraft der Sonne, endlich gezähmt. Ihr Brennstoff Deuterium wird im Meer sichtbar.'],
+  ['supraleiter', 'Supraleiter', 'industrie', 50, ['quantenalgorithmen', 'seltene_erden_abbau'], ['b:produktion_prozent=3'], 'Strom fließt ohne jeden Verlust.'],
+  ['plasmaphysik', 'Plasmaphysik', 'raumfahrt', 50, ['fusionsforschung', 'laserabwehr_technik'], ['b:wissenschaft_prozent=3'], 'Der vierte Zustand der Materie wird beherrschbar.'],
+  // Spalte 51
+  ['fusionsreaktor_bau', 'Fusionsreaktor', 'industrie', 51, ['kernfusion', 'supraleiter'], ['g:fusionsreaktor'], 'Eine kleine Sonne in jeder Stadt.'],
+  ['deuteriumgewinnung', 'Deuterium-Gewinnung', 'see', 51, ['kernfusion', 'unterwasserdrohnen_technik'], ['v:deuteriumfabrik'], 'Der Brennstoff der Fusion liegt im Meerwasser.'],
+  ['quantencomputer_bau', 'Quantencomputer', 'wissen', 51, ['kernfusion', 'supraleiter', 'quantenalgorithmen'], ['g:quantenrechner'], 'Rechner, die in Minuten lösen, wofür andere Jahrtausende bräuchten.'],
+  ['magnetschwebetechnik', 'Magnetschwebetechnik', 'industrie', 51, ['kernfusion', 'supraleiter', 'autonome_fahrzeuge'], ['v:magnetbahn'], 'Züge schweben lautlos über leuchtenden Schienen.'],
+  ['plasmawaffen', 'Plasmawaffen', 'militaer', 51, ['kernfusion', 'plasmaphysik', 'exoskelette'], ['e:plasmagrenadier', 'g:plasmaschmiede'], 'Glühendes Plasma durchschlägt jede Panzerung.'],
+  // Spalte 52
+  ['energienetz_global', 'Weltweites Energienetz', 'wirtschaft', 52, ['fusionsreaktor_bau', 'intelligente_netze'], ['g:molekularfabrik', 'b:gold_prozent=5', 'b:unterhalt_rabatt=10'], 'Energie im Überfluss, für jede Stadt der Welt.'],
+  ['schwebepanzer_technik', 'Schwebepanzer', 'militaer', 52, ['magnetschwebetechnik', 'autonome_panzer_technik'], ['e:schwebepanzer'], 'Panzer gleiten über Sumpf, Sand und Fels.'],
+  ['schienenkanonen', 'Schienenkanonen', 'militaer', 52, ['fusionsreaktor_bau', 'supraleiter', 'mehrfachraketenwerfer'], ['e:railgun_batterie'], 'Magnetfelder schleudern Geschosse schneller als jeder Knall.'],
+  ['energieschilde', 'Energieschilde', 'militaer', 52, ['plasmawaffen', 'laserabwehr_technik'], ['g:energieschild', 'e:schildgenerator'], 'Eine leuchtende Kuppel hält Bomben und Geschosse auf.'],
+  ['hyperloop_technik', 'Hyperloop', 'staat', 52, ['magnetschwebetechnik', 'digitale_verwaltung'], ['g:hyperloop_station'], 'Kapseln rasen durch luftleere Röhren von Stadt zu Stadt.'],
+  // Spalte 53
+  ['co2_entzug', 'CO2-Entzug', 'wissen', 53, ['fusionsreaktor_bau', 'klimaforschung'], ['g:co2_waescher', 'b:nahrung_prozent=5', 'b:zufriedenheit=1'], 'Anlagen holen das Treibhausgas zurück aus der Luft.'],
+  ['hyperschalltechnik', 'Hyperschalltechnik', 'luft', 53, ['plasmawaffen', 'jagddrohnen'], ['e:hyperschallbomber'], 'Flugzeuge mit glühender Nase und fünffacher Schallgeschwindigkeit.'],
+  ['fusionsantrieb_schiffe', 'Fusionsantrieb für Schiffe', 'see', 53, ['fusionsreaktor_bau', 'unterwasserdrohnen_technik'], ['e:fusionszerstoerer'], 'Kriegsschiffe, die nie wieder tanken müssen.'],
+  ['nanomedizin', 'Nanomedizin', 'wissen', 53, ['ki_medizin', 'quantencomputer_bau'], ['e:nanomediziner', 'b:heilung_prozent=10'], 'Winzige Maschinen reparieren den Körper von innen.'],
+  // Spalte 54
+  ['plasmaschiffe', 'Plasma-Kriegsschiffe', 'see', 54, ['fusionsantrieb_schiffe', 'energieschilde'], ['e:plasmakreuzer'], 'Schwimmende Festungen mit Plasma-Geschützen.'],
+  ['hyperschallraketen', 'Hyperschallraketen', 'militaer', 54, ['hyperschalltechnik', 'schienenkanonen'], ['e:hyperschallrakete'], 'Raketen, die kein Abwehrsystem mehr rechtzeitig sieht.'],
+  ['fusionsstaedte', 'Fusionsstädte', 'staat', 54, ['energienetz_global', 'hyperloop_technik'], ['b:zufriedenheit=2', 'b:kultur_prozent=5'], 'Saubere, helle Städte ohne Rauch und Lärm.'],
+  // Spalte 55
+  ['kuenstliche_sonne_technik', 'Künstliche Sonne', 'raumfahrt', 55, ['fusionsreaktor_bau', 'energienetz_global', 'quantencomputer_bau'], ['w:kuenstliche_sonne'], 'Ein Stern, gebaut von Menschenhand.'],
+  ['orbitalraketen', 'Orbitalraketen', 'raumfahrt', 55, ['hyperschallraketen', 'kernfusion'], ['b:sicht=1'], 'Wiederverwendbare Raketen machen den Weg ins All alltäglich.'],
+
+  // ======================= ZUKUNFT (wiederholbar, am Ende des letzten Zeitalters) =======================
+  ['zukunft_wissen', 'Zukunftstechnologie: Wissen', 'wissen', 56, ['weltgehirn_technik', 'kuenstliche_sonne_technik', 'nanomedizin'], ['b:wissenschaft_prozent=2'], 'Jede Antwort wirft neue Fragen auf. Beliebig oft erforschbar.'],
+  ['zukunft_wirtschaft', 'Zukunftstechnologie: Wirtschaft', 'wirtschaft', 56, ['fusionsstaedte', 'drohnenlogistik', 'vertikale_landwirtschaft'], ['b:gold_prozent=2'], 'Neue Märkte und neue Ideen. Beliebig oft erforschbar.'],
+  ['zukunft_industrie', 'Zukunftstechnologie: Industrie', 'industrie', 56, ['energienetz_global', 'orbitalraketen', 'deuteriumgewinnung'], ['b:produktion_prozent=2'], 'Noch schneller, noch effizienter. Beliebig oft erforschbar.'],
+  ['zukunft_verteidigung', 'Zukunftstechnologie: Verteidigung', 'militaer', 56, ['plasmaschiffe', 'gefechts_ki', 'schwebepanzer_technik'], ['b:stadt_staerke=1', 'b:erfahrung_prozent=2'], 'Schutzschilde für Städte und Truppen. Beliebig oft erforschbar.'],
+  ['zukunft_kultur', 'Zukunftstechnologie: Kultur', 'staat', 56, ['fusionsstaedte', 'co2_entzug'], ['b:kultur_prozent=2', 'b:zufriedenheit=1'], 'Kunst und Gemeinschaft für eine friedliche Welt. Beliebig oft erforschbar.'],
 ];
 
 const ART_KUERZEL = { e: 'einheit', g: 'gebaeude', w: 'wunder', v: 'verbesserung', r: 'rohstoff', o: 'option', b: 'bonus' };

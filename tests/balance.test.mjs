@@ -2,11 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 
-test('Balance-Simulation: ganzer Baum in 2-4 Wochen, Zeitalter nahe der Zielwerte, Unterhalt beherrschbar', { timeout: 180000 }, () => {
-  const out = execFileSync(process.execPath, ['tools/balance-sim.mjs', '34', '--still'], { encoding: 'utf8', maxBuffer: 1e7 });
+test('Balance-Simulation: alte Zeitalter in 2-3 Wochen, Endgame-Zeitalter nahe der Zielwerte, Unterhalt beherrschbar', { timeout: 600000 }, () => {
+  const out = execFileSync(process.execPath, ['tools/balance-sim.mjs', '70', '--still'], { encoding: 'utf8', maxBuffer: 1e7 });
   const b = JSON.parse(out.trim().split('\n').pop());
   assert.equal(b.engineFehler, 0);
-  assert.ok(b.ganzerBaumNachTagen >= 14 && b.ganzerBaumNachTagen <= 30, 'ganzer Baum nach ' + b.ganzerBaumNachTagen + ' Tagen');
+  assert.ok(b.ganzerBaumNachTagen >= 20 && b.ganzerBaumNachTagen <= 65, 'ganzer Baum nach ' + b.ganzerBaumNachTagen + ' Tagen');
+  assert.ok(b.zeitalterBeginn[6] <= 15, 'Atomzeit (Ende des alten Baums) nach ' + b.zeitalterBeginn[6] + ' Tagen erreicht');
   for (const e of b.ergebnisse) {
     if (e.dauer_tage == null) continue;
     assert.ok(e.dauer_tage >= e.ziel * 0.5 && e.dauer_tage <= e.ziel * 1.6, `${e.zeitalter}: ${e.dauer_tage} Tage (Ziel ${e.ziel})`);

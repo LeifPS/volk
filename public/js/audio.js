@@ -216,6 +216,50 @@ const ZEITALTER = [
     },
     form: ['C', 'A', 'B', 'P', 'A', 'C', 'B'],
   },
+  { // 7 KI-Zeitalter: ruhig-elektronisch, gleichmäßige Arpeggien, gedämpfter Puls
+    seed: 808, grund: 52, skala: 'dorisch', bpm: 84, takt: 4, rh: R4_BEWEGT, kad: R4_KAD, echo: 0.32, bassArt: 'ostinato', bassInstr: 'subbass', sept: true,
+    perc: [['kick', 0, 0.22], ['kick', 8, 0.16], ['hat', 2, 0.018], ['hat', 6, 0.018], ['hat', 10, 0.018], ['hat', 14, 0.022], ['tock', 12, 0.05]],
+    abschnitte: {
+      A: { prog: [0, 0, 3, 3, 5, 5, 4, 4], mel: 'sinus', okt: 1, dichte: 0.55, perc: 2, arp: 'arp', arpTakt: 16, begleit: 'pad' },
+      B: { prog: [5, 3, 0, 4, 5, 3, 1, 4], mel: 'glocke', okt: 1, hoch: 2, dichte: 0.5, perc: 1, arp: 'arp', arpTakt: 8 },
+      C: { prog: [0, 3, 0, 4], mel: null, perc: 2, arp: 'arp', arpTakt: 16, begleit: 'epiano' },
+      P: { prog: [0, 0, 3, 0], mel: null, perc: 0, begleit: 'pad', arp: 'glocke', arpTakt: 4 },
+    },
+    form: ['C', 'A', 'B', 'A', 'P', 'C', 'B'],
+  },
+  { // 8 Fusionszeitalter: hell und treibend, Dur, laufender Bass
+    seed: 909, grund: 55, skala: 'ionisch', bpm: 112, takt: 4, rh: R4_SYNK, kad: R4_KAD, echo: 0.2, bassArt: 'lauf', bassInstr: 'bass',
+    perc: [['kick', 0, 0.38], ['kick', 8, 0.3], ['snare', 4, 0.06], ['snare', 12, 0.07], ['hat', 2, 0.03], ['hat', 6, 0.03], ['hat', 10, 0.03], ['hat', 14, 0.035]],
+    abschnitte: {
+      A: { prog: [0, 4, 5, 3, 0, 4, 3, 4], mel: 'puls', okt: 1, dichte: 0.8, perc: 2, arp: 'arp', arpTakt: 16 },
+      B: { prog: [3, 4, 5, 5, 3, 4, 0, 0], mel: 'rund', okt: 1, hoch: 2, dichte: 0.75, perc: 2, begleit: 'epiano' },
+      C: { prog: [5, 3, 0, 4], mel: 'glocke', okt: 1, dichte: 0.5, perc: 1, arp: 'arp', arpTakt: 8, begleit: 'pad' },
+      P: { prog: [0, 4, 0, 4], mel: null, perc: 0, begleit: 'pad' },
+    },
+    form: ['A', 'B', 'A', 'C', 'P', 'B', 'A'],
+  },
+  { // 9 Weltraumzeitalter: weit und langsam, lydische Flächen, viel Echo
+    seed: 1010, grund: 48, skala: 'lydisch', bpm: 58, takt: 4, rh: R4, kad: R4_KAD, echo: 0.55, bassArt: 'bordun', bassInstr: 'subbass', sept: true,
+    perc: [['hat', 8, 0.012], ['kick', 0, 0.12]],
+    abschnitte: {
+      A: { prog: [0, 0, 1, 1, 5, 5, 4, 4], mel: 'sinus', okt: 1, hoch: 2, dichte: 0.4, perc: 1, begleit: 'pad', arp: 'glocke', arpTakt: 2 },
+      B: { prog: [3, 1, 0, 5, 3, 1, 4, 4], mel: 'glocke', okt: 1, hoch: 2, dichte: 0.45, perc: 0, begleit: 'pad' },
+      C: { prog: [0, 1, 5, 1], mel: null, perc: 0, begleit: 'pad', arp: 'arp', arpTakt: 4 },
+      P: { prog: [0, 0, 1, 0], mel: null, perc: 0, begleit: 'pad' },
+    },
+    form: ['P', 'A', 'C', 'B', 'A', 'P', 'C'],
+  },
+  { // 10 Sternenzeitalter: feierlich, getragener Dreiertakt, Glocken und Flächen
+    seed: 1111, grund: 50, skala: 'ionisch', bpm: 70, takt: 3, rh: R3, kad: R3_KAD, echo: 0.42, bassArt: 'halbe', bassInstr: 'subbass', sept: true,
+    perc: [['kick', 0, 0.2], ['tamb', 8, 0.03]],
+    abschnitte: {
+      A: { prog: [0, 3, 4, 0, 5, 3, 4, 0], mel: 'glocke', okt: 1, hoch: 2, dichte: 0.55, perc: 1, begleit: 'pad' },
+      B: { prog: [5, 5, 3, 3, 0, 0, 4, 4], mel: 'sinus', okt: 1, dichte: 0.6, perc: 1, arp: 'glocke', arpTakt: 6, begleit: 'pad' },
+      C: { prog: [3, 4, 5, 4, 3, 4, 0, 0], mel: 'floete', okt: 1, hoch: 2, dichte: 0.5, perc: 0, begleit: 'pad' },
+      P: { prog: [0, 3, 0, 4], mel: null, perc: 0, begleit: 'pad', arp: 'glocke', arpTakt: 3 },
+    },
+    form: ['A', 'B', 'A', 'C', 'P', 'B', 'A'],
+  },
 ];
 
 const LAUT = { floete: 0.2, puls: 0.11, schalmei: 0.12, rund: 0.1, laute: 0.17, lyra: 0.24, arp: 0.06, glocke: 0.12, epiano: 0.13, pad: 0.055, sinus: 0.2, bass: 0.26, bordun: 0.14, subbass: 0.22 };

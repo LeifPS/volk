@@ -68,3 +68,18 @@ Grundlage: `AUFTRAG-VOLK3.md` und `PLAN-ZEITALTER-8-11.md` (beide im Repo). Abwe
   - **Versionierte Migration:** `ZUSTAND_VERSION` steigt, jeder Schritt `migriere_vN_zu_vN+1` ist eine eigene, getestete Funktion (`public/shared/engine/migration.js`). Getestet wird mit einem echten Altstand (`tests/daten/altstand-v1.json`), der mit dem Code von `main` vor dem Ausbau erzeugt wurde.
   - **Durable Object:** Klasse `Welt` bleibt, keine neue Klasse, deshalb kein neuer Migrations-Tag in `wrangler.jsonc` nötig (Speicherformat SQLite-Tabelle `daten` bleibt).
 - **Arbeitsweise:** Die Stufen landen als einzelne Commits auf dem Branch `volk3-ausbau`. Nach `main` (= live) kommt nur, was spielbar und getestet ist.
+
+## Stufe 2: KI- und Fusionszeitalter
+- **Daten laut Plan**, mit diesen Abweichungen (Regel: man darf nichts freischalten, dessen Rohstoff man noch nicht sehen kann):
+  - **Seltene Erden werden mit der Schlüsselforschung "Lernende Maschinen" sichtbar, Deuterium mit "Kernfusion".** Im Plan kamen sie über Seitenforschungen, aber fast alle Einheiten und Gebäude des Zeitalters kosten diese Rohstoffe. `seltene_erden_abbau` heißt deshalb jetzt "Roboterbergbau" (schaltet die Robotermine frei), `deuteriumgewinnung` schaltet die Deuteriumfabrik frei.
+  - Einige Voraussetzungen ergänzt (Exoskelette, Quantencomputer, Magnetschwebetechnik, Plasmawaffen hängen an der Schlüsselforschung; Schienenkanonen am Fusionsreaktor; Energieschilde an Plasmawaffen).
+  - **Intelligentes Stromnetz** braucht kein Kraftwerk mehr (das Kraftwerk wird später ersetzt, die Bedingung wäre dann unerfüllbar).
+  - **Plasmaschmiede** ersetzt die Militärakademie (statt "braucht Kaserne"; die Kaserne wird früh ersetzt). Erfahrung 55 statt 20, damit sie besser ist als die Akademie (40).
+  - **Autonome Fabrik und Molekularfabrik** geben wie die Roboterfabrik einen weiteren Bauplatz (sie ersetzen sie, sonst würde der Platz beim Ausbau verloren gehen).
+- **Zukunftstechnologien** stehen am Ende des letzten Zeitalters und hängen an möglichen Sackgassen (so bleibt der Baum zusammenhängend). Migration 1→2 parkt eine laufende Zukunftsforschung, wenn die neuen Voraussetzungen fehlen; erforschte Stufen und ihre Boni bleiben.
+- **Tempo der neuen Zeitalter:** `ZEIT_TEMPO` 1,3 / 1,15 / 1,0 / 0,9 (statt Plan 2,2 / 2,0 / 1,8 / 1,6). Mit den Plan-Werten war das KI-Zeitalter für den Balance-Bot nach 3,3 Tagen vorbei. Gemessen (Bot, 70 Tage): Atomzeit bis KI 6 Tage, KI 5,4, Fusion 8,2. Endgültig eingestellt wird in Stufe 13.
+- **Goldkurve** der Einheiten flacht in den neuen Zeitaltern ab (4,4 / 4,6 / 4,8 / 5,0 statt weiter +0,6), weil die Grundkosten laut Plan schon hoch sind.
+- **Unterhalt-Grenzen** in den Datentests: Einheiten bis 12 (vorher 8), Gebäude bis 14 (vorher 10), nur für Endgame-Zeitalter.
+- **Neue Rohstoffe als Zusatzschicht** (`zusatzschicht: true`): Seltene Erden 31 Vorkommen (Hügel, Gebirge, Kristallgebirge, Wüste), Deuterium 109 (Küste, Meer, Tiefsee). Grundkarte bleibt `cf1bae76`.
+- **Wunder mit "benötigt"** akzeptieren auch spätere Ausbaustufen des Gebäudes (z. B. Sternenhafen statt Raumhafen).
+- **Grafik**: Sprites für alle Einheiten, Gebäude, Wunder, Verbesserungen und Lagergüter der vier neuen Zeitalter sowie die vier Stadtstile (smart, fusion, orbital, stern) entstanden parallel durch vier Hilfs-Agenten; selbst gesichtet und für gut befunden. Musik: vier neue Chiptune-Themen.

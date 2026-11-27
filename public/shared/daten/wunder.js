@@ -62,4 +62,18 @@ export const WUNDER = [
     reich: { wissenschaft_prozent: 20, sicht: 1 },
     wirkung: { wissenschaft: 20 },
   },
+  {
+    id: 'weltgehirn', name: 'Weltgehirn', zeitalter: 7, kategorie: 'wissen',
+    beschreibung: 'Ein gewaltiges Netz verbindet das Wissen aller Städte. Dein Reich forscht, baut und lernt schneller.',
+    kosten: { zeit: 5 * TAG, gold: 15000, stein: 800, marmor: 130, seltene_erden: 10 }, unterhalt: 0, benoetigt: ['ki_labor'], ersetzt: null,
+    reich: { wissenschaft_prozent: 25, produktion_prozent: 5, erfahrung_prozent: 10 },
+    wirkung: { wissenschaft: 30 },
+  },
+  {
+    id: 'kuenstliche_sonne', name: 'Künstliche Sonne', zeitalter: 8, kategorie: 'produktion',
+    beschreibung: 'Ein Stern von Menschenhand. Mehr Produktion und Nahrung im ganzen Reich, weniger Unterhalt.',
+    kosten: { zeit: 6 * TAG, gold: 20000, stein: 900, marmor: 150, deuterium: 12 }, unterhalt: 0, benoetigt: ['fusionsreaktor'], ersetzt: null,
+    reich: { produktion_prozent: 20, nahrung_prozent: 10, unterhalt_rabatt: 20 },
+    wirkung: { produktion: 25 },
+  },
 ];

@@ -19,6 +19,8 @@ const ART = {
   pflasterstrasse: { breite: 5, rand: hex('#4f4c47'), koerper: hex('#9b978e'), dunkel: hex('#76736c'), hell: hex('#aeaaa1') },
   eisenbahn: { breite: 6, rand: hex('#3c3128'), koerper: hex('#85796a'), dunkel: hex('#6d6256'), hell: hex('#9a8e7e'), schwelle: hex('#4a3a2a'), schiene: hex('#d2d8df') },
   autobahn: { breite: 8, rand: hex('#1d1f23'), koerper: hex('#3b3e44'), dunkel: hex('#32353a'), hell: hex('#464a51'), linie: hex('#dcdde2'), mitte: hex('#e8d36a') },
+  // Magnetbahn (Fusionszeitalter): schlanker heller Fahrweg ohne Schwellen, leuchtendes Magnetband in der Mitte
+  magnetbahn: { breite: 5, rand: hex('#26303e'), koerper: hex('#d6dde6'), dunkel: hex('#c2cad6'), hell: hex('#eef2f7'), schein: hex('#7fdcf2'), band: hex('#2fc4ee'), puls: hex('#e2fcff') },
 };
 
 let version = 0;
@@ -180,6 +182,10 @@ function baueChunk(cx, cy, liste, staedte) {
         if (p[2] - letzte >= 3.5) { letzte = p[2]; for (let o = -2.6; o <= 2.6; o += 0.5) stempel(p[0] + p[3] * o, p[1] + p[4] * o, 0.55, A.schwelle); }
       }
       for (const p of w.pts) for (const o of [-1.7, 1.7]) stempel(p[0] + p[3] * o, p[1] + p[4] * o, 0.55, A.schiene);
+    } else if (w.art === 'magnetbahn') {
+      // Lichtschein um das Band, dann das Band selbst mit hellen Pulsen in festem Abstand
+      for (const p of w.pts) stempel(p[0], p[1], 1.25, A.schein);
+      for (const p of w.pts) stempel(p[0], p[1], 0.6, Math.floor(p[2] / 2.5) % 3 === 0 ? A.puls : A.band);
     } else if (w.art === 'autobahn') {
       for (const p of w.pts) {
         for (const o of [-3.1, 3.1]) stempel(p[0] + p[3] * o, p[1] + p[4] * o, 0.5, A.linie);

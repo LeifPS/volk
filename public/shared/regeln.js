@@ -4,8 +4,9 @@ export const MIN = 60 * 1000, STD = 60 * MIN, TAG = 24 * STD;
 
 // --- Spieltempo (Update 2026-11-17: alles deutlich schneller, nur gegen Ende langsamer) ---
 // Alle Stellschrauben für das Tempo stehen hier. Grunddauern in den Daten bleiben unverändert und werden nur geteilt.
-/** Grundkurve des Tempos je Zeitalter (0 = Antike ... 6 = Atomzeit): Dauer = Grunddauer / Faktor. Daraus werden Produktion und Forschung abgeleitet. */
-export const ZEIT_TEMPO = [10, 8, 6, 5, 4, 3, 2.5];
+/** Grundkurve des Tempos je Zeitalter (0 = Antike ... 6 = Atomzeit, 7 bis 10 = KI, Fusion, Weltraum, Sterne): Dauer = Grunddauer / Faktor.
+ *  Daraus werden Produktion und Forschung abgeleitet. Die ersten sieben Werte sind seit dem Tempo-Update fest; die neuen Zeitalter haben eigene. */
+export const ZEIT_TEMPO = [10, 8, 6, 5, 4, 3, 2.5, 1.3, 1.15, 1.0, 0.9];
 export function zeitTempo(zeitalter) { return ZEIT_TEMPO[Math.max(0, Math.min(ZEIT_TEMPO.length - 1, Math.floor(zeitalter || 0)))]; }
 /** Produktion (Bauen, Ausbilden, Verbessern) dauert so viel länger als die Grundkurve (Leifs Wunsch 2026-11-17: doppelt so lange). */
 export const PRODUKTION_LANGSAMER = 2;
@@ -20,7 +21,7 @@ export const WIRTSCHAFT_TEMPO = 5;
 /** Abklingzeiten nach Angriffen folgen dem Zeitalter-Tempo nur abgeschwächt (Wurzel), damit Gefechte ihren Rhythmus behalten. */
 export function abklingFaktor(zeitalter) { return 1 / Math.sqrt(zeitTempo(zeitalter)); }
 /** Marschtempo je Zeitalter der Einheit: später wird es zäher (Faktor auf die Schrittdauer). */
-export const MARSCH_ZEITALTER = [1, 1, 1, 1, 1.25, 1.5, 2];
+export const MARSCH_ZEITALTER = [1, 1, 1, 1, 1.25, 1.5, 2, 2.2, 2.4, 2.6, 2.8];
 
 // --- Wirtschaft ---
 /** Grundfaktor für Nahrung, Gold, Kultur und Baustoffe (Holz, Stein, Marmor, Lehm, Salz). Er bestimmt auch die Kosten für Wachstum und Grenzen. */
@@ -32,7 +33,7 @@ export const GOLD_FAKTOR = 6 * WIRTSCHAFT_TEMPO; // doppelter Goldverdienst (vor
 /** Grundwissen je Einwohner (Punkte). */
 export const WISSEN_JE_EINWOHNER = 1;
 export const BAUSTOFFE = ['holz', 'stein', 'marmor', 'lehm', 'salz'];
-export const STRATEGISCH = ['kupfer', 'zinn', 'eisen', 'pferde', 'salpeter', 'kohle', 'oel', 'aluminium', 'uran', 'elefanten'];
+export const STRATEGISCH = ['kupfer', 'zinn', 'eisen', 'pferde', 'salpeter', 'kohle', 'oel', 'aluminium', 'uran', 'elefanten', 'seltene_erden', 'deuterium', 'titan', 'helium3', 'antimaterie'];
 export const NAHRUNG_PRO_EINWOHNER = 2;
 export const START_LAGER = { gold: 150, holz: 120, stein: 60 };
 export const LAGER_BASIS_BAU = 400;       // Kapazität je Baustoff

@@ -190,7 +190,7 @@ T.lexikon = {
     gelaende: 'Landschaften: Erträge, Bewegung, Verteidigung.',
     verbesserung: 'Was Arbeiter auf Feldern bauen.',
     befoerderung: 'Was erfahrene Einheiten lernen.',
-    zeitalter: 'Die sieben Zeitalter von der Antike bis zur Atomzeit.',
+    zeitalter: 'Alle Zeitalter von der Antike bis in die ferne Zukunft.',
     akteur: 'KI-Völker, Stadtstaaten, Barbaren und Raubtiere.',
   },
   // Beschriftungen
@@ -307,7 +307,7 @@ T.lexikon = {
       'Verbesserungen auf den Feldern (Farmen, Minen, Straßen …) baut ein [[einheit:arbeiter|Arbeiter]] – nur innerhalb deiner Grenzen. Siehe [[kat:verbesserung|Verbesserungen]].',
     ] },
     { id: 'forschung', titel: 'Forschung', sym: 'forschung', absaetze: () => [
-      'Fast alles wird erforscht: neue Einheiten, Gebäude, Verbesserungen, Diplomatie-Möglichkeiten und Boni. Der Forschungsbaum ist groß und reicht von der Antike bis zur Atomzeit.',
+      'Fast alles wird erforscht: neue Einheiten, Gebäude, Verbesserungen, Diplomatie-Möglichkeiten und Boni. Der Forschungsbaum ist groß und reicht von der Antike über die Atomzeit bis weit in die Zukunft.',
       'Dein Volk forscht **immer an genau einer Sache**. Du kannst weitere Forschungen in eine Warteschlange stellen. Wählst du etwas weiter hinten im Baum, setzt das Spiel die fehlenden Voraussetzungen automatisch davor.',
       '**Wissenschaft** macht die Forschung schneller: jeder Punkt um 1 %. 100 Wissenschaft heißt also doppelt so schnell. Forschungen der frühen Zeitalter sind außerdem von Haus aus schneller (Antike doppelt so schnell). Wissenschaft kommt aus Städten, Bibliotheken, Universitäten, Wundern und Forschungsabkommen.',
       'Tipp: Achte darauf, dass immer eine Forschung läuft. Oben rechts blinkt es, wenn nicht.',

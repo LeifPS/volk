@@ -9,7 +9,7 @@ Kernregel: Die Live-Welt muss nach jedem Schritt weiterlaufen (Migration, Karte 
 |---|---|---|
 | 0 | Branch, Auftrag ins Repo, Entscheidungen | fertig |
 | 1 | Migrationsgerüst (`engine/migration.js`), Konsistenzprüfung (`engine/pruefung.js`), echter Altstand-Test, Versionsabgleich Client/Server, vorbestehende Testfehler | fertig |
-| 2 | Zeitalter KI und Fusion | offen |
+| 2 | Zeitalter KI und Fusion (45 Forschungen, 19 Einheiten, 15 Gebäude, 2 Wunder, 4 Verbesserungen, Seltene Erden, Deuterium, Musik, Sprites für alle 4 neuen Zeitalter) | fertig |
 | 3 | Zeitalter Weltraum und Sterne | offen |
 | 4 | Weltraum-Ebene | offen |
 | 5 | Naturwunder, Wunder-Platzierung | offen |
@@ -28,6 +28,7 @@ Kernregel: Die Live-Welt muss nach jedem Schritt weiterlaufen (Migration, Karte 
 - Bei Protokoll-/Datenänderungen `SPIEL_VERSION` in `public/shared/version.js` erhöhen (Clients laden dann neu).
 - **Last:** Die Mehrspieler-Simulation misst auf dem Stand von main ~10 700 Alarme und ~55 600 geschriebene Zeilen pro Tag (Free-Limit 100 000). Seit Leifs Tempo-Update (×5) deutlich mehr als in ENTSCHEIDUNGEN dokumentiert. In Stufe 13 senken (Schreib-Bündelung) und neu messen.
 - Die Mehrspieler-Simulation dauert ~12 min: im Hintergrund laufen lassen.
+- Stufe 3 liegt als Patch-Skript bereit (Weltraum- und Sternenzeitalter, Daten ohne Ebene); die Sprites dafür sind schon da.
 
 ## Ausgangslage auf main (fedd000)
 - `npm test`: 78 von 79 grün ohne Mehrspieler; rot: Balance (Atomzeit 2,4 statt Ziel 7,7 Tage) und Mehrspieler (Stapelregel: zwei KI-Legionäre auf einem Feld).

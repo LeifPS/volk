@@ -866,8 +866,120 @@ FORM.irrlichter = (p) => {
   for (const [x, y] of [[2, 3], [14, 2], [13, 9], [1, 8], [10, 1]]) p.px(x, y, '#c8fff0');
 };
 
+// ---------- Zukunfts-Rohstoffe und -Lagergüter ----------
+/** Facettierter Erzbrocken (3x3 bis 4x3) mit Licht oben links. */
+function nugget(p, x, y, F, gross) {
+  p.rect(x, y, 3, 2, F[1]).rect(x + 1, y + 2, 2, 1, F[2]);
+  if (gross) p.rect(x + 3, y + 1, 1, 2, F[2]).px(x + 3, y, F[1]);
+  p.px(x, y, F[0]).px(x + 1, y, F[0]).px(x, y + 1, mische(F[0], F[1], 0.5));
+  p.px(x + 2, y + 1, F[2]);
+}
+FORM.seltene_erden = (p) => {
+  // dunkles Muttergestein mit schillernden, bunten Erzbrocken
+  p.karte(0, 0, [
+    '................',
+    '................',
+    '................',
+    '................',
+    '.....SSSSS......',
+    '...SSSSSSSSSS...',
+    '..SSSSSSSSSSSs..',
+    '.SSSSSSSSSSSSs..',
+    '.SSSSSSSSSSSSss.',
+    '.SSSSSSSSSSSSss.',
+    '..SSSSSSSSSSss..',
+    '...ssSSSSSsss...',
+    '.....ssssss.....',
+    '................',
+    '................',
+    '................',
+  ], { S: '#5c5668', s: '#3c3848' });
+  p.rect(4, 5, 4, 1, '#7a748a').rect(3, 6, 2, 1, '#7a748a');
+  nugget(p, 3, 7, ['#ffb0f0', '#e050c8', '#9a2a8a'], true);
+  nugget(p, 8, 4, ['#b0fff0', '#36cdb8', '#1a7a7a'], true);
+  nugget(p, 10, 8, ['#fff0a0', '#f0b828', '#a8700a']);
+  nugget(p, 6, 10, ['#c8d0ff', '#6a7cff', '#3a3ab0']);
+  nugget(p, 7, 2, ['#d8ffb0', '#8ade3a', '#4a8a1a']);
+  for (const [x, y, c] of [[2, 3, '#ffb0f0'], [13, 3, '#b0fff0'], [14, 7, '#fff0a0'], [1, 11, '#c8d0ff']]) p.px(x, y, c);
+};
+FORM.deuterium = (p) => {
+  // hellblauer Tropfen mit Atom (Kern aus Proton und Neutron, Elektronenbahn)
+  p.karte(0, 0, [
+    '................',
+    '.......B........',
+    '.......B........',
+    '......BbB.......',
+    '......BbB.......',
+    '.....BbbbB......',
+    '....BbbbbbB.....',
+    '...BbbbbbbbB....',
+    '...BbbbbbbbBd...',
+    '..BbbbbbbbbbBd..',
+    '..BbbbbbbbbbBd..',
+    '..BbbbbbbbbbBd..',
+    '...BbbbbbbbBd...',
+    '....BBbbbBBd....',
+    '......dddd......',
+    '................',
+  ], { B: '#3a8fe0', b: '#8fd0ff', d: '#1f5aa8' });
+  p.px(6, 6, '#ffffff').px(5, 7, '#e4f6ff').px(7, 4, '#e4f6ff');
+  // Elektronenbahn (geneigte Ellipse) und Kern aus zwei Teilchen
+  for (let i = 0; i < 48; i++) {
+    const t = i / 48 * Math.PI * 2, x = Math.cos(t) * 4.6, y = Math.sin(t) * 1.6, w = -0.45;
+    p.px(8 + x * Math.cos(w) - y * Math.sin(w), 10 + x * Math.sin(w) + y * Math.cos(w), '#1f5aa8');
+  }
+  p.rect(6, 9, 2, 2, '#ffffff').px(7, 10, '#c8ecff');
+  p.rect(8, 9, 2, 2, '#2a6ad0').px(8, 9, '#5aa8f0');
+  p.px(12, 7, '#ffffff');
+};
+FORM.titan = (p) => {
+  // zwei gebürstete Titanplatten mit leicht violettem Anlaufschimmer
+  const platte = (x, y, b) => {
+    p.poly([[x + 2, y], [x + b + 2, y], [x + b, y + 3], [x, y + 3]], '#c6cad4');
+    p.rect(x, y + 4, b + 1, 2, '#80869a').rect(x + b, y + 3, 1, 3, '#5c6274');
+    p.px(x + b + 1, y + 2, '#5c6274').px(x + b + 1, y + 3, '#5c6274').px(x + b + 2, y + 1, '#5c6274');
+    p.rect(x, y + 3, b, 1, '#a4a9b8');
+    for (let i = 0; i < b - 2; i += 3) p.px(x + 3 + i, y + 1, '#e6e9f0').px(x + 2 + i, y + 2, '#b0b5c4');
+    p.px(x + 2, y, '#f4f6fa').px(x + 3, y, '#f4f6fa');
+    // Anlauffarben an der Schnittkante (typisch für Titan)
+    const an = ['#7a8ae0', '#8a7ad8', '#a87ac8', '#c890a8', '#d8b070'];
+    for (let i = 0; i <= b; i++) p.px(x + i, y + 5, an[Math.min(an.length - 1, Math.floor(i / (b + 1) * an.length))]);
+  };
+  platte(1, 8, 11);
+  platte(3, 3, 9);
+};
+FORM.helium3 = (p) => {
+  // gelbliche Gaskugel mit Ventil und einer "3" auf dem Bauch
+  p.rect(7, 1, 2, 2, '#9aa5b1').rect(6, 1, 4, 1, '#c8d0d8').px(9, 2, '#6b7682');
+  p.kreis(8, 9, 5.6, '#b8900a');
+  p.kreis(7.7, 8.7, 5, '#f2d34a');
+  p.ellipse(6.5, 7, 2.5, 2, '#ffe98a');
+  p.px(5, 5, '#ffffff').px(4, 6, '#fff6c8').px(6, 5, '#fff6c8');
+  p.rect(3, 9, 10, 1, '#d8b020');
+  p.karte(7, 7, ['333', '..3', '.33', '..3', '333'], { 3: '#7a5408' });
+  p.px(13, 10, '#9a7408').px(12, 12, '#9a7408');
+};
+FORM.antimaterie = (p) => {
+  // violett leuchtende Kugel zwischen zwei Magnetspulen
+  for (const [x, y] of [[1, 6], [14, 9], [2, 10], [13, 5]]) p.px(x, y, '#e8c8ff');
+  const spule = (y) => {
+    p.ellipse(8, y, 6, 1.2, '#7a8494'); p.ellipse(8, y - 0.5, 6, 0.7, '#c8d0d8');
+    for (let x = 3; x <= 13; x += 2) p.px(x, y + 1, '#c87a3a');
+    p.px(2, y, '#9aa5b1').px(14, y, '#5a6472');
+  };
+  spule(2);
+  p.rect(3, 3, 1, 10, '#7a8494').rect(12, 3, 1, 10, '#5a6472');
+  p.kreis(8, 8, 3.6, '#8a3ae0');
+  p.kreis(8, 8, 2.6, '#c060ff');
+  p.kreis(7.6, 7.6, 1.4, '#f0d0ff');
+  p.px(7, 7, '#ffffff');
+  for (const [x, y] of [[4, 8], [11, 7], [8, 4], [8, 12]]) p.px(x, y, '#d8a8ff');
+  spule(13);
+};
+
 const IDS = ['weizen', 'reis', 'mais', 'fisch', 'wild', 'rinder', 'schafe', 'bananen', 'wale', 'muscheln', 'datteln', 'hirse', 'elefanten', 'pilze',
   'holz', 'stein', 'marmor', 'salz', 'lehm', 'kupfer', 'zinn', 'eisen', 'pferde', 'salpeter', 'kohle', 'oel', 'aluminium', 'uran',
-  'wein', 'gewuerze', 'seide', 'weihrauch', 'edelsteine', 'gold_erz', 'silber', 'zucker', 'elfenbein', 'pelze', 'perlen', 'kakao', 'baumwolle', 'farbstoffe', 'tee', 'bernstein', 'kristalle', 'irrlichter'];
+  'wein', 'gewuerze', 'seide', 'weihrauch', 'edelsteine', 'gold_erz', 'silber', 'zucker', 'elfenbein', 'pelze', 'perlen', 'kakao', 'baumwolle', 'farbstoffe', 'tee', 'bernstein', 'kristalle', 'irrlichter',
+  'seltene_erden', 'deuterium'];
 
 for (const id of IDS) definiere('rohstoff', id, { w: 16, h: 16, zeichne: (p) => { FORM[id](p); rand(p); } });

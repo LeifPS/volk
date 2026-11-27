@@ -1,5 +1,6 @@
 // Konsistenzprüfung des Spielzustands (für Tests, Migration und das Admin-Werkzeug).
 // Liefert eine Liste verständlicher Probleme; eine leere Liste heißt: alles in Ordnung.
+import './spiel.js'; // zuerst die Engine laden (sonst Kreis-Import einheiten.js <-> spiel.js)
 import { EINHEIT, GEB, WUNDER_NACH_ID, FORSCHUNG, VERBESSERUNG, BEFOERDERUNG } from '../daten/index.js';
 import { schichtVon } from './einheiten.js';
 
