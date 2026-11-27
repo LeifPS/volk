@@ -1,8 +1,19 @@
 // Netzwerk: Anmeldung per HTTP, Spiel per WebSocket (Befehle, Fragen, Deltas), automatische Wiederverbindung, Uhrabgleich.
 import { Z, melde, vollSetzen, deltaAnwenden, setzeVersatz } from './zustand.js';
+import { SPIEL_VERSION } from '../../shared/version.js';
 
 let ws = null, naechsteId = 1, offen = new Map(), wiederVersuche = 0, token = null, lokal = null;
 const TOKEN_KEY = 'volk_token';
+
+/** Läuft im Browser noch alter Code, während der Server schon neu ist: einmal neu laden (Schutz gegen Endlosschleife). */
+function versionPruefen(v) {
+  if (!v || v === SPIEL_VERSION) return;
+  try {
+    if (sessionStorage.getItem('volk_neu_geladen') === v) return;
+    sessionStorage.setItem('volk_neu_geladen', v);
+  } catch { return; }
+  location.reload();
+}
 
 export function gespeichertesToken() { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } }
 export function tokenSpeichern(t) { try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch { /* egal */ } }
@@ -41,7 +52,7 @@ export function verbinden(t) {
 export function empfangen(m) {
   if (m.t === 'voll') { vollSetzen(m.ansicht, m.nebel); return; }
   if (m.t === 'delta') { deltaAnwenden(m); return; }
-  if (m.t === 'hallo') { Z.konto = m.konto; Z.volk = m.volk; setzeVersatz(m.zeit - Date.now()); melde('hallo', m); return; }
+  if (m.t === 'hallo') { versionPruefen(m.version); Z.konto = m.konto; Z.volk = m.volk; setzeVersatz(m.zeit - Date.now()); melde('hallo', m); return; }
   if (m.t === 'uhr' || m.t === 'antwort') {
     const p = offen.get(m.id);
     if (p) { offen.delete(m.id); p.ok(m); }

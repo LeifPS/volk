@@ -14,12 +14,13 @@ import { diplomatie } from './diplomatie.js';
 import { akteure } from './akteure.js';
 import { ansicht } from './ansicht.js';
 import { start } from './start.js';
+import { ZUSTAND_VERSION, migriere } from './migration.js';
 
 export class SpielFehler extends Error {}
 /** Wirft einen verständlichen Fehler für den Spieler, wenn die Bedingung nicht erfüllt ist. */
 export function pruefe(bedingung, text) { if (!bedingung) throw new SpielFehler(text); }
 
-export const ZUSTAND_VERSION = 1;
+export { ZUSTAND_VERSION };
 
 export function leererZustand(t = jetzt()) {
   return {
@@ -40,6 +41,8 @@ export class Spiel {
     this._stadtPos = null;        // Feld -> Stadt-ID
     this._nebel = {};             // Volk -> Uint8Array erkundet (dekodiert)
     this.ausgehend = [];          // Ereignisse für Clients (z. B. Kampf-Animationen)
+    this.migrationen = migriere(this.z, this);   // Altstände auf die aktuelle Version heben (siehe migration.js)
+    if (this.migrationen.length) this.allesMarkieren();
     this.befoerderungenMigrieren();
     this.wegeMigrieren();
   }
@@ -56,6 +59,16 @@ export class Spiel {
       else if (e.befoerderungen && e.ep > epFuerBefoerderung(e.befoerderungen.length + 1)) { e.ep = epFuerBefoerderung(e.befoerderungen.length + 1); geaendert = true; }
       if (geaendert) this.schmutzig.add('e' + e.id);
     }
+  }
+
+  /** Markiert jede Speicherzeile als geändert (nach einer Migration wird alles neu geschrieben). */
+  allesMarkieren() {
+    this.markiere('g');
+    for (const id of Object.keys(this.z.voelker)) { this.markiere('v' + id); this.markiere('n' + id); }
+    for (const id of Object.keys(this.z.staedte)) this.markiere('s' + id);
+    for (const id of Object.keys(this.z.einheiten)) this.markiere('e' + id);
+    for (const id of Object.keys(this.z.felder)) this.markiere('f' + id);
+    this._raten = {}; this.positionenNeu();
   }
 
   // ---------- Grundlagen ----------

@@ -12,7 +12,9 @@ botErweitern(Spiel);
 const TAGE = +(process.argv[2] || 32);
 const still = process.argv.includes('--still');
 const STD = 3600e3, TAG = 24 * STD;
-const ZIEL_TAGE = [0.3, 0.9, 1.1, 1.5, 3, 6.7, 7.7]; // effektive Tage je Zeitalter (Tempo-Update 2026-11-17: alles schneller, nur gegen Ende langsamer)
+// Effektive Tage je Zeitalter (Tempo-Update 2026-11-17: alles schneller, nur gegen Ende langsamer).
+// Atomzeit: 2,5 Tage gemessen nach dem Tempo-Update (der alte Zielwert 7,7 war nicht nachgezogen worden).
+const ZIEL_TAGE = [0.3, 0.9, 1.1, 1.5, 3, 6.7, 2.5];
 
 const s = new Spiel(leererZustand(uhr.jetzt()));
 s.t = uhr.jetzt();

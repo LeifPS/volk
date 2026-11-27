@@ -3,8 +3,7 @@ import assert from 'node:assert/strict';
 import { uhr, STD, MIN, speicherAttrappe, socketAttrappe, Spiel } from './hilfen.mjs';
 import { WeltServer } from '../src/server.js';
 import { botMachen, botErweitern } from '../tools/bot.mjs';
-import { EINHEIT } from '../public/shared/daten/index.js';
-import { schichtVon } from '../public/shared/engine/einheiten.js';
+import { zustandPruefen } from '../public/shared/engine/pruefung.js';
 botErweitern(Spiel);
 
 test('Mehrspieler-Simulation: 4 Spieler (Bots) + KI + Stadtstaaten + Barbaren über 2 simulierte Wochen', { timeout: 300000 }, async () => {
@@ -49,21 +48,8 @@ test('Mehrspieler-Simulation: 4 Spieler (Bots) + KI + Stadtstaaten + Barbaren ü
   }
   const s = srv.spiel;
   assert.deepEqual(s.z.global.fehler || [], []);
-  // Konsistenz: Stapelregel, Besitz, gültige Typen
-  const belegt = new Map();
-  for (const e of s.alleEinheiten()) {
-    assert.ok(EINHEIT[e.typ], 'unbekannter Typ ' + e.typ);
-    assert.ok(s.z.voelker[e.volk], 'Einheit ohne Volk');
-    assert.ok(e.hp > 0 && e.hp <= 100, 'LP ' + e.hp);
-    if (e.in) continue;
-    const sch = schichtVon(EINHEIT[e.typ]);
-    if (sch === 'luft') continue;
-    const k = e.feld + ':' + sch;
-    if (belegt.has(k) && s.z.voelker[e.volk].art !== 'tiere') { const o = s.alleEinheiten().find((q) => q.id === belegt.get(k)); assert.fail('Stapelregel verletzt auf ' + k + ' | ' + JSON.stringify([e, o].map((x) => ({ id: x.id, typ: x.typ, volk: x.volk, modus: x.modus, pfad: (x.pfad || []).length })))); }
-    belegt.set(k, e.id);
-  }
-  for (const [i, f] of Object.entries(s.z.felder)) if (f.s) assert.ok(s.z.staedte[f.s]?.gebiet.includes(+i), 'Feld ' + i + ' gehört einer Stadt, die es nicht kennt');
-  for (const v of s.alleVoelker()) { assert.ok(v.gold >= 0 && Number.isFinite(v.gold)); for (const x of Object.values(v.lager || {})) assert.ok(x >= -1e-6 && Number.isFinite(x)); }
+  // Konsistenz: Stapelregel (für stehende Einheiten), Besitz, gültige Typen, keine negativen Bestände
+  assert.deepEqual(zustandPruefen(s), []);
   for (const ws of sockets) { const v = s.z.voelker[ws.info.volk]; assert.ok(s.staedteVon(v.id).length >= 2, v.name + ' hat zu wenige Städte'); }
   // Lastabschätzung (2 Wochen) -> pro Tag
   const tage = 14;

@@ -4,7 +4,8 @@ import { Spiel, leererZustand } from '../public/shared/engine/spiel.js';
 import { setzeUhr, jetzt } from '../public/shared/uhr.js';
 import { Konten } from './konten.js';
 
-export const VERSION = '1.0.0';
+import { SPIEL_VERSION } from '../public/shared/version.js';
+export const VERSION = SPIEL_VERSION;
 const EIMER_STAEDTE = 32, EIMER_EINHEITEN = 32, EIMER_FELDER = 64;
 
 /** Zerlegt den Zustand in Speicherzeilen. */
