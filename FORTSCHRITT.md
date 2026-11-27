@@ -1,15 +1,31 @@
 # Fortschritt (Arbeitsgedächtnis)
 
-## Erledigt
-- Fundament: wrangler.jsonc, Worker + Durable Object `Welt` (SQLite, Eimer-Speicherung), Konten (PBKDF2), WebSocket-Hibernation, Alarm auf nächstes Ereignis, Admin-Endpunkte + `tools/admin.mjs`, Test-Zeitregler (nur mit `ZEITFAKTOR_ERLAUBT`).
-- Gemeinsamer Code `public/shared/` (Hex, Zufall, Karte 192×120, Regeln, A*, Uhr) und Daten (242 Forschungen, 96 Einheiten, 79 Gebäude, 8 Wunder, 91 Beförderungen (13 Bäume, Civ-6-System), 50 Verbesserungen, 46 Rohstoffe, 23 Gelände, 5 KI, 12 Stadtstaaten, 6 Barbarenlager).
-- Engine komplett (Wirtschaft, Bau, Forschung, Bewegung, Kampf, Diplomatie, Handel, KI, Stadtstaaten, Barbaren, Raubtiere, Natur, Jahreszeiten, Ansicht/Deltas).
-- Alle Sprites, Galerie. Client: Renderer, Eingabe, HUD, alle Fenster (Forschungsbaum, Stadt, Reich, Diplomatie/Handel, Rangliste, Lexikon, Hilfe, Einstellungen), Tutorial, Chiptune-Audio, Demo-Modus.
-- Tests: 48/48 (`npm test`), Browser-Läufe 27/27 (`npm run browsertest`), Balance-Simulation (ganzer Baum ~27 Tage).
-- Hub-Paket: Icon, Favicon, Banner-Prompt + Zuschnitt-Skript, games-eintrag.json, ANLEITUNG.md, 10 Screenshots, Trailer (37 s).
-- Doku: README, ENTSCHEIDUNGEN (inkl. Lastabschätzung), ABNAHME.
+## Ausbau "Volk 3" in Volk (ab 2026-11-27, Branch `volk3-ausbau`)
 
-## Offen / nächste Schritte
-- Code-Review eingearbeitet (14 Fehler behoben, Regressionstests). Tests 56/56, Browser 27/27.
-- Push nach GitHub ist in dieser Umgebung nicht erlaubt → Leif pusht von Hand.
-- Beförderungen komplett neu nach Civ 6: Bäume mit 4 Stufen, 15 × Stufe EP, höchstens 5 Beförderungen, Heilung 50 LP, alte Beförderungen werden beim Laden entfernt (`befoerderungenMigrieren`).
+Auftrag: `AUFTRAG-VOLK3.md`, Plan: `PLAN-ZEITALTER-8-11.md`, Abweichungen: `ENTSCHEIDUNGEN.md` (Abschnitt "Ausbau Volk 3").
+Kernregel: Die Live-Welt muss nach jedem Schritt weiterlaufen (Migration, Karte bitgleich).
+
+| Stufe | Inhalt | Stand |
+|---|---|---|
+| 0 | Branch, Auftrag ins Repo, Entscheidungen | fertig |
+| 1 | Migrationsgerüst, Altstand-Test, Freischalt-Register, vorbestehende Fehler | offen |
+| 2 | Zeitalter KI und Fusion | offen |
+| 3 | Zeitalter Weltraum und Sterne | offen |
+| 4 | Weltraum-Ebene | offen |
+| 5 | Naturwunder, Wunder-Platzierung | offen |
+| 6 | Distrikte | offen |
+| 7 | Civics, Regierungen, Politikkarten | offen |
+| 8 | Religion | offen |
+| 9 | Eurekas | offen |
+| 10 | Symbole über Einheiten | offen |
+| 11 | Animationen | offen |
+| 12 | Grafik-Politur | offen |
+| 13 | Balancing, Last | offen |
+| 14 | Doku | offen |
+
+## Ausgangslage auf main (fedd000)
+- `npm test`: 78 von 79 grün ohne Mehrspieler; rot: Balance (Atomzeit 2,4 statt Ziel 7,7 Tage) und Mehrspieler (Stapelregel: zwei KI-Legionäre auf einem Feld).
+- Push-Rechte auf LeifPS/volk fehlen noch (403 für alexander-schm).
+
+## Erledigt (frühere Fassung)
+- Komplettes Spiel (siehe Git-Historie bis fedd000).

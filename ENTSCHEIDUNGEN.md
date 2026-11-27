@@ -53,3 +53,18 @@ Gemessen mit der Mehrspieler-Simulation (`tests/mehrspieler.test.mjs`: 4 aktive 
 | gespeicherte Zeilen insgesamt | ~175 | 5 GB |
 
 Dazu kommen echte Klicks: 5 Spieler × 2 Stunden × ~3 Befehle/Minute ≈ 1 800 WebSocket-Nachrichten pro Tag, die im Free-Plan mit 20:1 als Anfragen zählen (≈ 90) und je 2–5 Zeilen schreiben (≈ 7 000). Gelesen werden beim Aufwachen des Objekts ~175 Zeilen; selbst bei 3 000 Aufwach-Vorgängen sind das ~0,5 Mio. von 5 Mio. erlaubten gelesenen Zeilen. Die aktive Dauer bleibt dank WebSocket-Hibernation weit unter 13 000 GB-s. **Der Free-Plan reicht mit großem Abstand.**
+
+---
+
+# Ausbau "Volk 3" direkt in Volk (ab 2026-11-27)
+
+Grundlage: `AUFTRAG-VOLK3.md` und `PLAN-ZEITALTER-8-11.md` (beide im Repo). Abweichend vom Auftrag (Vorgabe von Alexander/Leif im Startgespräch):
+
+- **Es gibt kein volk3.** Der Ausbau entsteht direkt im Repo `LeifPS/volk`.
+- **Die laufende Welt bleibt komplett erhalten** (Abschnitt 3b des Auftrags "keine Migration" gilt deshalb nicht). Konten, Völker, Städte, Einheiten, Forschungen, Gebäude, Wunder, Verbesserungen, Diplomatie: alles läuft nach dem Update weiter. Daraus folgen diese Regeln:
+  - **Die Erdkarte bleibt bitgleich** (gleicher Seed, gleicher Karten-Hash `kartenHash`). Keine Neugestaltung von Küsten, Flüssen oder Biomen. Alles Neue auf der Erde (neue Rohstoffe, Naturwunder) kommt als **zusätzliche Schicht** mit eigenem Hash dazu, nur auf Feldern ohne Rohstoff bzw. ohne Stadt/Besitz.
+  - **Neue Rohstoffe werden hinten an `ROHSTOFFE` angehängt**, weil die Karte Rohstoffe als Index speichert.
+  - **IDs bleiben**, wo sie im Spielstand vorkommen. Wo eine Umbenennung nötig ist, gibt es eine Zuordnungstabelle in der Migration.
+  - **Versionierte Migration:** `ZUSTAND_VERSION` steigt, jeder Schritt `migriere_vN_zu_vN+1` ist eine eigene, getestete Funktion (`public/shared/engine/migration.js`). Getestet wird mit einem echten Altstand (`tests/daten/altstand-v1.json`), der mit dem Code von `main` vor dem Ausbau erzeugt wurde.
+  - **Durable Object:** Klasse `Welt` bleibt, keine neue Klasse, deshalb kein neuer Migrations-Tag in `wrangler.jsonc` nötig (Speicherformat SQLite-Tabelle `daten` bleibt).
+- **Arbeitsweise:** Die Stufen landen als einzelne Commits auf dem Branch `volk3-ausbau`. Nach `main` (= live) kommt nur, was spielbar und getestet ist.
