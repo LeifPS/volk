@@ -83,3 +83,10 @@ Grundlage: `AUFTRAG-VOLK3.md` und `PLAN-ZEITALTER-8-11.md` (beide im Repo). Abwe
 - **Neue Rohstoffe als Zusatzschicht** (`zusatzschicht: true`): Seltene Erden 31 Vorkommen (Hügel, Gebirge, Kristallgebirge, Wüste), Deuterium 109 (Küste, Meer, Tiefsee). Grundkarte bleibt `cf1bae76`.
 - **Wunder mit "benötigt"** akzeptieren auch spätere Ausbaustufen des Gebäudes (z. B. Sternenhafen statt Raumhafen).
 - **Grafik**: Sprites für alle Einheiten, Gebäude, Wunder, Verbesserungen und Lagergüter der vier neuen Zeitalter sowie die vier Stadtstile (smart, fusion, orbital, stern) entstanden parallel durch vier Hilfs-Agenten; selbst gesichtet und für gut befunden. Musik: vier neue Chiptune-Themen.
+
+## Stufe 3: Weltraum- und Sternenzeitalter (Daten ohne Ebene)
+- Daten laut Plan, mit den Vorgaben des Auftrags: Die Gebäude Mondbasis, Marskolonie und Asteroidenbergwerk entfallen. Ihre Forschungen (Mondbasis, Marskolonie, Asteroidenbergbau, Helium-3-Abbau) geben vorerst kleine Boni; in Stufe 4 schalten sie Kolonisten und die Weltraum-Verbesserungen frei.
+- **Militärkette** Kaserne → Waffenkammer → Militärakademie → Plasmaschmiede → Orbitalwerft → Sternenwerft (die Orbitalwerft "braucht Raumhafen" im Plan wäre unerfüllbar geworden, sobald der Sternenhafen den Raumhafen ersetzt).
+- **Materiewandler** gibt wie seine Vorgänger der Fabrik-Kette einen Bauplatz und liefert zusätzlich Stein und Eisen.
+- Zukunftstechnologien in Spalte 68 mit den Plan-Voraussetzungen plus je einer sonst offenen Sackgasse.
+- Titan und Helium-3 haben bis zur Weltraum-Ebene (Stufe 4) noch keine Quelle; Einheiten, die sie kosten, sind bis dahin nicht baubar (nur auf dem Arbeitszweig, nie live).

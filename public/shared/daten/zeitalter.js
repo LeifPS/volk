@@ -9,5 +9,7 @@ export const ZEITALTER = [
   { id: 'atom', name: 'Atomzeit', farbe: '#4a8c8c', stil: 'hochhaus', beschreibung: 'Hochhäuser, Kühltürme, Raketen und das Atom.' },
   { id: 'ki', name: 'KI-Zeitalter', farbe: '#5b8cff', stil: 'smart', beschreibung: 'Glastürme, Drohnen und lernende Maschinen.' },
   { id: 'fusion', name: 'Fusionszeitalter', farbe: '#f2a33a', stil: 'fusion', beschreibung: 'Weiße Kuppeln, Plasma und Magnetbahnen.' },
+  { id: 'weltraum', name: 'Weltraumzeitalter', farbe: '#8e7cc3', stil: 'orbital', beschreibung: 'Raumhäfen, Mondbasen und der Weg zu den Sternen.' },
+  { id: 'sterne', name: 'Sternenzeitalter', farbe: '#e6eef7', stil: 'stern', beschreibung: 'Kristalltürme, Antimaterie und Schiffe für Generationen.' },
 ];
 export const ZEITALTER_IDS = ZEITALTER.map((z) => z.id);

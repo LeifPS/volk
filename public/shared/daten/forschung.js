@@ -11,8 +11,8 @@ const MIN = 60;
 const STD = 3600;
 
 /** Erste Spalte jedes Zeitalters (Antike 0-5, Klassik 6-10, Mittelalter 11-16, Renaissance 17-22, Industrie 23-29, Moderne 30-36, Atomzeit 37-43,
- *  KI-Zeitalter 44-49, Fusionszeitalter ab 50). */
-export const SPALTEN_ZEITALTER = [0, 6, 11, 17, 23, 30, 37, 44, 50];
+ *  KI-Zeitalter 44-49, Fusionszeitalter 50-55, Weltraumzeitalter 56-61, Sternenzeitalter 62-67, Zukunft 68). */
+export const SPALTEN_ZEITALTER = [0, 6, 11, 17, 23, 30, 37, 44, 50, 56, 62];
 
 /** Basisdauer in Sekunden je Spalte. */
 export const DAUER_JE_SPALTE = [
@@ -25,11 +25,13 @@ export const DAUER_JE_SPALTE = [
   55 * STD, 57 * STD, 59 * STD, 61 * STD, 63 * STD, 65 * STD, 67 * STD, // Atomzeit: 2 bis 4 Tage (per Balance-Simulation eingestellt)
   70 * STD, 72 * STD, 74 * STD, 76 * STD, 78 * STD, 80 * STD, // KI-Zeitalter
   82 * STD, 84 * STD, 86 * STD, 88 * STD, 90 * STD, 92 * STD, // Fusionszeitalter
-  94 * STD, // Zukunftstechnologien
+  94 * STD, 96 * STD, 98 * STD, 100 * STD, 102 * STD, 104 * STD, // Weltraumzeitalter
+  106 * STD, 108 * STD, 110 * STD, 112 * STD, 114 * STD, 116 * STD, // Sternenzeitalter
+  120 * STD, // Zukunftstechnologien
 ];
 
 /** Schlüsselforschung je Zeitalter 1..10 (eröffnet den Zeitalter-Aufstieg). */
-const SCHLUESSEL = new Set(['eisenverarbeitung', 'feudalismus', 'schiesspulver', 'dampfmaschine', 'massenproduktion', 'atomtheorie', 'lernende_maschinen', 'kernfusion']);
+const SCHLUESSEL = new Set(['eisenverarbeitung', 'feudalismus', 'schiesspulver', 'dampfmaschine', 'massenproduktion', 'atomtheorie', 'lernende_maschinen', 'kernfusion', 'orbitalbau', 'sternenantrieb']);
 /** Wiederholbare Zukunftstechnologien. */
 const WIEDERHOLBAR = new Set(['zukunft_verteidigung', 'zukunft_wissen', 'zukunft_wirtschaft', 'zukunft_industrie', 'zukunft_kultur']);
 
@@ -390,12 +392,72 @@ const ROH = [
   ['kuenstliche_sonne_technik', 'Künstliche Sonne', 'raumfahrt', 55, ['fusionsreaktor_bau', 'energienetz_global', 'quantencomputer_bau'], ['w:kuenstliche_sonne'], 'Ein Stern, gebaut von Menschenhand.'],
   ['orbitalraketen', 'Orbitalraketen', 'raumfahrt', 55, ['hyperschallraketen', 'kernfusion'], ['b:sicht=1'], 'Wiederverwendbare Raketen machen den Weg ins All alltäglich.'],
 
+  // ======================= WELTRAUMZEITALTER (9) =======================
+  // Spalte 56
+  ['orbitalbau', 'Orbitalbau', 'raumfahrt', 56, ['orbitalraketen', 'supraleiter'], ['g:raumhafen', 'e:raumsonde'], 'Werften und Häfen im Orbit: der Beginn eines neuen Zeitalters.'],
+  ['leichtbau_titan', 'Titanlegierungen', 'industrie', 56, ['supraleiter', 'seltene_erden_abbau'], ['b:produktion_prozent=3'], 'Leicht wie Aluminium, hart wie Stahl: Titan für Raumschiffe und Türme.'],
+  ['raumfahrtmedizin', 'Raumfahrtmedizin', 'wissen', 56, ['nanomedizin'], ['b:heilung_prozent=10'], 'Der Körper lernt, monatelang in der Schwerelosigkeit zu leben.'],
+  // Spalte 57
+  ['orbitalwerften', 'Orbitalwerften', 'raumfahrt', 57, ['orbitalbau'], ['g:orbitalwerft'], 'Schiffe, die nie den Boden berühren, werden direkt im All gebaut.'],
+  ['raumjaeger_technik', 'Raumjäger', 'luft', 57, ['orbitalbau', 'hyperschalltechnik'], ['e:raumjaeger'], 'Wendige Jäger kämpfen zwischen Erde und Mond.'],
+  ['orbitale_solarkraft', 'Orbitale Solarkraft', 'industrie', 57, ['orbitalbau', 'energienetz_global'], ['g:orbitalkraftwerk'], 'Riesige Sonnensegel im All schicken Energie zur Erde.'],
+  ['raumanzug_infanterie', 'Raumlandetruppen', 'militaer', 57, ['orbitalbau', 'plasmawaffen'], ['e:raumlandetruppe'], 'Soldaten in Raumanzügen landen dort, wo es keine Luft gibt.'],
+  ['mondlandung', 'Mondbasis', 'raumfahrt', 57, ['orbitalbau', 'raumfahrtmedizin'], ['b:wissenschaft_prozent=3'], 'Die ersten Menschen bleiben auf dem Mond.'],
+  // Spalte 58
+  ['helium3_abbau', 'Helium-3-Abbau', 'industrie', 58, ['mondlandung', 'kernfusion'], ['b:produktion_prozent=3'], 'Der Mondstaub enthält den saubersten Brennstoff der Fusion.'],
+  ['orbitalabwehr_technik', 'Orbitalabwehr', 'militaer', 58, ['raumjaeger_technik', 'energieschilde'], ['g:orbitalabwehr', 'e:orbitalflak'], 'Geschütze, die bis in den Orbit reichen.'],
+  ['orbitalbomber_technik', 'Orbitalbomber', 'luft', 58, ['raumjaeger_technik', 'hyperschallraketen'], ['e:orbitalbomber'], 'Bomber, die aus dem All angreifen.'],
+  ['asteroidenbergbau', 'Asteroidenbergbau', 'industrie', 58, ['mondlandung', 'leichtbau_titan'], ['b:produktion_prozent=3'], 'Ein einziger Felsbrocken im All enthält mehr Metall als ein ganzes Gebirge.'],
+  ['raumfrachter_technik', 'Raumfrachter', 'wirtschaft', 58, ['orbitalbau', 'drohnenlogistik'], ['e:raumfrachter', 'e:orbitalfaehre', 'b:handel_gold_prozent=10'], 'Frachter pendeln zwischen Erde, Mond und Stationen.'],
+  // Spalte 59
+  ['marsmission', 'Marskolonie', 'raumfahrt', 59, ['mondlandung', 'raumfahrtmedizin'], ['b:sicht=1'], 'Der rote Planet wird zur zweiten Heimat.'],
+  ['biokuppeln', 'Biokuppeln', 'wirtschaft', 59, ['mondlandung', 'vertikale_landwirtschaft'], ['g:biokuppel', 'b:nahrung_prozent=5'], 'Gärten unter Glas, auf der Erde wie im All.'],
+  ['kinetische_waffen', 'Kinetische Orbitalwaffen', 'militaer', 59, ['orbitalabwehr_technik', 'schienenkanonen'], ['e:kinetischer_stab'], 'Ein Metallstab aus dem Orbit trifft mit der Wucht eines Meteoriten.'],
+  ['schwerelosigkeitstaktik', 'Schwerelosigkeits-Taktik', 'militaer', 59, ['raumanzug_infanterie', 'gefechts_ki'], ['e:mondpanzer', 'b:erfahrung_prozent=10'], 'Kämpfen, wo oben und unten nichts mehr bedeuten.'],
+  ['raumstationsnetz', 'Raumstationsnetz', 'wissen', 59, ['orbitalwerften', 'quantencomputer_bau'], ['b:wissenschaft_prozent=5'], 'Ein Ring aus Laboren umkreist die Erde.'],
+  // Spalte 60
+  ['weltraumaufzug_technik', 'Weltraumaufzug', 'raumfahrt', 60, ['leichtbau_titan', 'raumstationsnetz'], ['w:weltraumaufzug'], 'Ein Seil bis in den Himmel: Fracht fährt mit dem Aufzug ins All.'],
+  ['weltraumrecht', 'Weltraumrecht', 'staat', 60, ['raumstationsnetz', 'fusionsstaedte'], ['b:zufriedenheit=2', 'b:unterhalt_rabatt=10'], 'Gesetze für Kolonien, Bergwerke und Raumstationen.'],
+  // Spalte 61
+  ['kolonialverwaltung', 'Kolonialverwaltung', 'staat', 61, ['marsmission', 'weltraumrecht'], ['b:kultur_prozent=5', 'b:grenzwachstum_prozent=10'], 'Kolonien bekommen eigene Räte und eigene Feste.'],
+  ['antimaterie_physik', 'Antimaterie-Physik', 'raumfahrt', 61, ['asteroidenbergbau', 'marsmission', 'kinetische_waffen'], ['b:wissenschaft_prozent=5'], 'Materie und Antimaterie vernichten sich und werden zu reiner Energie.'],
+
+  // ======================= STERNENZEITALTER (10) =======================
+  // Spalte 62
+  ['sternenantrieb', 'Sternenantrieb', 'raumfahrt', 62, ['antimaterie_physik', 'helium3_abbau'], ['b:wissenschaft_prozent=5'], 'Ein Antrieb für die Reise zu fremden Sternen: der Beginn eines neuen Zeitalters.'],
+  ['exotische_werkstoffe', 'Exotische Werkstoffe', 'industrie', 62, ['antimaterie_physik', 'leichtbau_titan'], ['b:produktion_prozent=5'], 'Stoffe, die es in der Natur nicht gibt: leichter als Luft, härter als Diamant.'],
+  ['gravitationsphysik', 'Gravitationsphysik', 'wissen', 62, ['antimaterie_physik', 'quantencomputer_bau'], ['b:wissenschaft_prozent=3'], 'Die Schwerkraft wird zum Werkzeug.'],
+  // Spalte 63
+  ['antimaterie_erzeugung', 'Antimaterie-Erzeugung', 'industrie', 63, ['sternenantrieb', 'exotische_werkstoffe'], ['g:antimateriefabrik'], 'Fabriken stellen den kostbarsten Stoff des Universums her.'],
+  ['sternenhafen_bau', 'Sternenhäfen', 'raumfahrt', 63, ['sternenantrieb', 'orbitalwerften'], ['g:sternenhafen', 'g:sternenwerft', 'e:sternensonde'], 'Häfen für Schiffe, die zwischen den Sternen reisen.'],
+  ['materiewandlung', 'Materiewandlung', 'industrie', 63, ['exotische_werkstoffe', 'autonome_fertigung'], ['g:materiewandler'], 'Aus Staub wird Stein, aus Stein wird Eisen.'],
+  ['nanoschwaerme', 'Nanoschwärme', 'militaer', 63, ['exotische_werkstoffe', 'schwerelosigkeitstaktik'], ['e:nanoschwarm'], 'Milliarden winziger Maschinen formen sich zu Kriegern.'],
+  // Spalte 64
+  ['sternenobservatorien', 'Sternenobservatorien', 'wissen', 64, ['gravitationsphysik', 'raumstationsnetz'], ['g:sternenobservatorium', 'b:sicht=1'], 'Teleskope so groß wie Städte blicken bis an den Rand des Alls.'],
+  ['gravitationswaffen', 'Gravitationswaffen', 'militaer', 64, ['gravitationsphysik', 'kinetische_waffen'], ['e:gravitationswerfer'], 'Waffen, die Mauern unter ihrem eigenen Gewicht zerbrechen lassen.'],
+  ['sternenjaeger_technik', 'Sternenjäger', 'luft', 64, ['sternenhafen_bau', 'raumjaeger_technik'], ['e:sternenjaeger'], 'Jäger mit kristallinen Flügeln und Antimaterie-Antrieb.'],
+  ['planetarer_schild_technik', 'Planetarer Schild', 'militaer', 64, ['gravitationsphysik', 'energieschilde', 'orbitalabwehr_technik'], ['g:planetarer_schild'], 'Ein Schild, der ganze Städte vor allem schützt.'],
+  ['antimaterie_panzerung', 'Antimaterie-Panzerung', 'militaer', 64, ['antimaterie_erzeugung', 'nanoschwaerme'], ['e:antimaterie_panzer'], 'Panzer mit einem Herz aus gebändigter Antimaterie.'],
+  // Spalte 65
+  ['phasentechnik', 'Phasentechnik', 'militaer', 65, ['planetarer_schild_technik', 'nanoschwaerme'], ['e:phasenflak'], 'Abwehrfelder, die zwischen den Dimensionen schwingen.'],
+  ['sternenbomber_technik', 'Sternenbomber', 'luft', 65, ['sternenjaeger_technik', 'orbitalbomber_technik'], ['e:sternenbomber'], 'Gewaltige Bomber, die aus dem Sternenlicht angreifen.'],
+  ['gravitationsschiffe', 'Gravitationsschiffe', 'see', 65, ['antimaterie_erzeugung', 'plasmaschiffe'], ['e:gravitationskreuzer'], 'Schiffe schweben über den Wellen, getragen von Gravitationsringen.'],
+  ['terraforming', 'Terraforming', 'wirtschaft', 65, ['biokuppeln', 'antimaterie_erzeugung'], ['g:terraformer', 'b:nahrung_prozent=5'], 'Wüsten werden grün, kalte Welten werden warm.'],
+  ['welterbe_archiv', 'Welterbe-Archiv', 'staat', 65, ['kolonialverwaltung', 'virtuelle_welten'], ['g:weltarchiv', 'b:kultur_prozent=5'], 'Alles, was die Völker je geschaffen haben, wird für immer bewahrt.'],
+  // Spalte 66
+  ['antimaterie_waffen', 'Antimaterie-Waffen', 'militaer', 66, ['antimaterie_panzerung', 'gravitationswaffen'], ['e:antimaterie_rakete'], 'Eine Rakete mit Antimaterie: ein Ziel, eine Explosion, kein Entkommen.'],
+  ['sternenlogistik', 'Sternenlogistik', 'wirtschaft', 66, ['sternenhafen_bau', 'raumfrachter_technik'], ['e:sternenfrachter', 'b:handel_gold_prozent=10', 'b:handelsrouten=1'], 'Handelswege reichen nun über die ganze Welt und bis ins All.'],
+  ['stellare_kultur', 'Stellare Kultur', 'staat', 66, ['terraforming', 'welterbe_archiv'], ['b:zufriedenheit=3', 'b:kultur_prozent=5'], 'Kunst, die vom Leben zwischen den Sternen erzählt.'],
+  // Spalte 67
+  ['arche_technik', 'Generationenschiff', 'raumfahrt', 67, ['sternenlogistik', 'terraforming', 'sternenobservatorien'], ['w:sternenarche'], 'Ein Schiff, in dem Generationen geboren werden und sterben, bevor es ankommt.'],
+  ['sternenfrieden', 'Sternenfrieden', 'staat', 67, ['stellare_kultur', 'antimaterie_waffen'], ['b:zufriedenheit=2', 'b:stadt_staerke=3'], 'Die Völker schwören, die Sterne gemeinsam zu teilen.'],
+
   // ======================= ZUKUNFT (wiederholbar, am Ende des letzten Zeitalters) =======================
-  ['zukunft_wissen', 'Zukunftstechnologie: Wissen', 'wissen', 56, ['weltgehirn_technik', 'kuenstliche_sonne_technik', 'nanomedizin'], ['b:wissenschaft_prozent=2'], 'Jede Antwort wirft neue Fragen auf. Beliebig oft erforschbar.'],
-  ['zukunft_wirtschaft', 'Zukunftstechnologie: Wirtschaft', 'wirtschaft', 56, ['fusionsstaedte', 'drohnenlogistik', 'vertikale_landwirtschaft'], ['b:gold_prozent=2'], 'Neue Märkte und neue Ideen. Beliebig oft erforschbar.'],
-  ['zukunft_industrie', 'Zukunftstechnologie: Industrie', 'industrie', 56, ['energienetz_global', 'orbitalraketen', 'deuteriumgewinnung'], ['b:produktion_prozent=2'], 'Noch schneller, noch effizienter. Beliebig oft erforschbar.'],
-  ['zukunft_verteidigung', 'Zukunftstechnologie: Verteidigung', 'militaer', 56, ['plasmaschiffe', 'gefechts_ki', 'schwebepanzer_technik'], ['b:stadt_staerke=1', 'b:erfahrung_prozent=2'], 'Schutzschilde für Städte und Truppen. Beliebig oft erforschbar.'],
-  ['zukunft_kultur', 'Zukunftstechnologie: Kultur', 'staat', 56, ['fusionsstaedte', 'co2_entzug'], ['b:kultur_prozent=2', 'b:zufriedenheit=1'], 'Kunst und Gemeinschaft für eine friedliche Welt. Beliebig oft erforschbar.'],
+  ['zukunft_wissen', 'Zukunftstechnologie: Wissen', 'wissen', 68, ['sternenobservatorien', 'arche_technik', 'weltgehirn_technik'], ['b:wissenschaft_prozent=2'], 'Jede Antwort wirft neue Fragen auf. Beliebig oft erforschbar.'],
+  ['zukunft_wirtschaft', 'Zukunftstechnologie: Wirtschaft', 'wirtschaft', 68, ['sternenlogistik', 'sternenfrieden', 'orbitale_solarkraft'], ['b:gold_prozent=2'], 'Neue Märkte und neue Ideen. Beliebig oft erforschbar.'],
+  ['zukunft_industrie', 'Zukunftstechnologie: Industrie', 'industrie', 68, ['materiewandlung', 'antimaterie_waffen', 'weltraumaufzug_technik'], ['b:produktion_prozent=2'], 'Noch schneller, noch effizienter. Beliebig oft erforschbar.'],
+  ['zukunft_verteidigung', 'Zukunftstechnologie: Verteidigung', 'militaer', 68, ['planetarer_schild_technik', 'phasentechnik', 'schwebepanzer_technik'], ['b:stadt_staerke=1', 'b:erfahrung_prozent=2'], 'Schutzschilde für Städte und Truppen. Beliebig oft erforschbar.'],
+  ['zukunft_kultur', 'Zukunftstechnologie: Kultur', 'staat', 68, ['stellare_kultur', 'arche_technik', 'kuenstliche_sonne_technik'], ['b:kultur_prozent=2', 'b:zufriedenheit=1'], 'Kunst und Gemeinschaft für eine friedliche Welt. Beliebig oft erforschbar.'],
 ];
 
 const ART_KUERZEL = { e: 'einheit', g: 'gebaeude', w: 'wunder', v: 'verbesserung', r: 'rohstoff', o: 'option', b: 'bonus' };

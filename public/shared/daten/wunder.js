@@ -76,4 +76,18 @@ export const WUNDER = [
     reich: { produktion_prozent: 20, nahrung_prozent: 10, unterhalt_rabatt: 20 },
     wirkung: { produktion: 25 },
   },
+  {
+    id: 'weltraumaufzug', name: 'Weltraumaufzug', zeitalter: 9, kategorie: 'gold',
+    beschreibung: 'Ein Seil bis in den Himmel. Dein Reich baut schneller, hat mehr Handelsrouten und verdient mehr am Handel.',
+    kosten: { zeit: 7 * TAG, gold: 28000, stein: 1000, marmor: 170, titan: 15, deuterium: 10 }, unterhalt: 0, benoetigt: ['raumhafen'], ersetzt: null,
+    reich: { bauzeit_prozent: -15, handelsrouten: 2, handel_gold_prozent: 20 },
+    wirkung: { gold: 25 },
+  },
+  {
+    id: 'sternenarche', name: 'Sternenarche', zeitalter: 10, kategorie: 'kultur',
+    beschreibung: 'Ein Generationenschiff für die Reise zu fremden Sternen. Das größte Ziel und der größte Stolz eines Volkes.',
+    kosten: { zeit: 8 * TAG, gold: 40000, stein: 1200, marmor: 200, titan: 20, antimaterie: 10 }, unterhalt: 0, benoetigt: ['sternenhafen'], ersetzt: null,
+    reich: { kultur_prozent: 20, wissenschaft_prozent: 10, zufriedenheit: 4, stadt_staerke: 5 },
+    wirkung: { kultur: 30, wissenschaft: 20 },
+  },
 ];
