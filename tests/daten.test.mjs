@@ -12,14 +12,14 @@ const {
 // ---------- Erlaubte Listen laut DATENFORMAT.md ----------
 const LAGERGUETER = ['gold', 'glaube', 'holz', 'stein', 'marmor', 'salz', 'lehm', 'kupfer', 'zinn', 'eisen', 'pferde', 'salpeter', 'kohle', 'oel', 'aluminium', 'uran', 'elefanten', 'seltene_erden', 'deuterium', 'titan', 'helium3', 'antimaterie'];
 const KLASSEN = ['zivil', 'spaeher', 'haendler', 'nahkampf', 'fernkampf', 'reiter', 'belagerung', 'flak', 'sanitaeter', 'see_zivil', 'see_nah', 'see_fern', 'u_boot', 'traeger', 'transport', 'jaeger', 'bomber', 'rakete', 'atom'];
-const FAEHIGKEITEN = ['gruenden', 'arbeiten', 'see_arbeiten', 'handel', 'erkunden', 'transport', 'traeger', 'tarnung', 'abfangen', 'heilen', 'einmalig', 'flaechenschaden', 'belagerung', 'kein_gegenschaden', 'tiefsee', 'gelaende_ignorieren', 'raumschiff', 'raumtauglich', 'missionieren', 'glaubenskampf', 'inquisition'];
+const FAEHIGKEITEN = ['gruenden', 'arbeiten', 'see_arbeiten', 'handel', 'erkunden', 'transport', 'traeger', 'tarnung', 'abfangen', 'heilen', 'einmalig', 'flaechenschaden', 'belagerung', 'kein_gegenschaden', 'tiefsee', 'gelaende_ignorieren', 'raumschiff', 'raumtauglich', 'missionieren', 'glaubenskampf', 'inquisition', 'gesandtschaft'];
 const GEGEN = [...KLASSEN, 'stadt', 'luft', 'see', 'land'];
 const BEF_WIRKUNG = ['staerke', 'fern', 'reichweite', 'tempo', 'sicht', 'heilung', 'gelaende', 'gegen', 'verteidigung', 'angriff', 'abklingzeit_prozent'];
 const GEB_KATEGORIEN = ['nahrung', 'wissen', 'gold', 'produktion', 'kultur', 'zufriedenheit', 'militaer', 'verteidigung', 'see', 'luft', 'infrastruktur'];
 const GEB_WIRKUNG = ['nahrung', 'produktion', 'gold', 'wissenschaft', 'kultur', 'zufriedenheit', 'nahrung_prozent', 'produktion_prozent', 'gold_prozent', 'wissenschaft_prozent', 'kultur_prozent', 'pro_einwohner', 'wachstum_behalt', 'verteidigung', 'stadt_hp', 'stadt_reichweite', 'heilung', 'lager', 'bauplaetze', 'erfahrung', 'luft_plaetze', 'handelsrouten', 'grenzwachstum_prozent', 'einheit_bauzeit_prozent', 'material', 'sicht', 'unterhalt_frei'];
 const PRO_EINWOHNER = ['w', 'g', 'k', 'p'];
 const BONUS = ['wissenschaft_prozent', 'gold_prozent', 'produktion_prozent', 'kultur_prozent', 'nahrung_prozent', 'zufriedenheit', 'tempo_land', 'tempo_see', 'heilung_prozent', 'stadt_staerke', 'stadt_hp', 'lager', 'unterhalt_rabatt', 'sicht', 'handel_gold_prozent', 'grenzwachstum_prozent', 'bauzeit_prozent', 'arbeiter_tempo', 'erfahrung_prozent', 'bauplaetze', 'handelsrouten'];
-const OPTIONEN = ['krieg', 'frieden', 'offene_grenzen', 'buendnis', 'forschungsabkommen', 'tribut', 'tausch', 'karten_tausch', 'stadtstaat_buendnis', 'aufruesten', 'bauplatz_2', 'bauplatz_3', 'einschiffen', 'tiefsee_einschiffen', 'pluendern', 'luftlandung', 'atomschlag'];
+const OPTIONEN = ['krieg', 'frieden', 'offene_grenzen', 'buendnis', 'forschungsabkommen', 'tribut', 'tausch', 'karten_tausch', 'stadtstaat_buendnis', 'aufruesten', 'bauplatz_2', 'bauplatz_3', 'einschiffen', 'tiefsee_einschiffen', 'pluendern', 'luftlandung', 'atomschlag', 'handelsabkommen', 'embargo'];
 const ZWEIGE = ['wirtschaft', 'militaer', 'see', 'wissen', 'staat', 'industrie', 'luft', 'raumfahrt'];
 const FREI_ARTEN = ['einheit', 'gebaeude', 'wunder', 'verbesserung', 'rohstoff', 'option', 'bonus', 'distrikt'];
 const PERSOENLICHKEITEN = ['haendler', 'forscher', 'bauer', 'krieger', 'seefahrer'];

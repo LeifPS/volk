@@ -143,7 +143,7 @@ export const T = {
       tauschInfo: 'Gold, Waren, Luxusgüter oder Karten tauschen.', geschenkMin: 'Ein Geschenk muss mindestens 25 Gold sein.',
     },
     artErklaerung: { offene_grenzen: 'Einheiten dürfen durch das Gebiet des anderen ziehen.', buendnis: 'Geteilte Sicht und offene Grenzen.', frieden: 'Beendet den Krieg.', tribut: 'Regelmäßige Goldzahlung.' },
-    arten: { frieden: 'Frieden', offene_grenzen: 'Offene Grenzen', buendnis: 'Bündnis', forschungsabkommen: 'Forschungsabkommen', tausch: 'Tausch', tribut: 'Tribut' },
+    arten: { handelsabkommen: 'Handelsabkommen', frieden: 'Frieden', offene_grenzen: 'Offene Grenzen', buendnis: 'Bündnis', forschungsabkommen: 'Forschungsabkommen', tausch: 'Tausch', tribut: 'Tribut' },
     abkommenKosten: (g, b) => `Kostet beide Seiten je ${g} Gold. Danach forscht ihr beide 24 Stunden lang ${b} % schneller.`,
     abkommenLaeuft: (d, b) => `Forschungsabkommen läuft noch ${d} (+${b} % Forschungstempo).`,
     tributBekommst: (n, g, d) => `${n || '???'} zahlt dir ${g} Gold pro Stunde Tribut (noch ${d}).`,
@@ -303,7 +303,7 @@ T.lexikon = {
   optionText: {
     krieg: 'Krieg erklären', frieden: 'Frieden anbieten', offene_grenzen: 'Offene Grenzen vereinbaren', buendnis: 'Bündnisse schließen',
     forschungsabkommen: 'Forschungsabkommen schließen', tribut: 'Tribut fordern', tausch: 'Tauschangebote machen', karten_tausch: 'Karten tauschen',
-    stadtstaat_buendnis: 'Bündnisse mit Stadtstaaten', aufruesten: 'Einheiten gegen Gold aufrüsten', bauplatz_2: '2. gleichzeitiger Bauauftrag je Stadt',
+    handelsabkommen: 'Handelsabkommen', embargo: 'Embargo', stadtstaat_buendnis: 'Bündnisse mit Stadtstaaten', aufruesten: 'Einheiten gegen Gold aufrüsten', bauplatz_2: '2. gleichzeitiger Bauauftrag je Stadt',
     bauplatz_3: '3. gleichzeitiger Bauauftrag je Stadt', einschiffen: 'Landeinheiten fahren übers Küstenwasser', tiefsee_einschiffen: 'Landeinheiten fahren über die Tiefsee',
     pluendern: 'Feindliche Verbesserungen plündern', luftlandung: 'Luftlandungen', atomschlag: 'Atomschläge',
   },
@@ -615,7 +615,7 @@ T.baum = {
     krieg: 'Ihr könnt anderen Völkern den Krieg erklären.', frieden: 'Ihr könnt Frieden anbieten.', tausch: 'Ihr könnt Tauschangebote machen (Gold, Waren, Luxusgüter).',
     offene_grenzen: 'Ihr könnt offene Grenzen vereinbaren.', einschiffen: 'Landeinheiten können sich an der Küste einschiffen.', karten_tausch: 'Ihr könnt Karten mit anderen Völkern tauschen.',
     tribut: 'Ihr könnt von schwächeren Völkern Tribut fordern.', aufruesten: 'Ihr könnt Einheiten gegen Gold aufrüsten.', pluendern: 'Eure Einheiten können im Krieg feindliche Verbesserungen plündern.',
-    buendnis: 'Ihr könnt Bündnisse schließen.', stadtstaat_buendnis: 'Ihr könnt Bündnisse mit Stadtstaaten eingehen.', tiefsee_einschiffen: 'Eingeschiffte Einheiten können die Tiefsee befahren.',
+    buendnis: 'Ihr könnt Bündnisse schließen.', stadtstaat_buendnis: 'Ihr könnt Bündnisse mit Stadtstaaten eingehen.', handelsabkommen: 'Ihr könnt Handelsabkommen schließen: mehr Gold auf gemeinsamen Routen.', embargo: 'Ihr könnt Embargos verhängen: kein Handel mit einem Volk.', tiefsee_einschiffen: 'Eingeschiffte Einheiten können die Tiefsee befahren.',
     forschungsabkommen: 'Ihr könnt Forschungsabkommen schließen.', bauplatz_2: 'Jede Stadt kann 2 Bauaufträge gleichzeitig bearbeiten.', bauplatz_3: 'Jede Stadt kann 3 Bauaufträge gleichzeitig bearbeiten.',
     luftlandung: 'Eure Truppen können per Luftlandung hinter feindlichen Linien abspringen.', atomschlag: 'Ihr könnt Atomwaffen einsetzen.',
   },
@@ -790,3 +790,18 @@ T.reich = {
     imBau: 'Im Bau:', beiDir: (s, t) => `bei dir in ${s} – fertig in ${t}`, beiAnderen: (v) => `bei ${v}`, frei: 'Noch frei',
   },
 };
+
+// ---------- Handel und Diplomatie: Beziehungen ----------
+T.diplo.bz = {
+  titel: 'Beziehung', abkommen: 'Handelsabkommen', embargo: 'Embargo',
+  erklaerung: 'Handel, Verträge, Botschaften und Geschenke verbessern die Beziehung; Krieg, Embargos und Eroberungen verschlechtern sie. Mit der Zeit verblasst alles zur Mitte. KI-Völker richten sich danach.',
+  abkommenText: (p) => `Handelsabkommen: Routen zwischen euch bringen ${p} % mehr Gold, jede Seite hat eine Handelsroute mehr.`,
+  abkommenInfo: (p) => `Routen zwischen euch +${p} % Gold, eine Handelsroute mehr. Endet bei Krieg oder Embargo.`,
+  embargoDu: (t) => `Du hast ein Embargo verhängt (seit ${t}).`, embargoSie: (n) => `${n} hat ein Embargo gegen dich verhängt.`,
+  botschaftDu: 'Du hast dort eine Botschaft.', keineBotschaft: 'Noch keine Botschaft: Schicke einen Gesandten in eine ihrer Städte.', botschaftSie: (n) => `${n} hat eine Botschaft bei dir.`,
+  knopfAbkommen: 'Handelsabkommen anbieten', knopfEmbargo: 'Embargo verhängen', knopfAufheben: 'Embargo aufheben',
+  embargoFrage: (n) => `Kein Handel mehr mit ${n}: Handelsrouten zwischen euch enden, Tauschangebote verfallen, die Beziehung leidet. Mindestens 6 Stunden.`,
+  embargoInfo: 'Beendet alle Routen und jeden Tausch mit diesem Volk.', embargoGesetzt: 'Embargo verhängt.', aufgehoben: 'Embargo aufgehoben.',
+  nochNicht: (t) => `Aufheben geht in ${t}.`, gruendeEmbargo: 'Solange ein Embargo gilt, gibt es kein Handelsabkommen.',
+};
+T.gesandter = { knopf: 'Botschaft einrichten', fertig: 'Botschaft eingerichtet: Die Beziehung wird besser.', tip: (n) => `Richtet in ${n} eine Botschaft ein (der Gesandte wird verbraucht).`, hinweis: 'Ziehe den Gesandten in oder neben eine Stadt eines anderen Volkes.' };

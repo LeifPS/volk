@@ -1,6 +1,7 @@
 // Diplomatie-Fenster: Liste der Völker, Detailansicht mit Aktionen, Angebote, Tausch-Editor, Schutzregeln.
 import { el, symbol, fenster, frageJaNein, toast, fehler, zahl, dauerText, balken } from './basis.js';
 import { T } from '../texte.js';
+import { BEZIEHUNG, beziehungsStufe, HANDELSABKOMMEN, EMBARGO } from '../../shared/daten/diplomatie.js';
 import { Z, an, du, volk, serverJetzt, aktuellesGold, aktuellesLager } from '../kern/zustand.js';
 import { befehl } from '../kern/netz.js';
 import { FORSCHUNG, FREIGESCHALTET_DURCH, STADTSTAATEN, KI_VOELKER, ZEITALTER } from '../../shared/daten/index.js';
@@ -36,7 +37,10 @@ function stil() {
 .diplo-marke { font-size: 11px; font-family: var(--kopf); padding: 1px 5px; border: 1px solid var(--rand); background: #343c52; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; }
 .diplo-marke.krieg { background: #6a2218; color: #ffd0c8; } .diplo-marke.ruhe { background: #3a3550; color: #d6c8ff; }
 .diplo-marke.frieden { background: #2b4430; color: #c8f0c0; } .diplo-marke.grenzen { background: #24405a; color: #c8e4ff; }
-.diplo-marke.buendnis { background: #5a4818; color: #ffe9a8; } .diplo-marke.schutz { background: #203a5a; color: #bfe0ff; }
+.diplo-marke.buendnis { background: #5a4818; color: #ffe9a8; } .diplo-marke.abkommen { background: #1f4a3a; color: #b8f0d8; } .diplo-marke.embargo { background: #5a1f1f; color: #ffc8c0; }
+.diplo-bez { position: relative; height: 12px; background: linear-gradient(90deg, #5a1f1f, #3a3a44 50%, #1f4a3a); border: 2px solid #0b0d14; margin: 4px 0 2px; }
+.diplo-bez i { position: absolute; top: -4px; width: 4px; height: 16px; background: #ffe066; box-shadow: 0 0 0 2px #0b0d14; }
+.diplo-bez b { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,.25); } .diplo-marke.schutz { background: #203a5a; color: #bfe0ff; }
 .diplo-marke.freund { background: #2b4430; color: #c8f0c0; }
 .diplo-ein { position: relative; height: 12px; background: #0b0d14; border: 2px solid var(--rand); margin: 3px 0; }
 .diplo-ein > i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#7fd36a, #4a9c3a); }
@@ -104,6 +108,8 @@ function statusMarken(o) {
   else if (d.buendnis) m.push(marke(D().status.buendnis, 'buendnis', 'buendnis'));
   else if (d.offene_grenzen) m.push(marke(D().status.grenzen, 'grenzen', 'offene_grenzen'));
   else m.push(marke(D().status.frieden, 'frieden', 'frieden'));
+  if (d.handelsabkommen) m.push(marke(D().bz.abkommen, 'abkommen', 'handel'));
+  if (d.embargo_von_dir != null || d.embargo_gegen_dich != null) m.push(marke(D().bz.embargo, 'embargo', 'kreuz'));
   if (o.art === 'stadtstaat') {
     if (o.verbuendet === Z.volk) m.push(marke(D().ss.verbuendet, 'buendnis', 'krone'));
     else if ((o.einfluss || 0) >= STADTSTAAT.freund) m.push(marke(D().ss.freund, 'freund', 'zufriedenheit'));
@@ -275,7 +281,7 @@ function angebotZeile(a, eingehend) {
   return el('div.diplo-angebot', symbol('ui', symbolFuer(a.art), { px: 24 }), text, knoepfe);
 }
 
-function symbolFuer(art) { return { frieden: 'frieden', offene_grenzen: 'offene_grenzen', buendnis: 'buendnis', forschungsabkommen: 'forschungsabkommen', tausch: 'handel', tribut: 'tribut' }[art] || 'diplomatie'; }
+function symbolFuer(art) { return { handelsabkommen: 'handel', frieden: 'frieden', offene_grenzen: 'offene_grenzen', buendnis: 'buendnis', forschungsabkommen: 'forschungsabkommen', tausch: 'handel', tribut: 'tribut' }[art] || 'diplomatie'; }
 
 function autoAngebot(a) {
   const ich = Z.volk;
@@ -330,6 +336,7 @@ function detailZeichnen(ziel, o, zustand, neu) {
   }
   if (o.art === 'stadtstaat') k.push(stadtstaatBox(o));
   k.push(el('div.diplo-box', bez));
+  if (o.art === 'spieler' || o.art === 'ki') k.push(beziehungsBox(o, d));
 
   // Aktionen
   k.push(el('h3', { text: D().aktionen }), el('div.diplo-aktionen', aktionen(o, d, zustand, neu)));
@@ -338,6 +345,22 @@ function detailZeichnen(ziel, o, zustand, neu) {
   const mit = Object.values(Z.ansicht.angebote || {}).filter((a) => a.von === o.id || a.an === o.id || a.parteien?.includes(o.id));
   if (mit.length) k.push(el('h3', { text: D().angeboteMit(o.name) }), ...angeboteBloecke(mit, false));
   ziel.replaceChildren(...k);
+}
+
+/** Beziehungswert mit Stufe und Balken, dazu Handelsabkommen, Embargo und Botschaften. */
+function beziehungsBox(o, d) {
+  const w = d.beziehung || 0, st = beziehungsStufe(w);
+  const pos = (x) => ((x - BEZIEHUNG.min) / (BEZIEHUNG.max - BEZIEHUNG.min)) * 100;
+  const zeilen = [
+    el('div.diplo-zeile', el('b', { text: D().bz.titel + ': ' }), el('span', { style: { color: st.farbe }, text: `${st.name} (${w > 0 ? '+' : ''}${w})` })),
+    el('div.diplo-bez', ...BEZIEHUNG.stufen.slice(1).map((x) => el('b', { style: { left: pos(x.ab) + '%' } })), el('i', { style: { left: `calc(${pos(w)}% - 2px)` } })),
+    el('div.klein', { text: D().bz.erklaerung }),
+  ];
+  if (d.handelsabkommen) zeilen.push(el('div.gruen-t', { text: D().bz.abkommenText(HANDELSABKOMMEN.routenBonusProzent) }));
+  if (d.embargo_von_dir != null) zeilen.push(el('div.rot-t', { text: D().bz.embargoDu(dauerText(jetzt() - d.embargo_von_dir)) }));
+  if (d.embargo_gegen_dich != null) zeilen.push(el('div.rot-t', { text: D().bz.embargoSie(o.name) }));
+  zeilen.push(el('div.klein', { text: [d.botschaft_bei_ihnen ? D().bz.botschaftDu : D().bz.keineBotschaft, d.botschaft_bei_dir ? D().bz.botschaftSie(o.name) : null].filter(Boolean).join(' ') }));
+  return el('div.diplo-box', zeilen);
 }
 
 function stadtstaatBox(o) {
@@ -390,6 +413,12 @@ function aktionen(o, d, zustand, neu) {
       l.push(aktion('forschungsabkommen', D().knoepfe.abkommen, '', () => sende({ art: 'diplomatie_angebot', an: o.id, typ: 'forschungsabkommen' }, D().gesendet), { option: 'forschungsabkommen', grund, info: D().abkommenKosten(kosten, FORSCHUNGSABKOMMEN.bonus) }));
     }
   }
+  if (!istSS && !d.krieg && !d.handelsabkommen) {
+    const embargo = d.embargo_von_dir != null || d.embargo_gegen_dich != null;
+    l.push(aktion('handel', D().bz.knopfAbkommen, '', () => sende({ art: 'diplomatie_angebot', an: o.id, typ: 'handelsabkommen' }, D().gesendet), { option: 'handelsabkommen', grund: embargo ? D().bz.gruendeEmbargo : angebotLiegtVor(o, 'handelsabkommen') ? D().gruende.liegtVor : null, info: D().bz.abkommenInfo(HANDELSABKOMMEN.routenBonusProzent) }));
+  }
+  if (!istSS && d.embargo_von_dir == null) l.push(aktion('kreuz', D().bz.knopfEmbargo, 'rot', async () => { if (await frageJaNein(D().bz.knopfEmbargo, D().bz.embargoFrage(o.name), D().bz.knopfEmbargo)) sende({ art: 'embargo', an: o.id }, D().bz.embargoGesetzt); }, { option: 'embargo', info: D().bz.embargoInfo }));
+  else if (!istSS) { const rest = EMBARGO.mindestDauer - (jetzt() - d.embargo_von_dir); l.push(aktion('haken', D().bz.knopfAufheben, 'gruen', () => sende({ art: 'embargo', an: o.id, aufheben: true }, D().bz.aufgehoben), { grund: rest > 0 ? D().bz.nochNicht(dauerText(rest)) : null })); }
   if ((o.art === 'ki' || istSS) && !d.krieg) {
     const zahlt = (Z.ansicht.welt?.tribute || []).some((t) => t.von === o.id && t.an === Z.volk && t.bis > jetzt());
     l.push(aktion('tribut', D().knoepfe.tribut, '', () => tributFordern(o), { option: 'tribut', grund: zahlt ? D().gruende.zahltSchon : null, info: D().gruende.tributInfo }));

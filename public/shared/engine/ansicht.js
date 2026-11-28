@@ -35,7 +35,7 @@ export const ansicht = {
       if (o.art === 'ki') { a.voelker[o.id].persoenlichkeit = o.ki?.persoenlichkeit; a.voelker[o.id].herrscher = o.ki?.herrscher; a.voelker[o.id].stimmung = Math.round(-(o.ki?.groll?.[vid] || 0) + (o.ki?.freundschaft?.[vid] || 0)); }
       if (o.id !== vid && o.art !== 'barbar' && o.art !== 'tiere') {
         const d = this.z.diplomatie[this.diploSchluessel(vid, o.id)] || {};
-        a.diplomatie[o.id] = { krieg: !!d.krieg, seit: d.seit || null, letzter_kampf: d.letzter_kampf || null, offene_grenzen: !!d.offene_grenzen, buendnis: !!d.buendnis };
+        a.diplomatie[o.id] = { krieg: !!d.krieg, seit: d.seit || null, letzter_kampf: d.letzter_kampf || null, offene_grenzen: !!d.offene_grenzen, buendnis: !!d.buendnis, beziehung: Math.round(d.beziehung || 0), handelsabkommen: !!d.handelsabkommen, embargo_von_dir: d.embargo?.[vid] ?? null, embargo_gegen_dich: d.embargo?.[o.id] ?? null, botschaft_bei_ihnen: d.botschaft?.[vid] != null, botschaft_bei_dir: d.botschaft?.[o.id] != null };
       }
     }
     // Städte

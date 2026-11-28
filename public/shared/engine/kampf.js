@@ -475,6 +475,7 @@ export const kampf = {
     this.epGeben(e, EP.stadt_erobert, alt);
     const va = this.z.voelker[alt], vn = this.z.voelker[neu];
     this.aendern(alt); this.aendern(neu);
+    this.beziehungEreignis(alt, neu, 'stadt_erobert');
     const g = this.garnison(s);
     if (g) this.einheitEntfernen(g.id);
     // Zivilisten in der Stadt werden gefangen

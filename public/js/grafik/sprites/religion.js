@@ -192,3 +192,26 @@ ico('religion', (p) => {
   p.rect(2, 12, 13, 1, w); p.rect(1, 13, 15, 1, wd); p.rect(1, 14, 15, 1, wdd);
   p.px(2, 12, '#ffffff').px(1, 13, w);
 });
+
+// ---------------------------------------------------------------- Diplomatie: Gesandter (nutzt dieselbe Gewandfigur)
+definiere('einheit', 'gesandter', {
+  w: 32, h: 32,
+  zeichne(p) {
+    gewandFigur(p, { gewand: S, saum: C.gold, handHinten: [10, 22] });
+    // Schärpe in Gold quer über die Brust
+    p.linie(13, 17, 18, 22, C.gold).linie(13, 18, 17, 22, C.goldD);
+    // breitkrempiger Hut mit Feder
+    const x = 13, y = 10;
+    p.rect(x - 2, y + 1, 9, 1, SDD).rect(x, y - 1, 5, 2, SD).rect(x + 1, y - 2, 3, 1, SD).px(x + 1, y - 1, S);
+    p.linie(x - 1, y - 1, x - 3, y - 5, C.weiss).px(x - 2, y - 4, C.lichtH).px(x - 3, y - 5, C.lichtH);
+    // Stab mit Wimpel in Volksfarbe in der vorderen Hand
+    p.linie(23, 5, 23, 30, PAL.holz).px(23, 30, PAL.holzD).px(23, 4, C.goldH);
+    p.rect(24, 5, 5, 3, S).px(29, 6, S).rect(24, 5, 5, 1, SH).rect(24, 7, 4, 1, SD);
+    arm(p, 17, 18, 22, 18, S);
+    p.px(22, 17, PAL.haut);
+    // Schriftrolle mit rotem Siegel in der hinteren Hand
+    p.rect(16, 21, 6, 3, C.pergament).rect(16, 23, 6, 1, C.pergamentD).px(15, 21, C.pergamentD).px(22, 21, C.pergamentD);
+    p.px(19, 22, '#c0302a').px(19, 23, '#8a1e1a');
+    p.px(16, 20, PAL.haut);
+  },
+});

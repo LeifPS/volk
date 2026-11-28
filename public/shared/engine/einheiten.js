@@ -109,7 +109,7 @@ export const einheiten = {
 
   // ---------- Bewegung ----------
   /** Händler (Karawanen, Handelsschiffe) ziehen überall durch: Grenzen gelten für sie nicht. */
-  ignoriertGrenzen(d) { return !!d?.faehigkeiten?.includes('handel'); },
+  ignoriertGrenzen(d) { return !!(d?.faehigkeiten?.includes('handel') || d?.faehigkeiten?.includes('gesandtschaft')); },
 
   /** Darf Volk a das Gebiet von Volk b betreten? */
   darfBetreten(a, b) {
@@ -423,6 +423,7 @@ export const einheiten = {
         }
       }
     }
+    this.botschaftsSicht(vid, sicht);
     return sicht;
   },
 

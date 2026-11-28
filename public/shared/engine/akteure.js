@@ -176,6 +176,8 @@ export const akteure = {
       if (ov.art === 'spieler' && (ov.schutz_bis > this.t || !this.istOnline(+o))) continue;
       this.kiKriegErklaeren(v, +o, 'Ihr habt uns zu oft beleidigt. Jetzt antworten wir mit Waffen!');
     }
+    // Beziehungen: Embargo, Groll bei schlechter Beziehung, eigene Vorschläge
+    this.kiBeziehungen(v);
     // Groll vergeht langsam
     for (const o of Object.keys(ki.groll || {})) ki.groll[o] = Math.max(0, ki.groll[o] - 1.5);
     // Kriege unter KI-Völkern (selten, kurz)
@@ -189,7 +191,8 @@ export const akteure = {
     const d = this.diplo(v.id, o);
     if (d.krieg) return;
     this.aendern(v.id); this.aendern(o);
-    Object.assign(d, { krieg: true, seit: this.t, letzter_kampf: this.t, offene_grenzen: false, buendnis: false });
+    this.kriegBeziehung(v.id, o, d.buendnis);
+    Object.assign(d, { krieg: true, seit: this.t, letzter_kampf: this.t, offene_grenzen: false, buendnis: false, handelsabkommen: false });
     this.markiere('d' + this.diploSchluessel(v.id, o));
     if (this.z.voelker[o].art === 'spieler') { v.ki.rache = v.ki.rache || {}; v.ki.rache[o] = this.t + 6 * STD; }
     this.meldung(o, `${v.name} erklärt dir den Krieg: "${grund}"`, { art: 'krieg', wichtig: true });
@@ -219,10 +222,14 @@ export const akteure = {
     else if (a.art === 'offene_grenzen') { ja = groll < 20; grund = 'Wir trauen euch nicht.'; }
     else if (a.art === 'buendnis') { ja = groll < 5 && (k.ki?.freundschaft?.[a.von] || 0) >= 30; grund = 'Dafür kennen wir uns noch nicht gut genug. Handelt mit uns!'; }
     else if (a.art === 'forschungsabkommen') { ja = groll < 10 && k.gold >= a.kosten; grund = 'Dafür fehlt uns das Gold oder das Vertrauen.'; }
+    else if (a.art === 'handelsabkommen') { ja = groll < 15; grund = 'Mit euch handeln wir nicht gern.'; }
     else if (a.art === 'tausch') {
       const wert = (t) => (t.gold || 0) + Object.entries(t.lager || {}).reduce((s, [g, n]) => s + n * (['holz', 'stein'].includes(g) ? 1 : 12), 0) + (t.luxus || []).length * 150 + (t.karte ? 80 : 0);
       try { this.tauschPruefen(k, a.will); ja = wert(a.gibt) >= wert(a.will) * 1.15 && groll < 40; grund = 'Das ist uns zu wenig.'; } catch (e) { ja = false; grund = 'Das haben wir nicht.'; }
     }
+    // Die Beziehung entscheidet mit (Stadtstaaten urteilen nur nach Groll und Einfluss)
+    const anderer = a.von ?? a.parteien?.find((x) => x !== kid);
+    if (ja && k.art === 'ki' && anderer != null && this.beziehung(kid, anderer) < this.kiSchwelle(a.art)) { ja = false; grund = `Unsere Beziehung ist dafür zu schlecht (${this.beziehungsStufe(kid, anderer).name}).`; }
     if (a.auto) {
       if (ja) { a.zustimmung[kid] = true; this.markiere('a' + a.id); if (a.parteien.every((x) => a.zustimmung[x])) { this.friedenSchliessen(a.parteien[0], a.parteien[1]); this.angebotEntfernen(a); } }
       return;

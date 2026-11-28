@@ -102,3 +102,31 @@ test('Migration 1->2: laufende Zukunftstechnologie ohne neue Voraussetzungen wir
   assert.ok(srv.spiel.boni(n).wissenschaft_prozent >= 4, 'Boni der erforschten Zukunftsstufen wirken weiter');
   assert.deepEqual(zustandPruefen(srv.spiel), []);
 });
+
+test('Migration 5->6: Beziehungswerte passen zum bisherigen Verhältnis, nichts sonst ändert sich', async () => {
+  const { SCHRITTE } = await import('../public/shared/engine/migration.js');
+  const z = {
+    voelker: { 1: { id: 1, art: 'spieler' }, 2: { id: 2, art: 'ki' }, 3: { id: 3, art: 'spieler' }, 4: { id: 4, art: 'stadtstaat' } },
+    staedte: { 10: { id: 10, volk: 2 }, 11: { id: 11, volk: 3 } },
+    einheiten: { 5: { id: 5, volk: 1, route: { aktiv: true, nach: 11 } }, 6: { id: 6, volk: 1, route: { aktiv: true, nach: 11 } } },
+    diplomatie: { '1|2': { krieg: true }, '2|3': { krieg: false, buendnis: true, offene_grenzen: true }, '1|4': { krieg: false } },
+  };
+  SCHRITTE[5](z);
+  assert.equal(z.diplomatie['1|2'].beziehung, -50);
+  assert.equal(z.diplomatie['2|3'].beziehung, 55);
+  assert.equal(z.diplomatie['1|3'].beziehung, 16, 'zwei Routen ohne bisherigen Eintrag');
+  assert.equal(z.diplomatie['1|4'].beziehung, undefined, 'Stadtstaaten haben Einfluss statt Beziehung');
+  assert.equal(z.diplomatie['2|3'].buendnis, true);
+});
+
+test('Migration bis 6 mit dem echten Altstand: Diplomatie-Einträge haben Beziehungswerte', () => {
+  uhr.setze(ALT.spielzeit);
+  const srv = new WeltServer(speicherAttrappe(new Map(Object.entries(ALT.zeilen))), { __eigeneUhr: true }, socketAttrappe());
+  assert.ok(srv.spiel.migrationen.includes('5->6'));
+  for (const [k, d] of Object.entries(srv.spiel.z.diplomatie)) {
+    const [a, b] = k.split('|').map(Number);
+    const gross = (x) => ['spieler', 'ki'].includes(srv.spiel.z.voelker[x]?.art);
+    if (gross(a) && gross(b)) assert.ok(Number.isFinite(d.beziehung), k);
+  }
+  assert.deepEqual(zustandPruefen(srv.spiel), []);
+});

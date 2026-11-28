@@ -255,6 +255,10 @@ function einheitAktionen(e) {
     if (ebeneVon(f) === 0 && st && st.feld === f && st.volk === Z.volk) k.push(aktKnopf('stern_voll', T.ebene.starten, () => ausfuehren({ art: 'ebene_wechseln', einheit: e.id }).then((r) => { if (r) { ton('gruendung'); springe(r.feld); } }), { gold: true, tip: T.ebene.startenTip }));
     if (ebeneVon(f) === 1 && GELAENDE[karte().gelaende[f]]?.id === 'erdorbit') k.push(aktKnopf('pfeil_links', T.ebene.landen, () => ausfuehren({ art: 'ebene_wechseln', einheit: e.id }).then((r) => { if (r) { ton('gruendung'); springe(r.feld); } }), { gold: true, tip: T.ebene.landenTip }));
   }
+  if (d.faehigkeiten?.includes('gesandtschaft')) {
+    const fremd = Object.values(Z.ansicht.staedte).find((st) => st.volk !== Z.volk && abstand(st.feld, aktuellesFeld(e)) <= 1 && ['spieler', 'ki'].includes(volk(st.volk)?.art));
+    k.push(aktKnopf('diplomatie', T.gesandter.knopf, () => ausfuehren({ art: 'gesandtschaft', einheit: e.id }).then((r) => { if (r) { ton('gruendung'); toast(T.gesandter.fertig, 'erfolg'); } }), { gold: true, tip: fremd ? T.gesandter.tip(fremd.name) : T.gesandter.hinweis, aus: !fremd }));
+  }
   if (d.faehigkeiten?.includes('missionieren') && e.religion) {
     k.push(el('div.klein', { text: (RELIGION[e.religion]?.name || '') + ' · ' + T.religion.ladungen(e.ladungen || 0) }));
     k.push(aktKnopf('religion', T.religion.missionieren, () => ausfuehren({ art: 'missionieren', einheit: e.id }, null), { gold: true, tip: T.religion.missionierenTip }));

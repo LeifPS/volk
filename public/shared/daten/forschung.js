@@ -89,7 +89,7 @@ const ROH = [
   // Spalte 7
   ['strassenbau', 'Straßenbau', 'staat', 7, ['baukunst', 'rad'], ['v:strasse', 'v:bruecke', 'b:tempo_land=3'], 'Alle Wege führen in deine Hauptstadt.'],
   ['philosophie', 'Philosophie', 'wissen', 7, ['mathematik', 'polytheismus'], ['g:campus', 'b:wissenschaft_prozent=3'], 'Warum ist die Welt, wie sie ist? Denker suchen Antworten.'],
-  ['diplomatie', 'Diplomatie', 'staat', 7, ['stammesrat', 'waehrung'], ['o:frieden', 'o:offene_grenzen'], 'Gesandte sprechen, wo sonst Schwerter sprechen würden.'],
+  ['diplomatie', 'Diplomatie', 'staat', 7, ['stammesrat', 'waehrung'], ['o:frieden', 'o:offene_grenzen', 'e:gesandter'], 'Gesandte sprechen, wo sonst Schwerter sprechen würden.'],
   ['kompositbogen', 'Kompositbogen', 'militaer', 7, ['bogenschiessen', 'phalanx'], ['e:kompositbogenschuetze'], 'Holz, Horn und Sehne: ein kleiner Bogen mit großer Kraft.'],
   ['elefantendressur', 'Elefantendressur', 'militaer', 7, ['reitkunst'], ['e:kriegselefant'], 'Ein Elefant im Panzer ist eine wandelnde Festung.'],
   ['handwerk', 'Handwerk', 'industrie', 7, ['eisenverarbeitung', 'lehmbau'], ['d:industriezone', 'g:werkstatt', 'g:ziegelei', 'b:produktion_prozent=2'], 'Meister und Lehrlinge fertigen Werkzeug für die ganze Stadt.'],
@@ -99,7 +99,7 @@ const ROH = [
   ['legionsdrill', 'Legionsdrill', 'militaer', 8, ['eisenverarbeitung', 'strassenbau'], ['e:legionaer', 'b:erfahrung_prozent=5'], 'Täglicher Drill macht aus Bauern Berufssoldaten.'],
   ['muenzwesen', 'Münzwesen', 'wirtschaft', 8, ['waehrung', 'handwerk', 'salzgewinnung'], ['g:muenzpraegeanstalt', 'b:gold_prozent=3'], 'Einheitliche Münzen mit dem Bild des Herrschers.'],
   ['literatur', 'Literatur', 'wissen', 8, ['philosophie'], ['w:grosse_bibliothek', 'b:kultur_prozent=3'], 'Epen und Gedichte erzählen von Helden und Göttern.'],
-  ['seehandel', 'Seehandel', 'see', 8, ['kuestenbau', 'waehrung'], ['e:handelsschiff', 'o:einschiffen'], 'Schiffe voller Wein und Öl verbinden ferne Häfen.'],
+  ['seehandel', 'Seehandel', 'see', 8, ['kuestenbau', 'waehrung'], ['e:handelsschiff', 'o:einschiffen', 'o:handelsabkommen'], 'Schiffe voller Wein und Öl verbinden ferne Häfen.'],
   ['berittene_schuetzen', 'Berittene Schützen', 'militaer', 8, ['kompositbogen', 'reitkunst'], ['e:berittener_bogenschuetze'], 'Schießen im vollen Galopp: eine Kunst der Steppe.'],
   ['brot_und_spiele', 'Brot und Spiele', 'staat', 8, ['polytheismus', 'baukunst'], ['g:kolosseum', 'b:zufriedenheit=1'], 'Ein zufriedenes Volk ist ein ruhiges Volk.'],
   // Spalte 9
@@ -175,7 +175,7 @@ const ROH = [
   ['ballistik', 'Ballistik', 'militaer', 19, ['schiesspulver', 'physik'], ['e:kanone'], 'Die Flugbahn jeder Kugel lässt sich berechnen.'],
   ['kuerassiere', 'Kürassiere', 'militaer', 19, ['ritterwesen', 'musketen'], ['e:kuerassier'], 'Brustpanzer und Pistolen für die schwere Reiterei.'],
   ['hochseeschifffahrt', 'Hochseeschifffahrt', 'see', 19, ['takelage', 'physik'], ['o:tiefsee_einschiffen', 'b:tempo_see=5'], 'Wochenlang ohne Land in Sicht über den Ozean.'],
-  ['merkantilismus', 'Merkantilismus', 'wirtschaft', 19, ['bankwesen', 'plantagenwirtschaft'], ['g:handelskompanie', 'b:handel_gold_prozent=10'], 'Mehr ausführen als einführen: Gold füllt die Schatzkammer.'],
+  ['merkantilismus', 'Merkantilismus', 'wirtschaft', 19, ['bankwesen', 'plantagenwirtschaft'], ['g:handelskompanie', 'b:handel_gold_prozent=10', 'o:embargo'], 'Mehr ausführen als einführen: Gold füllt die Schatzkammer.'],
   ['bastionen', 'Bastionen', 'militaer', 19, ['schiesspulver', 'wallanlagen'], ['g:festungsmauer', 'b:stadt_staerke=3'], 'Sternförmige Festungen halten auch Kanonen stand.'],
   ['manufakturwesen', 'Manufakturwesen', 'industrie', 19, ['bankwesen', 'physik'], ['g:manufaktur'], 'Arbeitsteilung macht Werkstätten zu Manufakturen.'],
   // Spalte 20

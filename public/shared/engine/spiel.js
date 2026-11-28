@@ -21,6 +21,7 @@ import { distrikte } from './distrikte.js';
 import { civics } from './civics.js';
 import { religion } from './religion.js';
 import { eurekas } from './eurekas.js';
+import { beziehungen } from './beziehungen.js';
 import { ZUSTAND_VERSION, migriere } from './migration.js';
 
 export class SpielFehler extends Error {}
@@ -239,7 +240,7 @@ export const BEFEHLE = new Set([
   'forschen', 'forschung_schlange', 'feld_bewirtschaften', 'auto_bewirtschaften', 'grenzziel', 'aufloesen', 'aufruesten', 'befoerdern',
   'krieg_erklaeren', 'diplomatie_angebot', 'angebot_antwort', 'angebot_zurueckziehen', 'tausch_angebot', 'handelsroute',
   'stadtstaat_geschenk', 'pluendern', 'luftangriff', 'verlegen', 'atomschlag', 'stadt_angriff', 'stadt_umbenennen',
-  'meldungen_gelesen', 'tutorial', 'neuanfang', 'ping', 'einstellungen', 'tribut_fordern', 'ebene_wechseln', 'distrikt_spez', 'distrikt_reparieren', 'tradition_waehlen', 'civic', 'civic_schlange', 'regierung', 'karten', 'pantheon', 'religion_gruenden', 'religion_verstaerken', 'missionieren', 'glaubenskampf', 'inquisition',
+  'meldungen_gelesen', 'tutorial', 'neuanfang', 'ping', 'einstellungen', 'tribut_fordern', 'ebene_wechseln', 'distrikt_spez', 'distrikt_reparieren', 'tradition_waehlen', 'civic', 'civic_schlange', 'regierung', 'karten', 'pantheon', 'religion_gruenden', 'religion_verstaerken', 'missionieren', 'glaubenskampf', 'inquisition', 'embargo', 'gesandtschaft',
 ]);
 
-Object.assign(Spiel.prototype, wirtschaft, bau, forschung, einheiten, kampf, diplomatie, akteure, ansicht, start, weltraum, naturwunder, wunderplatz, distrikte, civics, religion, eurekas);
+Object.assign(Spiel.prototype, wirtschaft, bau, forschung, einheiten, kampf, diplomatie, akteure, ansicht, start, weltraum, naturwunder, wunderplatz, distrikte, civics, religion, eurekas, beziehungen);

@@ -12,7 +12,7 @@ import { CIVICS } from '../daten/civics.js';
 //  - Jeder Schritt hat einen Test mit dem echten Altstand (tests/daten/altstand-v1.json) in tests/migration.test.mjs.
 
 /** Aktuelle Version des Spielzustands. */
-export const ZUSTAND_VERSION = 5;
+export const ZUSTAND_VERSION = 6;
 
 /** Schritte: SCHRITTE[n] hebt einen Zustand von Version n auf n + 1. */
 export const SCHRITTE = {
@@ -108,6 +108,30 @@ export const SCHRITTE = {
         spiel.meldung(v.id, 'Neu: der Kulturbaum mit Regierungen und Politikkarten. Dein Volk hat die Civics der vergangenen Zeitalter schon gemeistert; Regierung und Karten wurden passend gewählt. Ändern kannst du sie jederzeit (der erste Tausch ist kostenlos).', { art: 'kultur', wichtig: true });
       }
     }
+  },
+
+  /**
+   * 5 -> 6 (Handel und Diplomatie): Jedes bekannte Völkerpaar bekommt einen Beziehungswert, der zum bisherigen Verhältnis passt:
+   * Krieg -50, Bündnis +55, offene Grenzen +20, je aktiver Handelsroute zwischen beiden +8 (höchstens +24), sonst 0.
+   * Alles andere (Handelsabkommen, Embargo, Botschaften) beginnt leer.
+   */
+  5(z) {
+    const gross = new Set(Object.values(z.voelker || {}).filter((v) => v.art === 'spieler' || v.art === 'ki').map((v) => v.id));
+    const routen = {};
+    for (const e of Object.values(z.einheiten || {})) {
+      if (!e.route?.aktiv) continue;
+      const n = z.staedte?.[e.route.nach]; if (!n || n.volk === e.volk) continue;
+      const k = e.volk < n.volk ? e.volk + '|' + n.volk : n.volk + '|' + e.volk; routen[k] = (routen[k] || 0) + 1;
+    }
+    for (const [k, d] of Object.entries(z.diplomatie || {})) {
+      const [a, b] = k.split('|').map(Number);
+      if (!gross.has(a) || !gross.has(b)) continue;
+      let w = 0;
+      if (d.krieg) w = -50;
+      else { if (d.buendnis) w += 55; else if (d.offene_grenzen) w += 20; w += Math.min(24, (routen[k] || 0) * 8); }
+      d.beziehung = w;
+    }
+    for (const [k, n] of Object.entries(routen)) if (!z.diplomatie[k]) { const [a, b] = k.split('|').map(Number); if (gross.has(a) && gross.has(b)) z.diplomatie[k] = { krieg: false, beziehung: Math.min(24, n * 8) }; }
   },
 };
 

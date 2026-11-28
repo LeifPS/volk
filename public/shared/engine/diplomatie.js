@@ -126,7 +126,8 @@ export const diplomatie = {
     this.aendern(v.id); this.aendern(o.id);
     if (v.schutz_bis > this.t) { v.schutz_bis = this.t; this.meldung(v.id, 'Dein Neulingsschutz ist beendet.', { art: 'diplomatie' }); }
     this.zaehle(v.id, 'krieg'); this.zaehle(o.id, 'krieg');
-    Object.assign(d, { krieg: true, seit: this.t, letzter_kampf: this.t, offene_grenzen: false, buendnis: false, auto_vorschlag: null });
+    this.kriegBeziehung(v.id, o.id, d.buendnis);
+    Object.assign(d, { handelsabkommen: false, krieg: true, seit: this.t, letzter_kampf: this.t, offene_grenzen: false, buendnis: false, auto_vorschlag: null });
     this.markiere('d' + this.diploSchluessel(v.id, o.id));
     for (const [id, a] of Object.entries(this.z.angebote)) if ((a.von === v.id && a.an === o.id) || (a.von === o.id && a.an === v.id)) { delete this.z.angebote[id]; this.markiere('a' + id); }
     // Einheiten im Gebiet des anderen bleiben, wo sie sind; Handelsrouten zwischen beiden enden
@@ -146,6 +147,7 @@ export const diplomatie = {
     const g = this.z.global;
     g.diplo_um = this.t + STD;
     this.markiere('g');
+    this.beziehungTakt();
     for (const [k, d] of Object.entries(this.z.diplomatie)) {
       if (!d.krieg) continue;
       const [a, b] = k.split('|').map(Number);
@@ -192,13 +194,14 @@ export const diplomatie = {
     pruefe(this.kennt(v.id, o.id), 'Du kennst dieses Volk noch nicht.');
     const d = this.diplo(v.id, o.id);
     const art = b.typ;
-    const optionen = { frieden: 'frieden', offene_grenzen: 'offene_grenzen', buendnis: 'buendnis', forschungsabkommen: 'forschungsabkommen' };
+    const optionen = { frieden: 'frieden', offene_grenzen: 'offene_grenzen', buendnis: 'buendnis', forschungsabkommen: 'forschungsabkommen', handelsabkommen: 'handelsabkommen' };
     pruefe(optionen[art], 'Unbekanntes Angebot.');
     pruefe(this.hatOption(v, optionen[art]), `Dafür fehlt die Forschung "${this.forschungsName(FREIGESCHALTET_DURCH['option:' + optionen[art]])}".`);
     if (art === 'frieden') pruefe(d.krieg, 'Ihr seid nicht im Krieg.');
     else pruefe(!d.krieg, 'Im Krieg geht das nicht. Schließt zuerst Frieden.');
     if (art === 'offene_grenzen') pruefe(!d.offene_grenzen, 'Die Grenzen sind schon offen.');
     if (art === 'buendnis') pruefe(!d.buendnis, 'Ihr seid schon verbündet.');
+    if (art === 'handelsabkommen') { pruefe(!d.handelsabkommen, 'Ihr habt schon ein Handelsabkommen.'); pruefe(!this.hatEmbargo(v.id, o.id), 'Solange ein Embargo gilt, gibt es kein Handelsabkommen.'); }
     if (art === 'forschungsabkommen') {
       pruefe(!(v.abkommen_bis > this.t), 'Du hast schon ein laufendes Forschungsabkommen.');
       pruefe(o.art !== 'stadtstaat', 'Mit Stadtstaaten gibt es keine Forschungsabkommen.');
@@ -216,7 +219,7 @@ export const diplomatie = {
   },
 
   abkommenKosten(a, b) { return FORSCHUNGSABKOMMEN.kostenJeZeitalter * (1 + Math.max(a.zeitalter || 0, b.zeitalter || 0)); },
-  angebotName(art) { return { frieden: 'Frieden', offene_grenzen: 'Offene Grenzen', buendnis: 'Bündnis (geteilte Sicht)', forschungsabkommen: 'Forschungsabkommen', tausch: 'Tauschhandel', tribut: 'Tribut' }[art] || art; },
+  angebotName(art) { return { handelsabkommen: 'Handelsabkommen', frieden: 'Frieden', offene_grenzen: 'Offene Grenzen', buendnis: 'Bündnis (geteilte Sicht)', forschungsabkommen: 'Forschungsabkommen', tausch: 'Tauschhandel', tribut: 'Tribut' }[art] || art; },
 
   befehl_angebot_antwort(v, b) {
     const a = this.z.angebote[b.id];
@@ -242,6 +245,7 @@ export const diplomatie = {
     if (a.art === 'frieden') { pruefe(d.krieg, 'Ihr seid nicht mehr im Krieg.'); this.friedenSchliessen(a.von, a.an); }
     else if (a.art === 'offene_grenzen') { pruefe(!d.krieg, 'Ihr seid im Krieg.'); d.offene_grenzen = true; }
     else if (a.art === 'buendnis') { pruefe(!d.krieg, 'Ihr seid im Krieg.'); d.buendnis = true; d.offene_grenzen = true; }
+    else if (a.art === 'handelsabkommen') { pruefe(!d.krieg && !this.hatEmbargo(a.von, a.an), 'Im Krieg oder unter Embargo geht das nicht.'); d.handelsabkommen = true; delete this._raten[a.von]; delete this._raten[a.an]; }
     else if (a.art === 'forschungsabkommen') {
       pruefe(von.gold >= a.kosten && an.gold >= a.kosten, `Beide brauchen je ${a.kosten} Gold.`);
       pruefe(!(von.abkommen_bis > this.t) && !(an.abkommen_bis > this.t), 'Eine Seite hat schon ein laufendes Abkommen.');
@@ -250,6 +254,7 @@ export const diplomatie = {
       von.abkommen_bis = an.abkommen_bis = this.t + FORSCHUNGSABKOMMEN.dauer;
       delete this._raten[von.id]; delete this._raten[an.id];
     } else if (a.art === 'tausch') this.tauschAusfuehren(a);
+    if (a.art !== 'frieden') this.beziehungEreignis(a.von, a.an, a.art === 'buendnis' ? 'buendnis' : a.art === 'tausch' ? 'tausch' : 'vertrag');
     this.markiere('d' + k);
     this.angebotEntfernen(a);
     this.meldung(a.von, `${an.name} hat dein Angebot angenommen: ${this.angebotName(a.art)}.`, { art: 'diplomatie', wichtig: true });
@@ -260,6 +265,7 @@ export const diplomatie = {
     this.aendern(a); this.aendern(b);
     const d = this.diplo(a, b);
     Object.assign(d, { krieg: false, frieden_seit: this.t, auto_vorschlag: null });
+    this.beziehungEreignis(a, b, 'frieden');
     this.markiere('d' + this.diploSchluessel(a, b));
     for (const x of [a, b]) this.meldung(x, `Frieden zwischen ${this.z.voelker[a].name} und ${this.z.voelker[b].name}!`, { art: 'frieden', wichtig: true });
     // Einheiten verlassen fremdes Gebiet
@@ -299,6 +305,7 @@ export const diplomatie = {
     pruefe(this.kennt(v.id, o.id), 'Du kennst dieses Volk noch nicht.');
     pruefe(this.hatOption(v, 'tausch'), `Tauschangebote erfordern die Forschung "${this.forschungsName(FREIGESCHALTET_DURCH['option:tausch'])}".`);
     pruefe(!this.imKrieg(v.id, o.id), 'Im Krieg wird nicht gehandelt.');
+    pruefe(!this.hatEmbargo(v.id, o.id), 'Wegen eines Embargos gibt es keinen Handel mit diesem Volk.');
     const gibt = this.tauschSaeubern(b.gibt), will = this.tauschSaeubern(b.will);
     pruefe(this.tauschLeer(gibt) === false || this.tauschLeer(will) === false, 'Das Angebot ist leer.');
     this.tauschPruefen(v, gibt);
@@ -323,6 +330,7 @@ export const diplomatie = {
   tauschAusfuehren(a) {
     const von = this.z.voelker[a.von], an = this.z.voelker[a.an];
     pruefe(!this.imKrieg(von.id, an.id), 'Im Krieg wird nicht gehandelt.');
+    pruefe(!this.hatEmbargo(von.id, an.id), 'Wegen eines Embargos gibt es keinen Handel.');
     this.tauschPruefen(von, a.gibt); this.tauschPruefen(an, a.will);
     this.aendern(von.id); this.aendern(an.id);
     const uebertrage = (g, n, t) => {
@@ -351,6 +359,7 @@ export const diplomatie = {
     const gold = Math.max(3, Math.round(this.raten(o.id).einnahmen * 0.2));
     this.aendern(v.id); this.aendern(o.id);
     (g.tribute ||= []).push({ von: o.id, an: v.id, gold, bis: this.t + TAG });
+    this.beziehungEreignis(o.id, v.id, 'tribut');
     this.ablaufPlanen(o.id, this.t + TAG); this.ablaufPlanen(v.id, this.t + TAG);
     this.markiere('g');
     delete this._raten[v.id]; delete this._raten[o.id];
@@ -398,7 +407,7 @@ export const diplomatie = {
 
   // ---------- Handelsrouten ----------
   routenKapazitaet(v) {
-    let n = 1 + (this.raten(v.id).boni.handelsrouten || 0);
+    let n = 1 + (this.raten(v.id).boni.handelsrouten || 0) + this.abkommenRouten(v.id);
     for (const s of this.staedteVon(v.id)) n += this.gebaeudeSumme(s, 'handelsrouten');
     return n;
   },
@@ -413,6 +422,7 @@ export const diplomatie = {
     pruefe(ziel, 'Unbekannte Stadt.');
     pruefe(this.aktiveRouten(v.id).filter((x) => x.id !== e.id).length < this.routenKapazitaet(v), `Du kannst höchstens ${this.routenKapazitaet(v)} Handelsrouten gleichzeitig betreiben (Märkte, Häfen und Forschung erhöhen das).`);
     pruefe(ziel.volk === v.id || !this.imKrieg(v.id, ziel.volk), 'Mit Kriegsgegnern wird nicht gehandelt.');
+    pruefe(ziel.volk === v.id || !this.hatEmbargo(v.id, ziel.volk), 'Wegen eines Embargos gibt es keinen Handel mit diesem Volk.');
     const heim = this.staedteVon(v.id).filter((s) => s.id !== ziel.id).sort((a, c) => abstand(a.feld, e.feld) - abstand(c.feld, e.feld))[0];
     pruefe(heim, 'Du brauchst eine eigene Heimatstadt (eine andere als das Ziel).');
     pruefe(abstand(heim.feld, ziel.feld) <= HANDELSROUTE_MAX_FELDER, `Das Ziel ist zu weit weg (höchstens ${HANDELSROUTE_MAX_FELDER} Felder).`);

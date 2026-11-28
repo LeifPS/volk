@@ -642,7 +642,7 @@ export const wirtschaft = {
     if (!von || !nach) return 0;
     const d = abstand(von.feld, nach.feld);
     let w = HANDEL.grundGold + d * HANDEL.jeFeld + (von.bev + nach.bev) * 0.3;
-    if (von.volk !== nach.volk) w *= HANDEL.fremdBonus;
+    if (von.volk !== nach.volk) w *= HANDEL.fremdBonus * this.routenFaktor(von.volk, nach.volk);
     return Math.round(w * GOLD_FAKTOR * 10) / 10;
   },
 
