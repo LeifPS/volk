@@ -65,6 +65,7 @@ test('Beförderung: Balken, Wahl, Heilung 50, Reset, Voraussetzungen, höchstens
 
 test('Kampf bringt EP; gegen Barbaren nach der ersten Beförderung nur 1', () => {
   const { s, A, e } = einheit();
+  A.v.regierung = null; A.v.karten = {}; A.v.civics = null; delete s._raten[A.v.id]; // ohne Regierungs- und Kartenboni rechnen
   s.epGeben(e, 3, null);
   assert.equal(e.ep, 3);
   const bar = Object.values(s.z.voelker).find((v) => v.art === 'barbar');

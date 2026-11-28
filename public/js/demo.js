@@ -4,7 +4,7 @@ import { Spiel, leererZustand } from '../shared/engine/spiel.js';
 import { setzeUhr } from '../shared/uhr.js';
 import { Z, setzeVersatz } from './kern/zustand.js';
 import * as netz from './kern/netz.js';
-import { FORSCHUNGEN, EINHEITEN, GEBAEUDE, EINHEIT, ZEITALTER } from '../shared/daten/index.js';
+import { FORSCHUNGEN, EINHEITEN, GEBAEUDE, EINHEIT, ZEITALTER, CIVICS } from '../shared/daten/index.js';
 import { umkreis, abstand, nachbarn, idxE } from '../shared/hex.js';
 import { koerperMitte } from '../shared/weltraumkarte.js';
 import { karte, startWert } from '../shared/karte.js';
@@ -24,6 +24,9 @@ export function baueDemo(zeitalter = 3, start = Date.now()) {
   for (const f of FORSCHUNGEN) if (v.forschung.erforscht[f.id]) for (const p of f.voraussetzungen) v.forschung.erforscht[p] = 1;
   s.zeitalterPruefen(v);
   v.zeitalter = zeitalter;
+  // Kulturbaum passend zum Zeitalter, Regierung und Karten wie "Alle zuweisen"
+  for (const c of CIVICS) if (c.zeitalter < zeitalter || (c.zeitalter === zeitalter && c.spalte % 2 === 0)) v.civics.erforscht[c.id] = 1;
+  s.kiPolitik(v); v.freier_tausch = true;
   // Hauptstadt und weitere Städte
   const siedler = s.einheitenVon(v.id).find((e) => e.typ === 'siedler');
   const haupt = s.stadtGruenden(v.id, siedler.feld, 'Erzhausen');

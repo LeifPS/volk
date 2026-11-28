@@ -3,7 +3,7 @@ import { el, symbol, toast, fehler, zahl, vorzeichen, dauerText, uhrzeit, balken
 import { T } from '../texte.js';
 import { Z, an, du, volk, einheit, stadt, feldInfo, eigeneEinheiten, eigeneStaedte, aktuellesFeld, aktuelleHp, aktuellesGold, aktuellesLager, forschungsFortschritt, serverJetzt, stadtAuf, einheitenAuf, besitzerVon, erkundet } from '../kern/zustand.js';
 import { befehl, frage } from '../kern/netz.js';
-import { EINHEIT, GEB, FORSCHUNG, FREIGESCHALTET_DURCH, VERBESSERUNG, BEFOERDERUNG, BEFOERDERUNGEN, BAUM, ROHSTOFF } from '../../shared/daten/index.js';
+import { EINHEIT, GEB, FORSCHUNG, FREIGESCHALTET_DURCH, VERBESSERUNG, BEFOERDERUNG, BEFOERDERUNGEN, BAUM, ROHSTOFF, CIVIC } from '../../shared/daten/index.js';
 import { GELAENDE } from '../../shared/daten/gelaende.js';
 import { LAGER_NAMEN } from '../../shared/daten/rohstoffe.js';
 import { ZEITALTER } from '../../shared/daten/zeitalter.js';
@@ -21,6 +21,7 @@ const ZIVIL = new Set(['zivil', 'spaeher', 'haendler', 'see_zivil', 'sanitaeter'
 const LUFT = new Set(['jaeger', 'bomber', 'rakete', 'atom']);
 const SEE = new Set(['see_zivil', 'see_nah', 'see_fern', 'u_boot', 'traeger', 'transport']);
 
+let kulturEl;
 let leiste, ressourcen, forschungsEl, auswahlEl, aktionenEl, miniEl, miniCv, naechsteEl;
 
 export function aufbauen() {
@@ -28,6 +29,8 @@ export function aufbauen() {
   ressourcen = el('div#ressourcen.pix');
   const menue = el('div#menue.pix',
     knopf('forschung', T.menue.forschung, () => fenster_.forschung()),
+    knopf('kultur', T.menue.kultur, () => fenster_.kultur()),
+    knopf('krone', T.menue.regierung, () => fenster_.regierung()),
     knopf('stadt', T.menue.staedte, () => fenster_.reich()),
     knopf('diplomatie', T.menue.diplomatie, () => fenster_.diplomatie()),
     knopf('rangliste', T.menue.rangliste, () => fenster_.rangliste()),
@@ -38,6 +41,7 @@ export function aufbauen() {
   );
   leiste.append(ressourcen, menue);
   forschungsEl = el('div#forschungsanzeige.pix', { onclick: () => fenster_.forschung() });
+  kulturEl = el('div#kulturanzeige.pix', { onclick: () => fenster_.kultur() });
   auswahlEl = el('div#auswahl.pix.versteckt');
   aktionenEl = el('div#aktionen');
   miniCv = el('canvas', { width: BREITE, height: HOEHE });
@@ -45,7 +49,7 @@ export function aufbauen() {
   miniEl = el('div#minikarte.pix', miniCv, ebenenKnopf);
   beiEbenenwechsel(() => { minikarteZeichnen(); ebenenKnopfZeichnen(); });
   naechsteEl = el('button#naechste.knopf.gold', { onclick: naechsteAktion, tip: T.naechsteTip }, symbol('ui', 'pfeil_rechts'), T.naechste);
-  document.body.append(leiste, forschungsEl, auswahlEl, aktionenEl, miniEl, naechsteEl, el('div#meldungsleiste'));
+  document.body.append(leiste, forschungsEl, kulturEl, auswahlEl, aktionenEl, miniEl, naechsteEl, el('div#meldungsleiste'));
   minikarteEingabe();
   an('aenderung', (x) => { aktualisieren(); if (!x.gruppen || x.gruppen.has('nebel') || x.gruppen.has('felder') || x.gruppen.has('staedte') || x.voll) minikarteZeichnen(); });
   an('meldungen', (l) => { for (const m of l) { toast(m.text, m.art === 'warnung' || m.art === 'krieg' ? 'warnung' : 'info', { onclick: m.feld != null ? () => springe(m.feld) : null }); if (m.art !== 'zeitalter') ton(m.art === 'forschung' ? 'forschung' : m.art === 'bau' ? 'bau' : m.art === 'kampf' || m.art === 'krieg' ? 'warnung' : m.art === 'stadt' ? 'gruendung' : 'meldung'); } });
@@ -109,7 +113,22 @@ export function einkommenFenster() {
 }
 
 // ---------- Forschung ----------
+/** Kultur-Anzeige unter der Forschung: aktive Civic mit Fortschritt und Restzeit (aus den Kulturpunkten pro Stunde). */
+function kulturZeichnen() {
+  const c = du()?.civics; if (!kulturEl) return;
+  if (!c) { kulturEl.classList.add('versteckt'); return; }
+  kulturEl.classList.remove('versteckt');
+  if (!c.aktiv) { kulturEl.replaceChildren(el('div.zeile', symbol('ui', 'kultur', { px: 24 }), el('b.gold-t', { text: T.kultur.keine }))); kulturEl.classList.add('blink'); return; }
+  kulturEl.classList.remove('blink');
+  const civ = CIVIC[c.aktiv]; if (!civ) return;
+  const seit = Math.max(0, serverJetzt() - (du().stand_um || serverJetzt()));
+  const p = Math.min(1, ((c.punkte || 0) + (c.rate || 0) * seit / 3600000) / civ.kosten);
+  const rest = c.fertig_um ? c.fertig_um - serverJetzt() : null;
+  kulturEl.replaceChildren(el('div.zeile', symbol('ui', 'kultur', { px: 24 }), el('div', { style: { flex: 1, minWidth: 0 } }, el('div', { style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, el('b', { text: civ.name })), balken(p, 'lila'), el('div.klein', { text: `${Math.floor(p * 100)} % · ${rest != null ? 'fertig in ' + dauerText(rest) : T.kultur.keineKultur}` }))));
+}
+
 function forschungZeichnen() {
+  kulturZeichnen();
   const f = du()?.forschung; if (!f) return;
   if (!f.aktiv) { forschungsEl.replaceChildren(el('div.zeile', symbol('ui', 'forschung', { px: 24 }), el('b.gold-t', { text: T.keineForschung }))); forschungsEl.classList.add('blink'); return; }
   const fo = FORSCHUNG[f.aktiv];

@@ -76,6 +76,8 @@ export function init(cv) {
     else if (k === 'F3') { e.preventDefault(); F.diplomatie(); }
     else if (k === 'F4') { e.preventDefault(); F.rangliste(); }
     else if (k === 'F5') { e.preventDefault(); F.lexikon(); }
+    else if (k === 'F6') { e.preventDefault(); F.kultur(); }
+    else if (k === 'F7') { e.preventDefault(); F.regierung(); }
     else if (k === 'h' || k === 'H') F.hilfe();
     else if (k === 'n' || k === 'N') meldungsListe();
     else if (k === 'e' || k === 'E') ebeneUmschalten();

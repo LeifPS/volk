@@ -68,6 +68,7 @@ export const start = {
     for (const f of STARTFORSCHUNGEN) if (FORSCHUNG[f].freischaltet.some((x) => x.art === 'einheit' && x.id === 'siedler')) v.forschung.erforscht[f] = 1;
     if (o.art === 'ki' || o.art === 'stadtstaat') { v.gold = 300; v.lager = { holz: 300, stein: 200 }; }
     this.z.voelker[id] = v;
+    if (o.art === 'spieler' || o.art === 'ki') this.civicsStart(v);
     this.markiere('v' + id);
     return v;
   },

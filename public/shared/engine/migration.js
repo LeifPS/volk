@@ -3,6 +3,7 @@
 // auf den aktuellen Stand gebracht. Jeder Schritt ist eine eigene Funktion, die genau einmal läuft (danach steigt `version`).
 import { FORSCHUNG } from '../daten/index.js';
 import { DISTRIKT_VON_GEBAEUDE } from '../daten/distrikte.js';
+import { CIVICS } from '../daten/civics.js';
 
 // Regeln:
 //  - Ein Schritt darf nur Daten umformen oder ergänzen, nie die Erdkarte ändern (die Karte wird nicht gespeichert).
@@ -11,7 +12,7 @@ import { DISTRIKT_VON_GEBAEUDE } from '../daten/distrikte.js';
 //  - Jeder Schritt hat einen Test mit dem echten Altstand (tests/daten/altstand-v1.json) in tests/migration.test.mjs.
 
 /** Aktuelle Version des Spielzustands. */
-export const ZUSTAND_VERSION = 4;
+export const ZUSTAND_VERSION = 5;
 
 /** Schritte: SCHRITTE[n] hebt einen Zustand von Version n auf n + 1. */
 export const SCHRITTE = {
@@ -84,6 +85,27 @@ export const SCHRITTE = {
         const feld = spiel.distriktPlatzAutomatisch(st, did, false);
         if (feld != null) spiel.distriktSetzen(st, did, feld);
         else { st.distrikte ||= {}; st.distrikte[did] = { feld: null, spez: null }; }
+      }
+    }
+  },
+
+  /**
+   * 4 -> 5 (Kulturbaum, Regierungen, Politikkarten): Jedes Volk bekommt den Kulturbaum. Wer schon weiter ist, soll nicht
+   * hinter neue Spieler zurückfallen: Alle Civics der Zeitalter, die das Volk schon hinter sich hat (Zeitalter < aktuelles),
+   * gelten als abgeschlossen; die Kultur der Vergangenheit hat sie bezahlt. Danach wählt das Spiel die beste freie Regierung
+   * und legt die stärksten Karten (wie "Alle zuweisen"); der Spieler kann das jederzeit kostenlos ändern (freier Tausch).
+   */
+  4(z, spiel) {
+    if (!spiel) return;
+    for (const v of Object.values(z.voelker)) {
+      if (v.art !== 'spieler' && v.art !== 'ki') continue;
+      spiel.civicsStart(v);
+      for (const c of CIVICS) if (c.zeitalter < (v.zeitalter || 0)) v.civics.erforscht[c.id] = 1;
+      const aktivVorher = v.civics.aktiv;
+      spiel.kiPolitik(v);
+      if (v.art === 'spieler') {
+        v.civics.aktiv = aktivVorher; v.freier_tausch = true;
+        spiel.meldung(v.id, 'Neu: der Kulturbaum mit Regierungen und Politikkarten. Dein Volk hat die Civics der vergangenen Zeitalter schon gemeistert; Regierung und Karten wurden passend gewählt. Ändern kannst du sie jederzeit (der erste Tausch ist kostenlos).', { art: 'kultur', wichtig: true });
       }
     }
   },

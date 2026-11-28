@@ -70,13 +70,15 @@ export const distrikte = {
   },
 
   /** Ertrag des Distrikts pro Stunde (Grundwerte vor Faktoren): Nachbarschaft × Stufenfaktor + Grundwert nach Zeitalter. */
-  distriktErtrag(s, id) {
+  distriktErtrag(s, id, boni = null) {
     const d = DISTRIKT[id]; const x = s.distrikte?.[id];
     if (!d || !x || this.distriktGepluendert(s, id)) return { art: d?.ertrag, wert: 0, nachbar: { roh: 0, quellen: [] }, stufe: 0 };
     const nb = x.feld != null ? this.distriktNachbarschaft(s, id, x.feld) : { roh: 0, quellen: [] };
     const stufe = this.distriktStufe(s, id);
     const za = this.z.voelker[s.volk]?.zeitalter || 0;
-    let wert = nb.roh * DR.stufenFaktor[stufe] + 1 + za * DR.grundJeZeitalter;
+    const b = boni || this.boni(this.z.voelker[s.volk]);
+    const nbProzent = (b.nachbar_prozent || 0) + (b['nachbar_' + id + '_prozent'] || 0);
+    let wert = nb.roh * DR.stufenFaktor[stufe] * (1 + nbProzent / 100) + 1 + za * DR.grundJeZeitalter;
     if (x.spez_ab && x.spez_ab > this.t) wert *= 0.5; // Umstellung läuft
     return { art: d.ertrag, wert: Math.round(wert * 10) / 10, nachbar: nb, stufe };
   },

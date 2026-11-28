@@ -1,4 +1,4 @@
-// Forschungsbaum: großes Vollbild-Fenster mit dem ganzen Baum (Canvas), Suche/Filter, Detailpanel und Warteschlangen-Leiste.
+// Forschungs- und Kulturbaum (eine Ansicht, zwei Datenquellen, siehe QUELLEN): großes Vollbild-Fenster mit dem ganzen Baum (Canvas), Suche/Filter, Detailpanel und Warteschlangen-Leiste.
 // Verschieben per Ziehen (Maus/Touch), Zoom per Mausrad, Zwei-Finger-Geste und Knöpfen.
 import { el, symbol, fenster, fehler, toast, zahl, dauerText, balken, tip } from './basis.js';
 import { sprite } from '../grafik/sprites.js';
@@ -6,10 +6,44 @@ import { T } from '../texte.js';
 import { an, du, forschungsFortschritt, serverJetzt } from '../kern/zustand.js';
 import { befehl } from '../kern/netz.js';
 import { forschungZeitTempo } from '../../shared/regeln.js';
-import { FORSCHUNGEN, FORSCHUNG, NACHFOLGER, EINHEIT, GEB, WUNDER_NACH_ID, VERBESSERUNG, ROHSTOFF, ZEITALTER } from '../../shared/daten/index.js';
+import { FORSCHUNGEN, FORSCHUNG, NACHFOLGER, EINHEIT, GEB, WUNDER_NACH_ID, VERBESSERUNG, ROHSTOFF, ZEITALTER, CIVICS, CIVIC, CIVIC_NACHFOLGER, CIVIC_SPALTEN_ZEITALTER, POLITIKKARTE, REGIERUNG } from '../../shared/daten/index.js';
 import { SPALTEN_ZEITALTER } from '../../shared/daten/forschung.js';
+import { STD } from '../../shared/regeln.js';
 
-const TB = () => T.baum;
+// ---------- Datenquellen: Forschung (Wissenschaft) und Kultur (Civics) ----------
+/** Civics bekommen für die Anordnung im Baum einen "Zweig" aus ihrer Freischaltung (Kartenkategorie, Regierung = Staat). */
+const CIVIC_ZWEIG = { militaer: 'militaer', wirtschaft: 'wirtschaft', diplomatie: 'staat', joker: 'wissen' };
+for (const c of CIVICS) {
+  const k = c.freischaltet.find((x) => x.art === 'politikkarte');
+  c.zweig ||= c.freischaltet.some((x) => x.art === 'regierung') ? 'staat' : k ? CIVIC_ZWEIG[POLITIKKARTE[k.id]?.kategorie] || 'wissen' : 'wirtschaft';
+}
+const civicStand = () => du()?.civics;
+/** Kulturpunkte der aktiven Civic jetzt (zwischen zwei Server-Abrechnungen hochgerechnet). */
+function civicPunkte() { const c = civicStand(); if (!c?.aktiv) return 0; const seit = Math.max(0, serverJetzt() - (du()?.stand_um || serverJetzt())); return (c.punkte || 0) + (c.rate || 0) * seit / STD; }
+const QUELLEN = {
+  forschung: {
+    name: 'forschung', liste: FORSCHUNGEN, nach: FORSCHUNG, nachfolger: NACHFOLGER, spaltenZeitalter: SPALTEN_ZEITALTER,
+    zweige: ['see', 'wirtschaft', 'staat', 'wissen', 'raumfahrt', 'industrie', 'luft', 'militaer'], symbol: 'forschung',
+    stand: () => du()?.forschung, befehl: 'forschen', schlangeBefehl: 'forschung_schlange',
+    fortschritt: () => forschungsFortschritt(), teil: (id) => du()?.forschung?.teil?.[id] || 0,
+    dauerMs: (f) => { let d = f.dauer; if (f.wiederholbar) d *= 1 + 0.15 * (du()?.forschung?.erforscht?.[f.id] || 0); return d * 1000 / forschungZeitTempo(f.zeitalter || 0) / (1 + Math.max(0, du()?.raten?.wissenschaft || 0) / 100); },
+    titel: () => T.baum.titel,
+  },
+  kultur: {
+    name: 'kultur', liste: CIVICS, nach: CIVIC, nachfolger: CIVIC_NACHFOLGER, spaltenZeitalter: CIVIC_SPALTEN_ZEITALTER,
+    zweige: ['wirtschaft', 'staat', 'wissen', 'militaer'], symbol: 'kultur',
+    stand: civicStand, befehl: 'civic', schlangeBefehl: 'civic_schlange',
+    fortschritt: () => { const c = civicStand(); const k = CIVIC[c?.aktiv]?.kosten; return k ? Math.min(1, civicPunkte() / k) : 0; },
+    teil: (id) => (civicStand()?.teil?.[id] || 0) / (CIVIC[id]?.kosten || 1),
+    dauerMs: (c) => { const r = civicStand()?.rate || 0; return r > 0 ? c.kosten / r * STD : Infinity; },
+    titel: () => T.kultur.titel,
+  },
+};
+let Q = QUELLEN.forschung;
+
+/** Texte des Baums; für den Kulturbaum überschreibt T.kultur.baum einzelne Einträge. */
+const TB = () => (Q?.name === 'kultur' ? { ...T.baum, ...T.kultur.baum } : T.baum);
+const LAYOUTS = {};
 
 // ---------- Maße (Weltkoordinaten) ----------
 const NW = 200, NH = 82;          // Knotengröße
@@ -18,7 +52,7 @@ const RH = 104;                   // Zeilenabstand
 const PADX = 40, TOP = 52, UNTEN = 30;
 const KANAL = CW - NW;
 const MIN_ZOOM = 0.12;
-const ZWEIG_REIHE = ['see', 'wirtschaft', 'staat', 'wissen', 'raumfahrt', 'industrie', 'luft', 'militaer'];
+
 
 const OPTION_SYM = { krieg: 'krieg', frieden: 'frieden', tausch: 'handel', offene_grenzen: 'offene_grenzen', einschiffen: 'see', karten_tausch: 'karte_tausch', tribut: 'tribut', aufruesten: 'aufruesten', pluendern: 'pluendern', buendnis: 'buendnis', stadtstaat_buendnis: 'buendnis', tiefsee_einschiffen: 'see', forschungsabkommen: 'forschungsabkommen', bauplatz_2: 'bau', bauplatz_3: 'bau', luftlandung: 'luft', atomschlag: 'atom' };
 const BONUS_SYM = { wissenschaft_prozent: 'wissenschaft', gold_prozent: 'gold', produktion_prozent: 'produktion', kultur_prozent: 'kultur', nahrung_prozent: 'nahrung', zufriedenheit: 'zufriedenheit', tempo_land: 'tempo', tempo_see: 'see', heilung_prozent: 'hp', stadt_staerke: 'schild', stadt_hp: 'hp', lager: 'lager', unterhalt_rabatt: 'gold', sicht: 'sicht', handel_gold_prozent: 'handel', grenzwachstum_prozent: 'karte', bauzeit_prozent: 'bau', arbeiter_tempo: 'arbeiten', erfahrung_prozent: 'befoerderung', bauplaetze: 'bau', handelsrouten: 'handel' };
@@ -33,18 +67,17 @@ const FARBE = {
 };
 
 // ---------- Layout (einmalig berechnet) ----------
-let LAYOUT = null;
 function layout() {
-  if (LAYOUT) return LAYOUT;
+  if (LAYOUTS[Q.name]) return LAYOUTS[Q.name];
   const spalten = [];
-  for (const f of FORSCHUNGEN) (spalten[f.spalte] ||= []).push(f);
+  for (const f of Q.liste) (spalten[f.spalte] ||= []).push(f);
   const maxN = Math.max(...spalten.map((s) => s?.length || 0));
   const R = maxN + 1;
   // Zweige als Bänder: Mittelpunkt je Zweig nach Anteil
-  const anzahl = {}; for (const f of FORSCHUNGEN) anzahl[f.zweig] = (anzahl[f.zweig] || 0) + 1;
+  const anzahl = {}; for (const f of Q.liste) anzahl[f.zweig] = (anzahl[f.zweig] || 0) + 1;
   const band = {}; let kum = 0;
-  for (const z of ZWEIG_REIHE) { const n = anzahl[z] || 0; band[z] = ((kum + n / 2) / FORSCHUNGEN.length) * (R - 1); kum += n; }
-  for (const f of FORSCHUNGEN) if (band[f.zweig] == null) band[f.zweig] = (R - 1) / 2;
+  for (const z of Q.zweige) { const n = anzahl[z] || 0; band[z] = ((kum + n / 2) / Q.liste.length) * (R - 1); kum += n; }
+  for (const f of Q.liste) if (band[f.zweig] == null) band[f.zweig] = (R - 1) / 2;
   const reihe = {};
   const zuweisen = (spalte, wunsch) => {
     const l = [...spalte].sort((a, b) => wunsch[a.id] - wunsch[b.id] || band[a.zweig] - band[b.zweig]);
@@ -64,7 +97,7 @@ function layout() {
   const mittel = (ids) => ids.reduce((a, x) => a + reihe[x], 0) / ids.length;
   const kreuzungen = () => {
     const kanten = [];
-    for (const f of FORSCHUNGEN) for (const p of f.voraussetzungen) kanten.push([FORSCHUNG[p].spalte, reihe[p], f.spalte, reihe[f.id]]);
+    for (const f of Q.liste) for (const p of f.voraussetzungen) kanten.push([Q.nach[p].spalte, reihe[p], f.spalte, reihe[f.id]]);
     let k = 0;
     for (let i = 0; i < kanten.length; i++) for (let j = i + 1; j < kanten.length; j++) {
       const a = kanten[i], b = kanten[j];
@@ -76,7 +109,7 @@ function layout() {
     return k;
   };
   // Start: Bänder
-  const w0 = {}; for (const f of FORSCHUNGEN) w0[f.id] = band[f.zweig];
+  const w0 = {}; for (const f of Q.liste) w0[f.id] = band[f.zweig];
   for (const s of spalten) if (s) zuweisen(s, w0);
   let bester = { ...reihe }, besterWert = kreuzungen();
   for (let iter = 0; iter < 10; iter++) {
@@ -86,7 +119,7 @@ function layout() {
     for (const s of reihenfolge) {
       if (!s) continue;
       for (const f of s) {
-        const nach = NACHFOLGER[f.id] || [];
+        const nach = Q.nachfolger[f.id] || [];
         const nb = vor ? f.voraussetzungen : nach;
         const b = nb.length ? mittel(nb) : band[f.zweig];
         w[f.id] = 0.72 * b + 0.28 * band[f.zweig];
@@ -99,7 +132,7 @@ function layout() {
   Object.assign(reihe, bester);
   const pos = {};
   const belegt = Array.from({ length: spalten.length }, () => new Array(R).fill(null));
-  for (const f of FORSCHUNGEN) {
+  for (const f of Q.liste) {
     pos[f.id] = { x: PADX + f.spalte * CW, y: TOP + reihe[f.id] * RH, reihe: reihe[f.id], spalte: f.spalte };
     belegt[f.spalte][reihe[f.id]] = f.id;
   }
@@ -108,7 +141,7 @@ function layout() {
   const kanalMitte = (c) => PADX + c * CW + NW + KANAL / 2;
   const frei = (r, c1, c2) => { for (let c = c1; c <= c2; c++) if (belegt[c]?.[r]) return false; return true; };
   const kanten = [];
-  for (const f of FORSCHUNGEN) {
+  for (const f of Q.liste) {
     const b = pos[f.id];
     for (const pid of f.voraussetzungen) {
       const a = pos[pid];
@@ -129,33 +162,29 @@ function layout() {
       kanten.push({ von: pid, nach: f.id, p, x0: Math.min(x1, x2), x1: Math.max(x1, x2) });
     }
   }
-  LAYOUT = { pos, W, H, R, kanten, kreuzungen: besterWert };
-  return LAYOUT;
+  LAYOUTS[Q.name] = { pos, W, H, R, kanten, kreuzungen: besterWert };
+  return LAYOUTS[Q.name];
 }
 
 // ---------- Hilfen ----------
 const norm = (s) => s.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
 const wissenschaft = () => du()?.raten?.wissenschaft || 0;
-const erforscht = () => du()?.forschung?.erforscht || {};
+const erforscht = () => Q.stand()?.erforscht || {};
 
 /** Dauer in ms bei aktueller Wissenschaft (ohne Teilfortschritt). */
-function dauerMs(f) {
-  let d = f.dauer;
-  if (f.wiederholbar) d *= 1 + 0.15 * (erforscht()[f.id] || 0);
-  return d * 1000 / forschungZeitTempo(f.zeitalter || 0) / (1 + Math.max(0, wissenschaft()) / 100);
-}
+function dauerMs(f) { return Q.dauerMs(f); }
 /** Restdauer in ms (berücksichtigt aktive Forschung und Teilfortschritt). */
 function restMs(id) {
-  const fo = du()?.forschung, f = FORSCHUNG[id];
-  if (fo?.aktiv === id) return fo.fertig_um ? Math.max(0, fo.fertig_um - serverJetzt()) : dauerMs(f) * (1 - forschungsFortschritt());
-  return dauerMs(f) * (1 - (fo?.teil?.[id] || 0));
+  const fo = Q.stand(), f = Q.nach[id];
+  if (fo?.aktiv === id) return fo.fertig_um ? Math.max(0, fo.fertig_um - serverJetzt()) : dauerMs(f) * (1 - Q.fortschritt());
+  return dauerMs(f) * (1 - Q.teil(id));
 }
 /** Fehlende Voraussetzungen (inkl. id) in Reihenfolge, wie der Server sie vorschaltet. */
 function weg(id, bekannt) {
   const erg = [], gesehen = new Set();
   const besuche = (x) => {
     if (gesehen.has(x)) return; gesehen.add(x);
-    const f = FORSCHUNG[x];
+    const f = Q.nach[x];
     if (!f || (bekannt[x] && !(x === id && f.wiederholbar))) return;
     for (const p of f.voraussetzungen) besuche(p);
     erg.push(x);
@@ -164,7 +193,7 @@ function weg(id, bekannt) {
   return erg;
 }
 function zustand(id) {
-  const fo = du()?.forschung, f = FORSCHUNG[id];
+  const fo = Q.stand(), f = Q.nach[id];
   if (!fo) return 'gesperrt';
   if (fo.aktiv === id) return 'aktiv';
   if (fo.schlange?.includes(id)) return 'schlange';
@@ -174,12 +203,12 @@ function zustand(id) {
 }
 function alleNachfolger(id) {
   const s = new Set(), stapel = [id];
-  while (stapel.length) for (const n of NACHFOLGER[stapel.pop()] || []) if (!s.has(n)) { s.add(n); stapel.push(n); }
+  while (stapel.length) for (const n of Q.nachfolger[stapel.pop()] || []) if (!s.has(n)) { s.add(n); stapel.push(n); }
   return s;
 }
 function alleVorgaenger(id) {
   const s = new Set(), stapel = [id];
-  while (stapel.length) for (const p of FORSCHUNG[stapel.pop()]?.voraussetzungen || []) if (!s.has(p)) { s.add(p); stapel.push(p); }
+  while (stapel.length) for (const p of Q.nach[stapel.pop()]?.voraussetzungen || []) if (!s.has(p)) { s.add(p); stapel.push(p); }
   return s;
 }
 
@@ -205,6 +234,8 @@ function freiInfo(x) {
     case 'rohstoff': { const d = ROHSTOFF[x.id]; return { kat: 'rohstoff', id: x.id, titel: d?.name || x.id, art: B.arten.rohstoff, text: B.rohstoffSichtbar }; }
     case 'option': return { kat: 'ui', id: OPTION_SYM[x.id] || 'stern_voll', titel: B.optionen[x.id] || x.id, art: B.arten.option, text: '' };
     case 'bonus': return { kat: 'ui', id: BONUS_SYM[x.id] || 'plus', titel: bonusText(x.id, x.wert), art: B.arten.bonus, text: '' };
+    case 'politikkarte': { const k = POLITIKKARTE[x.id]; return { kat: 'ui', id: { militaer: 'krieg', wirtschaft: 'gold', diplomatie: 'diplomatie', joker: 'stern_voll' }[k?.kategorie] || 'stern_voll', titel: k?.name || x.id, art: T.kultur.baum.karteArt(T.regierung.kat[k?.kategorie] || ''), text: k?.text || '' }; }
+    case 'regierung': { const r = REGIERUNG[x.id]; return { kat: 'ui', id: 'krone', titel: r?.name || x.id, art: T.kultur.baum.regierungArt, text: r?.beschreibung || '' }; }
     default: return { kat: 'ui', id: 'stern_leer', titel: x.id, art: '', text: '' };
   }
 }
@@ -271,8 +302,13 @@ function css() {
 // ---------- Fenster ----------
 let offen = null;
 
-export function oeffneForschung(id) {
-  if (offen) { if (id && FORSCHUNG[id]) offen.waehle(id, true); return; }
+/** Kulturbaum: dieselbe Ansicht mit den Civics. */
+export function oeffneKultur(id) { oeffneBaum('kultur', id); }
+export function oeffneForschung(id) { oeffneBaum('forschung', id); }
+function oeffneBaum(quelle, id) {
+  if (offen && Q.name !== quelle) offen.fenster.schliessen();
+  Q = QUELLEN[quelle];
+  if (offen) { if (id && Q.nach[id]) offen.waehle(id, true); return; }
   css();
   const L = layout();
   const B = TB();
@@ -287,10 +323,10 @@ export function oeffneForschung(id) {
   let zeichnenAngefragt = false, animation = null;
   const abmelden = [];
   const symbole = {};          // Freischaltungs-Sprites je Forschung
-  for (const f of FORSCHUNGEN) symbole[f.id] = f.freischaltet.map((x) => spriteVon(freiInfo(x)));
+  for (const f of Q.liste) symbole[f.id] = f.freischaltet.map((x) => spriteVon(freiInfo(x)));
   const namenKurz = {};
 
-  const zustaendeNeu = () => { zust = {}; for (const f of FORSCHUNGEN) zust[f.id] = zustand(f.id); };
+  const zustaendeNeu = () => { zust = {}; for (const f of Q.liste) zust[f.id] = zustand(f.id); };
   zustaendeNeu();
 
   // ----- Kopfzeile -----
@@ -306,7 +342,7 @@ export function oeffneForschung(id) {
     const zoom = el('div.fb-zoom',
       el('button.knopf', { text: '+', 'aria-label': B.zoomRein, tip: B.zoomRein, onclick: () => zoomUm(1.3) }),
       el('button.knopf', { text: '−', 'aria-label': B.zoomRaus, tip: B.zoomRaus, onclick: () => zoomUm(1 / 1.3) }),
-      el('button.knopf', { 'aria-label': B.zurAktuellen, tip: B.zurAktuellen, onclick: () => springeZuStart(true) }, symbol('ui', 'forschung', { px: 20 })),
+      el('button.knopf', { 'aria-label': B.zurAktuellen, tip: B.zurAktuellen, onclick: () => springeZuStart(true) }, symbol('ui', Q.symbol, { px: 20 })),
     );
     detailEl = el('div.fb-detail.pix.versteckt');
     buehne = el('div.fb-buehne', cv, zoom, detailEl);
@@ -314,28 +350,28 @@ export function oeffneForschung(id) {
     const leg = (z, t) => el('span', el('i', { style: { background: FARBE[z].f, borderColor: FARBE[z].r } }), t);
     leisteEl = el('div.fb-leiste', schlangeEl, el('div.fb-legende', leg('erforscht', B.zustaende.erforscht), leg('aktiv', B.zustaende.aktiv), leg('schlange', B.zustaende.schlange), leg('erforschbar', B.zustaende.erforschbar), leg('gesperrt', B.zustaende.gesperrt)));
     innen.append(buehne, leisteEl);
-  }, { breite: 'voll', symbol: symbol('ui', 'forschung', { px: 24 }), kopf, beiSchliessen: () => { for (const a of abmelden) a(); offen = null; } });
+  }, { breite: 'voll', symbol: symbol('ui', Q.symbol, { px: 24 }), kopf, beiSchliessen: () => { for (const a of abmelden) a(); offen = null; } });
 
   // ----- Filter -----
   function filterOptionen() {
     const opts = [['alle', B.filterAlle], ['erforschbar', B.filterErforschbar], ['offen', B.filterOffen]];
-    for (const z of ZWEIG_REIHE) opts.push(['zweig:' + z, B.zweigPraefix + B.zweige[z]]);
-    if (filter.startsWith('braucht:')) opts.push([filter, B.brauchtPraefix + FORSCHUNG[filter.slice(8)].name]);
-    else if (auswahl) opts.push(['braucht:' + auswahl, B.brauchtPraefix + FORSCHUNG[auswahl].name]);
+    for (const z of Q.zweige) opts.push(['zweig:' + z, B.zweigPraefix + B.zweige[z]]);
+    if (filter.startsWith('braucht:')) opts.push([filter, B.brauchtPraefix + Q.nach[filter.slice(8)].name]);
+    else if (auswahl) opts.push(['braucht:' + auswahl, B.brauchtPraefix + Q.nach[auswahl].name]);
     filterEl.replaceChildren(...opts.map(([v, t]) => el('option', { value: v, text: t, selected: v === filter })));
   }
   function setzeFilter(v, springen = true) {
     filter = v;
     filterOptionen();
     if (v === 'alle') filterMenge = null;
-    else if (v === 'erforschbar') filterMenge = new Set(FORSCHUNGEN.filter((x) => zust[x.id] === 'erforschbar' || zust[x.id] === 'aktiv').map((x) => x.id));
-    else if (v === 'offen') filterMenge = new Set(FORSCHUNGEN.filter((x) => zust[x.id] !== 'erforscht').map((x) => x.id));
-    else if (v.startsWith('zweig:')) filterMenge = new Set(FORSCHUNGEN.filter((x) => x.zweig === v.slice(6)).map((x) => x.id));
+    else if (v === 'erforschbar') filterMenge = new Set(Q.liste.filter((x) => zust[x.id] === 'erforschbar' || zust[x.id] === 'aktiv').map((x) => x.id));
+    else if (v === 'offen') filterMenge = new Set(Q.liste.filter((x) => zust[x.id] !== 'erforscht').map((x) => x.id));
+    else if (v.startsWith('zweig:')) filterMenge = new Set(Q.liste.filter((x) => x.zweig === v.slice(6)).map((x) => x.id));
     else if (v.startsWith('braucht:')) { const id = v.slice(8); filterMenge = alleNachfolger(id); filterMenge.add(id); }
     if (springen && filterMenge?.size) {
       // zum ersten Treffer, falls keiner sichtbar ist
       const sichtbar = [...filterMenge].some((x) => imBild(x));
-      if (!sichtbar) { const erst = [...filterMenge].sort((a, b) => FORSCHUNG[a].spalte - FORSCHUNG[b].spalte)[0]; zentriere(erst, true); }
+      if (!sichtbar) { const erst = [...filterMenge].sort((a, b) => Q.nach[a].spalte - Q.nach[b].spalte)[0]; zentriere(erst, true); }
     }
     bitte();
   }
@@ -346,11 +382,11 @@ export function oeffneForschung(id) {
   function suche() {
     suchText = norm(suchFeld.value.trim());
     trefferNr = -1;
-    treffer = suchText ? FORSCHUNGEN.filter((x) => norm(x.name).includes(suchText) || x.freischaltet.some((y) => norm(freiInfo(y).titel).includes(suchText))).map((x) => x.id) : [];
-    treffer.sort((a, b) => (norm(FORSCHUNG[b].name).includes(suchText) - norm(FORSCHUNG[a].name).includes(suchText)) || FORSCHUNG[a].spalte - FORSCHUNG[b].spalte);
+    treffer = suchText ? Q.liste.filter((x) => norm(x.name).includes(suchText) || x.freischaltet.some((y) => norm(freiInfo(y).titel).includes(suchText))).map((x) => x.id) : [];
+    treffer.sort((a, b) => (norm(Q.nach[b].name).includes(suchText) - norm(Q.nach[a].name).includes(suchText)) || Q.nach[a].spalte - Q.nach[b].spalte);
     if (!suchText) { trefferEl.classList.add('versteckt'); bitte(); return; }
     trefferEl.replaceChildren(...(treffer.length ? treffer.slice(0, 30).map((x, i) => {
-      const fo = FORSCHUNG[x];
+      const fo = Q.nach[x];
       const nebenbei = !norm(fo.name).includes(suchText) ? fo.freischaltet.map((y) => freiInfo(y).titel).find((t) => norm(t).includes(suchText)) : null;
       return el('div.eintrag', { onclick: () => { trefferNr = i; springeTreffer(); trefferEl.classList.add('versteckt'); } }, symbol('zweig', fo.zweig, { px: 20 }),
         el('div', el('b', { text: fo.name }), el('span.klein', { text: ' · ' + B.zustaende[zust[x]] + (nebenbei ? ' · ' + nebenbei : '') })));
@@ -420,9 +456,9 @@ export function oeffneForschung(id) {
     begrenze(); bitte();
   }
   function startId() {
-    const fo = du()?.forschung;
+    const fo = Q.stand();
     if (fo?.aktiv) return fo.aktiv;
-    return FORSCHUNGEN.filter((x) => zust[x.id] === 'erforschbar').sort((a, b) => a.spalte - b.spalte)[0]?.id || FORSCHUNGEN[0].id;
+    return Q.liste.filter((x) => zust[x.id] === 'erforschbar').sort((a, b) => a.spalte - b.spalte)[0]?.id || Q.liste[0].id;
   }
   function springeZuStart(sanft) { zentriere(startId(), sanft); }
 
@@ -446,7 +482,7 @@ export function oeffneForschung(id) {
   const FONT_KLEIN = '400 13px Zahlen, Pixelify, Silkscreen, monospace';
   function kurzName(id, gross) {
     const k = id + (gross ? '#g' : '');
-    if (!namenKurz[k]) namenKurz[k] = gross ? kuerze(FORSCHUNG[id].name, NW - 50, FONT_GROSS) : kuerze(FORSCHUNG[id].name, NW - 40, FONT_NAME);
+    if (!namenKurz[k]) namenKurz[k] = gross ? kuerze(Q.nach[id].name, NW - 50, FONT_GROSS) : kuerze(Q.nach[id].name, NW - 40, FONT_NAME);
     return namenKurz[k];
   }
   function bild(img, x, y, box) {
@@ -465,7 +501,7 @@ export function oeffneForschung(id) {
     ctx.imageSmoothingEnabled = false;
     const wx0 = -ox / s, wx1 = (bw - ox) / s, wy0 = -oy / s, wy1 = (bh - oy) / s;
     // Zeitalter-Bänder
-    const grenzen = [...SPALTEN_ZEITALTER, 45];
+    const grenzen = [...Q.spaltenZeitalter, 45];
     for (let z = 0; z < ZEITALTER.length; z++) {
       const xa = z === 0 ? -4000 : PADX + grenzen[z] * CW - KANAL / 2, xb = z === ZEITALTER.length - 1 ? L.W + 4000 : PADX + grenzen[z + 1] * CW - KANAL / 2;
       if (xb < wx0 || xa > wx1) continue;
@@ -505,7 +541,7 @@ export function oeffneForschung(id) {
     for (const [k, farbe] of oben) { linie(k, '#07080c', lw + 3 / s); linie(k, farbe, lw + 1 / s); }
     // Knoten
     const detail = s >= 0.48;
-    for (const fo of FORSCHUNGEN) {
+    for (const fo of Q.liste) {
       const p = L.pos[fo.id];
       if (p.x + NW + 30 < wx0 || p.x - 30 > wx1 || p.y + NH + 30 < wy0 || p.y - 30 > wy1) continue;
       knoten(fo, p.x, p.y, detail, dimmen && !gehoert(fo.id), dimmen && gehoert(fo.id));
@@ -529,7 +565,7 @@ export function oeffneForschung(id) {
   function knoten(fo, x, y, detail, blass, treffer_) {
     const z = zust[fo.id], F = FARBE[z];
     const istAuswahl = auswahl === fo.id, istHover = hover === fo.id;
-    const fo_ = du()?.forschung;
+    const fo_ = Q.stand();
     ctx.globalAlpha = blass ? 0.16 : 1;
     // Schatten, Rahmen, Füllung im Pixelstil
     ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(x + 4, y + 4, NW, NH);
@@ -568,12 +604,12 @@ export function oeffneForschung(id) {
         ctx.fillStyle = '#9fdc8c'; ctx.fillText(B.zustaende.erforscht, x + 25, y + 73);
       }
       let rechts = '';
-      if (z === 'aktiv') rechts = Math.floor(forschungsFortschritt() * 100) + ' %';
+      if (z === 'aktiv') rechts = Math.floor(Q.fortschritt() * 100) + ' %';
       else if (fo_?.teil?.[fo.id]) rechts = Math.floor(fo_.teil[fo.id] * 100) + ' %';
       if (rechts) { ctx.fillStyle = F.t; const w = ctx.measureText(rechts).width; ctx.fillText(rechts, x + NW - 9 - w, y + 73); }
       if (z === 'aktiv') {
         ctx.fillStyle = '#0b0d14'; ctx.fillRect(x + 4, y + NH - 2, NW - 8, 7);
-        ctx.fillStyle = '#ffe066'; ctx.fillRect(x + 5, y + NH - 1, Math.round((NW - 10) * forschungsFortschritt()), 5);
+        ctx.fillStyle = '#ffe066'; ctx.fillRect(x + 5, y + NH - 1, Math.round((NW - 10) * Q.fortschritt()), 5);
       }
     } else {
       if (zweig) ctx.drawImage(zweig, x + 8, y + 8, 32, 32);
@@ -583,7 +619,7 @@ export function oeffneForschung(id) {
         ctx.fillStyle = '#000'; ctx.fillText(name, x + 46, y + 34);
         ctx.fillStyle = F.t; ctx.fillText(name, x + 44, y + 32);
       }
-      if (z === 'aktiv') { ctx.fillStyle = '#0b0d14'; ctx.fillRect(x + 6, y + NH - 22, NW - 12, 14); ctx.fillStyle = '#ffe066'; ctx.fillRect(x + 8, y + NH - 20, Math.round((NW - 16) * forschungsFortschritt()), 10); }
+      if (z === 'aktiv') { ctx.fillStyle = '#0b0d14'; ctx.fillRect(x + 6, y + NH - 22, NW - 12, 14); ctx.fillStyle = '#ffe066'; ctx.fillRect(x + 8, y + NH - 20, Math.round((NW - 16) * Q.fortschritt()), 10); }
     }
     // Markierungen
     const badge = (text, farbe, rx) => {
@@ -618,7 +654,7 @@ export function oeffneForschung(id) {
   const lokal = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
   function treffe(px, py) {
     const wx = (px - ansicht.ox) / ansicht.s, wy = (py - ansicht.oy) / ansicht.s;
-    for (const fo of FORSCHUNGEN) { const p = L.pos[fo.id]; if (wx >= p.x - 4 && wx <= p.x + NW + 4 && wy >= p.y - 4 && wy <= p.y + NH + 4) return fo.id; }
+    for (const fo of Q.liste) { const p = L.pos[fo.id]; if (wx >= p.x - 4 && wx <= p.x + NW + 4 && wy >= p.y - 4 && wy <= p.y + NH + 4) return fo.id; }
     return null;
   }
   cv.addEventListener('pointerdown', (e) => {
@@ -699,11 +735,11 @@ export function oeffneForschung(id) {
   }
   function verweis(id) {
     const z = zust[id];
-    return el('button.fb-verweis', { style: { borderLeftColor: FARBE[z].r }, onclick: () => waehle(id, true), tip: B.zustaende[z] }, symbol('zweig', FORSCHUNG[id].zweig), FORSCHUNG[id].name);
+    return el('button.fb-verweis', { style: { borderLeftColor: FARBE[z].r }, onclick: () => waehle(id, true), tip: B.zustaende[z] }, symbol('zweig', Q.nach[id].zweig), Q.nach[id].name);
   }
   function detailZeichnen(erzwingen) {
     if (!auswahl) return;
-    const fo = FORSCHUNG[auswahl], d = du(), fs = d?.forschung;
+    const fo = Q.nach[auswahl], d = du(), fs = Q.stand();
     const schl = JSON.stringify([auswahl, fs?.aktiv, fs?.schlange, fs?.erforscht?.[auswahl], Object.keys(fs?.erforscht || {}).length, Math.round(wissenschaft())]);
     if (!erzwingen && schl === detailSchl) { aktualisiereFortschritt(); return; }
     detailSchl = schl;
@@ -724,7 +760,7 @@ export function oeffneForschung(id) {
     e.push(dauerZeile);
     detailFortschritt = null;
     if (z === 'aktiv' || fs?.teil?.[auswahl]) {
-      const bal = balken(z === 'aktiv' ? forschungsFortschritt() : fs.teil[auswahl], 'gold');
+      const bal = balken(z === 'aktiv' ? Q.fortschritt() : Q.teil(auswahl), 'gold');
       const txt = el('div.klein');
       detailFortschritt = { bal, txt, aktiv: z === 'aktiv' };
       e.push(bal, txt);
@@ -732,7 +768,7 @@ export function oeffneForschung(id) {
     // Voraussetzungen / Nachfolger
     if (fo.voraussetzungen.length) e.push(el('h3', { text: B.voraussetzungen }), el('div.fb-verweise', fo.voraussetzungen.map(verweis)));
     else e.push(el('h3', { text: B.voraussetzungen }), el('p.klein', { text: B.keineVoraussetzungen }));
-    const nach = NACHFOLGER[auswahl] || [];
+    const nach = Q.nachfolger[auswahl] || [];
     if (nach.length) e.push(el('h3', { text: B.ermoeglicht }), el('div.fb-verweise', nach.map(verweis)));
     // Freischaltungen
     e.push(el('h3', { text: B.freischaltungen }));
@@ -746,9 +782,9 @@ export function oeffneForschung(id) {
     if (!kannNicht && fs) {
       const w = weg(auswahl, fs.erforscht);
       const summe = w.reduce((a, x) => a + restMs(x), 0);
-      if (w.length > 1) e.push(el('div.fb-weg', el('b', { text: B.wegTitel(w.length) }), el('div', { text: w.map((x) => FORSCHUNG[x].name).join(' → ') }), el('div.gold-t', { text: B.gesamt + ': ' + dauerText(summe) })));
+      if (w.length > 1) e.push(el('div.fb-weg', el('b', { text: B.wegTitel(w.length) }), el('div', { text: w.map((x) => Q.nach[x].name).join(' → ') }), el('div.gold-t', { text: B.gesamt + ': ' + dauerText(summe) })));
       if (z !== 'aktiv') {
-        knoepfe.append(el('button.knopf.gold', { onclick: () => forschen(auswahl) }, symbol('ui', 'forschung'), el('span', el('b', { text: w.length > 1 ? B.jetztKette(w.length) : B.jetzt }), el('span.klein', { text: B.dauert(dauerText(summe)) }))));
+        knoepfe.append(el('button.knopf.gold', { onclick: () => forschen(auswahl) }, symbol('ui', Q.symbol), el('span', el('b', { text: w.length > 1 ? B.jetztKette(w.length) : B.jetzt }), el('span.klein', { text: B.dauert(dauerText(summe)) }))));
       }
       // Hinten anstellen
       const sim = { ...fs.erforscht }; if (fs.aktiv) sim[fs.aktiv] = 1; for (const x of fs.schlange || []) sim[x] = 1;
@@ -757,7 +793,7 @@ export function oeffneForschung(id) {
         const vorher = (fs.aktiv ? restMs(fs.aktiv) : 0) + (fs.schlange || []).reduce((a, x) => a + restMs(x), 0);
         const dazu = w2.reduce((a, x) => a + restMs(x), 0);
         knoepfe.append(el('button.knopf', { onclick: () => anstellen(auswahl) }, symbol('ui', 'plus'), el('span', el('b', { text: B.hintenAn }), el('span.klein', { text: B.fertigIn(dauerText(vorher + dazu)) }))));
-        if (w2.length > 1) knoepfe.append(el('div.klein', { text: B.hintenKette(w2.map((x) => FORSCHUNG[x].name).join(' → ')) }));
+        if (w2.length > 1) knoepfe.append(el('div.klein', { text: B.hintenKette(w2.map((x) => Q.nach[x].name).join(' → ')) }));
       }
     }
     if ((fs?.schlange || []).includes(auswahl)) knoepfe.append(el('button.knopf.rot', { onclick: () => entfernen(auswahl) }, symbol('ui', 'kreuz'), B.ausSchlange));
@@ -769,48 +805,48 @@ export function oeffneForschung(id) {
   }
   function aktualisiereFortschritt() {
     if (!detailFortschritt) return;
-    const fs = du()?.forschung;
-    const p = detailFortschritt.aktiv ? forschungsFortschritt() : fs?.teil?.[auswahl] || 0;
+    const fs = Q.stand();
+    const p = detailFortschritt.aktiv ? Q.fortschritt() : Q.teil(auswahl);
     detailFortschritt.bal.firstChild.style.width = Math.round(p * 100) + '%';
     detailFortschritt.txt.textContent = detailFortschritt.aktiv ? B.fortschrittAktiv(Math.floor(p * 100), dauerText(restMs(auswahl))) : B.fortschrittTeil(Math.floor(p * 100));
   }
 
   // ----- Befehle -----
   async function forschen(id) {
-    const r = await befehl({ art: 'forschen', id });
+    const r = await befehl({ art: Q.befehl, id });
     if (!r?.ok) { fehler(r?.fehler || B.fehlgeschlagen); return; }
-    toast(B.gestartet(FORSCHUNG[(r.weg && r.weg[0]) || id].name), 'erfolg', { symbol: 'forschung' });
+    toast(B.gestartet(Q.nach[(r.weg && r.weg[0]) || id].name), 'erfolg', { symbol: 'forschung' });
   }
   async function anstellen(id) {
-    const fs = du()?.forschung; if (!fs) return;
-    const r = await befehl({ art: 'forschung_schlange', ids: [...(fs.schlange || []), id] });
+    const fs = Q.stand(); if (!fs) return;
+    const r = await befehl({ art: Q.schlangeBefehl, ids: [...(fs.schlange || []), id] });
     if (!r?.ok) fehler(r?.fehler || B.fehlgeschlagen);
   }
   async function entfernen(id) {
-    const fs = du()?.forschung; if (!fs) return;
+    const fs = Q.stand(); if (!fs) return;
     // auch alles entfernen, was darauf aufbaut (sonst schaltet der Server es wieder davor)
     const weg_ = alleNachfolger(id); weg_.add(id);
-    const r = await befehl({ art: 'forschung_schlange', ids: (fs.schlange || []).filter((x) => !weg_.has(x)) });
+    const r = await befehl({ art: Q.schlangeBefehl, ids: (fs.schlange || []).filter((x) => !weg_.has(x)) });
     if (!r?.ok) fehler(r?.fehler || B.fehlgeschlagen);
   }
 
   // ----- Leiste: aktuelle Forschung + Warteschlange -----
   let leisteSchl = '', leisteBalken = null;
   function leisteZeichnen() {
-    const fs = du()?.forschung;
+    const fs = Q.stand();
     const schl = JSON.stringify([fs?.aktiv, fs?.schlange]);
     if (schl === leisteSchl) { aktualisiereLeiste(); return; }
     leisteSchl = schl;
     const teile = [el('b.klein', { text: B.leisteTitel, style: { flex: 'none' } })];
     leisteBalken = null;
     if (fs?.aktiv) {
-      const fo = FORSCHUNG[fs.aktiv];
-      const bal = balken(forschungsFortschritt(), 'gold'), txt = el('span.klein');
+      const fo = Q.nach[fs.aktiv];
+      const bal = balken(Q.fortschritt(), 'gold'), txt = el('span.klein');
       leisteBalken = { bal, txt };
       teile.push(el('div.fb-chip.aktiv', { onclick: () => waehle(fo.id, true), tip: B.aktivTip }, symbol('zweig', fo.zweig, { px: 20 }), el('div', el('b', { text: fo.name }), el('div', { style: { display: 'flex', gap: '6px', alignItems: 'center' } }, bal, txt))));
     } else teile.push(el('span.gold-t', { text: B.keineAktiv }));
     (fs?.schlange || []).forEach((id, i) => {
-      const fo = FORSCHUNG[id];
+      const fo = Q.nach[id];
       teile.push(symbol('ui', 'pfeil_rechts'));
       teile.push(el('div.fb-chip', { onclick: () => waehle(id, true) }, el('span.nr', { text: String(i + (fs.aktiv ? 2 : 1)) }), symbol('zweig', fo.zweig, { px: 20 }), el('span', { text: fo.name }),
         el('button.knopf.klein.rot', { 'aria-label': B.entfernen, tip: B.entfernen, onclick: (e) => { e.stopPropagation(); entfernen(id); } }, symbol('ui', 'kreuz'))));
@@ -824,8 +860,8 @@ export function oeffneForschung(id) {
   }
   function aktualisiereLeiste() {
     if (!leisteBalken) return;
-    const fs = du()?.forschung; if (!fs?.aktiv) return;
-    const p = forschungsFortschritt();
+    const fs = Q.stand(); if (!fs?.aktiv) return;
+    const p = Q.fortschritt();
     leisteBalken.bal.firstChild.style.width = Math.round(p * 100) + '%';
     leisteBalken.txt.textContent = Math.floor(p * 100) + ' % · ' + dauerText(restMs(fs.aktiv));
   }
@@ -840,7 +876,7 @@ export function oeffneForschung(id) {
     bitte();
   }
   abmelden.push(an('aenderung', aktualisieren));
-  const takt = setInterval(() => { if (!offen) return; aktualisiereLeiste(); aktualisiereFortschritt(); if (du()?.forschung?.aktiv) bitte(); }, 1000);
+  const takt = setInterval(() => { if (!offen) return; aktualisiereLeiste(); aktualisiereFortschritt(); if (Q.stand()?.aktiv) bitte(); }, 1000);
   abmelden.push(() => clearInterval(takt));
   const ro = new ResizeObserver(() => groesse());
   ro.observe(buehne);
@@ -851,6 +887,6 @@ export function oeffneForschung(id) {
   groesse();
   ansicht.s = Math.max(0.6, Math.min(1, bh / L.H));
   leisteZeichnen();
-  if (id && FORSCHUNG[id]) { waehle(id, false); bewegeZu(ziel(id, ansicht.s), false); }
+  if (id && Q.nach[id]) { waehle(id, false); bewegeZu(ziel(id, ansicht.s), false); }
   else bewegeZu(ziel(startId(), ansicht.s), false);
 }

@@ -22,6 +22,7 @@ export * from './forschung.js';
 export * from './akteure.js';
 export * from './distrikte.js';
 export * from './naturwunder.js';
+export * from './civics.js';
 
 const nachId = (liste) => Object.assign(Object.create(null), Object.fromEntries(liste.map((x) => [x.id, x])));
 

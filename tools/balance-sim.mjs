@@ -27,12 +27,13 @@ s.befehl(v.id, { art: 'stadt_gruenden', einheit: sied.id });
 botMachen(s, v, 'forscher');
 const start = uhr.jetzt();
 const zeitalterAb = [0];
+const civicsBeiZeitalter = [0];
 let minGold = Infinity, maxUnterhaltAnteil = 0, protokoll = [];
 for (let h = 1; h <= TAGE * 24; h++) {
   uhr.vorspulen(STD);
   s.verarbeite(uhr.jetzt());
   const z = v.zeitalter || 0;
-  while (zeitalterAb.length <= z) zeitalterAb.push(h / 24);
+  while (zeitalterAb.length <= z) { zeitalterAb.push(h / 24); civicsBeiZeitalter.push(Object.keys(v.civics?.erforscht || {}).length); }
   const r = s.raten(v.id);
   const unterhalt = r.unterhalt.einheiten + r.unterhalt.gebaeude;
   if (h > 24) { minGold = Math.min(minGold, v.gold); maxUnterhaltAnteil = Math.max(maxUnterhaltAnteil, unterhalt / Math.max(1, r.einnahmen)); }
@@ -53,7 +54,7 @@ const nichtWiederholbar = FORSCHUNGEN.filter((f) => !f.wiederholbar).length;
 const fertig = s.forschungsAnzahl(v) >= nichtWiederholbar ? protokoll.fertig : null;
 const bericht = {
   tage: TAGE, forschungen: s.forschungsAnzahl(v), von: nichtWiederholbar, ganzerBaumNachTagen: fertig,
-  zeitalterBeginn: zeitalterAb.map((x) => +x.toFixed(2)), ergebnisse, minGold: Math.round(minGold), maxUnterhaltAnteil: +maxUnterhaltAnteil.toFixed(2), engineFehler: fehler.length,
+  zeitalterBeginn: zeitalterAb.map((x) => +x.toFixed(2)), civicsBeiZeitalter, civicsGesamt: Object.keys(v.civics?.erforscht || {}).length, ergebnisse, minGold: Math.round(minGold), maxUnterhaltAnteil: +maxUnterhaltAnteil.toFixed(2), engineFehler: fehler.length,
   ki: s.alleVoelker().filter((x) => x.art === 'ki').map((x) => ({ name: x.name, staedte: s.staedteVon(x.id).length, zeitalter: x.zeitalter })),
 };
 console.log(JSON.stringify(bericht, null, still ? 0 : 2));

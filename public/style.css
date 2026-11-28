@@ -44,6 +44,7 @@ h1 { font-size: 24px; } h2 { font-size: 18px; color: var(--akzent); } h3 { font-
 .balken.blau > i { background: linear-gradient(#7fb8f0, #3d7fc4); }
 .balken.gold > i { background: linear-gradient(#ffe066, #c8961a); }
 .balken.rot > i { background: linear-gradient(#ff7a66, #b8341f); }
+.balken.lila > i { background: linear-gradient(#c9a2ff, #7b4fb0); }
 
 /* Obere Leiste: beginnt rechts vom freien Bereich oben links */
 #leiste { position: fixed; top: calc(6px + var(--sicher-oben)); left: calc(72px + var(--sicher-links)); right: calc(6px + var(--sicher-rechts)); display: flex; gap: 6px; align-items: stretch; z-index: 20; pointer-events: none; flex-wrap: wrap; }
@@ -54,7 +55,9 @@ h1 { font-size: 24px; } h2 { font-size: 18px; color: var(--akzent); } h3 { font-
 .res .rate { font-size: 11px; }
 #menue { display: flex; gap: 4px; padding: 4px; }
 #forschungsanzeige { position: fixed; top: calc(62px + var(--sicher-oben)); right: calc(6px + var(--sicher-rechts)); width: 260px; padding: 6px 8px; z-index: 19; cursor: pointer; }
-#forschungsanzeige .zeile { display: flex; gap: 8px; align-items: center; }
+#forschungsanzeige .zeile, #kulturanzeige .zeile { display: flex; gap: 8px; align-items: center; }
+#kulturanzeige { position: fixed; top: calc(126px + var(--sicher-oben)); right: calc(6px + var(--sicher-rechts)); width: 260px; padding: 6px 8px; z-index: 19; cursor: pointer; }
+#kulturanzeige.versteckt { display: none; }
 
 /* Unten links: Auswahl, unten Mitte: Aktionen, unten rechts: Minimap */
 #auswahl { position: fixed; left: calc(6px + var(--sicher-links)); bottom: calc(6px + var(--sicher-unten)); width: 300px; max-height: 50vh; overflow: auto; padding: 8px; z-index: 18; }
@@ -110,6 +113,7 @@ h1 { font-size: 24px; } h2 { font-size: 18px; color: var(--akzent); } h3 { font-
   #minikarte canvas { width: 144px; height: 90px; }
   #naechste { bottom: calc(112px + var(--sicher-unten)); }
   #forschungsanzeige { width: 200px; top: calc(100px + var(--sicher-oben)); }
+  #kulturanzeige { width: 200px; top: calc(164px + var(--sicher-oben)); }
   #meldungsleiste { top: calc(150px + var(--sicher-oben)); width: 240px; }
 }
 @media (max-height: 560px) { #auswahl { max-height: 40vh; } }

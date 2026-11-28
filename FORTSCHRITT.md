@@ -14,7 +14,7 @@ Kernregel: Die Live-Welt muss nach jedem Schritt weiterlaufen (Migration, Karte 
 | 4 | Weltraum-Ebene (Karte, Bewegung, Start/Landung, Kolonien, Weltraum-Verbesserungen, Client-Umschalter, Sprites) | fertig |
 | 5 | Naturwunder (12, Platzierung, Entdeckung), Weltwunder auf Feldern, Migration 2→3 | fertig |
 | 6 | Distrikte (8 + 3 im All, Stufen, Nachbarschaft, Spezialisierung, Plündern, 5 Traditionen mit einzigartigen Distrikten, Migration 3→4) | fertig |
-| 7 | Civics, Regierungen, Politikkarten | offen |
+| 7 | Civics (120), Regierungen (8), Politikkarten (60), Kulturbaum, Regierungsfenster, Migration 4→5 | fertig |
 | 8 | Religion | offen |
 | 9 | Eurekas | offen |
 | 10 | Symbole über Einheiten | offen |
@@ -33,7 +33,7 @@ Kernregel: Die Live-Welt muss nach jedem Schritt weiterlaufen (Migration, Karte 
 ## Ausgangslage auf main (fedd000)
 - `npm test`: 78 von 79 grün ohne Mehrspieler; rot: Balance (Atomzeit 2,4 statt Ziel 7,7 Tage) und Mehrspieler (Stapelregel: zwei KI-Legionäre auf einem Feld).
   - Beides in Stufe 1 geklärt: Der Atomzeit-Zielwert war nach dem Tempo-Update nicht nachgezogen (jetzt 2,5); die Stapelregel-Prüfung meldete Einheiten mitten im Marsch (Durchlaufen eigener Einheiten ist erlaubt), die Prüfung gilt jetzt nur für stehende Einheiten.
-- Push-Rechte auf LeifPS/volk fehlen noch (403 für alexander-schm).
+- Push klappt seit 2026-11-28; der Branch volk3-ausbau liegt auf GitHub.
 
 ## Erledigt (frühere Fassung)
 - Komplettes Spiel (siehe Git-Historie bis fedd000).

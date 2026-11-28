@@ -18,6 +18,7 @@ import { weltraum } from './weltraum.js';
 import { naturwunder } from './naturwunder.js';
 import { wunderplatz } from './wunderplatz.js';
 import { distrikte } from './distrikte.js';
+import { civics } from './civics.js';
 import { ZUSTAND_VERSION, migriere } from './migration.js';
 
 export class SpielFehler extends Error {}
@@ -181,6 +182,7 @@ export class Spiel {
     }
     for (const v of this.alleVoelker()) {
       k(this.forschungsZeit(v), 'forsch' + v.id, () => this.forschungFertig(v.id), () => { v.forschung.aktiv = null; });
+      k(this.civicZeit(v), 'civic' + v.id, () => this.civicFertig(v.id), () => { v.civics.aktiv = null; });
       if (v.offline_ende) k(v.offline_ende, 'offende' + v.id, () => { this.aendern(v.id); v.offline_faktor = 0; v.offline_ende = null; delete this._raten[v.id]; }, () => { v.offline_ende = null; });
       k(this.goldNullZeit(v), 'goldnull' + v.id, () => this.goldNull(v.id));
       if (v.mangel_um) k(v.mangel_um, 'mangel' + v.id, () => this.mangelSchritt(v.id), () => { v.mangel_um = null; });
@@ -231,7 +233,7 @@ export const BEFEHLE = new Set([
   'forschen', 'forschung_schlange', 'feld_bewirtschaften', 'auto_bewirtschaften', 'grenzziel', 'aufloesen', 'aufruesten', 'befoerdern',
   'krieg_erklaeren', 'diplomatie_angebot', 'angebot_antwort', 'angebot_zurueckziehen', 'tausch_angebot', 'handelsroute',
   'stadtstaat_geschenk', 'pluendern', 'luftangriff', 'verlegen', 'atomschlag', 'stadt_angriff', 'stadt_umbenennen',
-  'meldungen_gelesen', 'tutorial', 'neuanfang', 'ping', 'einstellungen', 'tribut_fordern', 'ebene_wechseln', 'distrikt_spez', 'distrikt_reparieren', 'tradition_waehlen',
+  'meldungen_gelesen', 'tutorial', 'neuanfang', 'ping', 'einstellungen', 'tribut_fordern', 'ebene_wechseln', 'distrikt_spez', 'distrikt_reparieren', 'tradition_waehlen', 'civic', 'civic_schlange', 'regierung', 'karten',
 ]);
 
-Object.assign(Spiel.prototype, wirtschaft, bau, forschung, einheiten, kampf, diplomatie, akteure, ansicht, start, weltraum, naturwunder, wunderplatz, distrikte);
+Object.assign(Spiel.prototype, wirtschaft, bau, forschung, einheiten, kampf, diplomatie, akteure, ansicht, start, weltraum, naturwunder, wunderplatz, distrikte, civics);

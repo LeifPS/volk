@@ -360,7 +360,7 @@ export const kampf = {
 
   /** Siegprämie (Beförderung "sieg_gold"). */
   siegGold(e) {
-    const g = this.befMax(e, 'sieg_gold');
+    const g = this.befMax(e, 'sieg_gold') + (this.z.voelker[e.volk] ? (this.raten(e.volk).boni.sieg_gold || 0) : 0);
     if (g > 0 && this.z.voelker[e.volk]?.art === 'spieler') { this.z.voelker[e.volk].gold += g; this.aendern(e.volk); }
   },
 
@@ -551,7 +551,7 @@ export const kampf = {
     this.aendern(bes); this.aendern(v.id);
     this.setzeFeld(e.feld, { pl: this.t + 12 * STD });
     this.ablaufPlanen(bes, this.t + 12 * STD);
-    const pg = Math.round(30 * (1 + this.befMax(e, 'pluendern_prozent') / 100));
+    const pg = Math.round(30 * (1 + (this.befMax(e, 'pluendern_prozent') + (this.raten(v.id).boni.pluendern_prozent || 0)) / 100));
     v.gold += pg;
     this.epGeben(e, EP.pluendern, bes);
     this.befoerderungPruefen(e);

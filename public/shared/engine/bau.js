@@ -109,7 +109,10 @@ export const bau = {
     const r = this.raten(s.volk);
     const sr = r.staedte[s.id] || { p: 0 };
     let prozent = r.boni.bauzeit_prozent || 0;
-    if (art === 'einheit') prozent += this.gebaeudeSumme(s, 'einheit_bauzeit_prozent');
+    if (art === 'einheit') prozent += this.gebaeudeSumme(s, 'einheit_bauzeit_prozent') + (r.boni.einheit_bauzeit_prozent || 0);
+    if (art === 'gebaeude') prozent += r.boni.gebaeude_bauzeit_prozent || 0;
+    if (art === 'distrikt') prozent += r.boni.distrikt_bauzeit_prozent || 0;
+    if (art === 'wunder') prozent += r.boni.wunder_bauzeit_prozent || 0;
     const v = this.z.voelker[s.volk];
     if (v.art === 'ki') prozent += 30;
     const za = art === 'distrikt' ? (FORSCHUNG[FREIGESCHALTET_DURCH['distrikt:' + id]]?.zeitalter || 0) : (d.zeitalter || 0);

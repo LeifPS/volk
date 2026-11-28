@@ -14,7 +14,11 @@ import { SpielFehler, pruefe } from './spiel.js';
 
 const BONUS_SCHLUESSEL = ['wissenschaft_prozent', 'gold_prozent', 'produktion_prozent', 'kultur_prozent', 'nahrung_prozent', 'zufriedenheit',
   'tempo_land', 'tempo_see', 'heilung_prozent', 'stadt_staerke', 'stadt_hp', 'lager', 'unterhalt_rabatt', 'sicht', 'handel_gold_prozent',
-  'grenzwachstum_prozent', 'bauzeit_prozent', 'arbeiter_tempo', 'erfahrung_prozent', 'bauplaetze', 'handelsrouten'];
+  'grenzwachstum_prozent', 'bauzeit_prozent', 'arbeiter_tempo', 'erfahrung_prozent', 'bauplaetze', 'handelsrouten',
+  // seit Civics und Politikkarten (Stufe 7)
+  'glaube_prozent', 'einheiten_unterhalt_rabatt', 'gebaeude_bauzeit_prozent', 'einheit_bauzeit_prozent', 'distrikt_bauzeit_prozent', 'wunder_bauzeit_prozent',
+  'sieg_gold', 'pluendern_prozent', 'einfluss_prozent', 'kultur_je_distrikt', 'nachbar_prozent', 'nachbar_campus_prozent', 'nachbar_heiligtum_prozent', 'nachbar_handelsplatz_prozent',
+  'nachbar_industriezone_prozent', 'nachbar_theaterplatz_prozent', 'nachbar_hafen_prozent', 'nachbar_militaerlager_prozent', 'nachbar_stadtviertel_prozent'];
 
 export const wirtschaft = {
   /** Reichsweite Boni eines Volkes aus Forschung, Wundern, Stadtstaaten und Abkommen. */
@@ -37,6 +41,8 @@ export const wirtschaft = {
       if (e >= STADTSTAAT.freund) for (const [k, x] of Object.entries(def.bonus || {})) if (k in b) b[k] += x;
       if (ss.verbuendet === v.id) for (const [k, x] of Object.entries(def.buendnis_bonus || {})) if (k in b) b[k] += x;
     }
+    // Regierung, Politikkarten und Civic-Boni
+    this.politikBoni(v, b);
     // Jahreszeit
     const jz = this.z.global.jahreszeit || 0;
     if (jz === 1) b.nahrung_prozent += 5; else if (jz === 3) b.nahrung_prozent -= 5; else if (jz === 2) b.gold_prozent += 5;
@@ -156,7 +162,7 @@ export const wirtschaft = {
     // Einheiten-Unterhalt mit großzügigem Freikontingent (die teuersten sind frei)
     const kosten = this.einheitenVon(vid).map((e) => (this.einheitDaten(e)?.unterhalt || 0) * WIRTSCHAFT_TEMPO).filter((x) => x > 0).sort((a, c) => c - a);
     const frei = freieEinheiten(staedte.length);
-    erg.unterhalt.einheiten = kosten.slice(frei).reduce((a, x) => a + x, 0);
+    erg.unterhalt.einheiten = kosten.slice(frei).reduce((a, x) => a + x, 0) * (1 - Math.min(75, Math.max(0, b.einheiten_unterhalt_rabatt || 0)) / 100);
     const rabatt = Math.min(75, Math.max(0, b.unterhalt_rabatt)) / 100;
     erg.unterhalt.einheiten *= 1 - rabatt; erg.unterhalt.gebaeude *= 1 - rabatt;
     erg.einnahmen += erg.handel;
@@ -209,8 +215,9 @@ export const wirtschaft = {
     }
     for (const wk of this.distriktWirkungen(s)) wirkungen.push(wk);
     r.distrikte = {};
+    r.k += Object.keys(s.distrikte || {}).length * (b.kultur_je_distrikt || 0);
     for (const id of Object.keys(s.distrikte || {})) {
-      const de = this.distriktErtrag(s, id);
+      const de = this.distriktErtrag(s, id, b);
       r.distrikte[id] = de.wert;
       if (de.art && de.art !== 'glaube') r[de.art] += de.wert;
       else if (de.art === 'glaube') r.glaube = (r.glaube || 0) + de.wert;
@@ -277,6 +284,7 @@ export const wirtschaft = {
     // Gold friert bei 0 ein
     v.gold = Math.max(0, (v.gold || 0) + r.gold * h);
     v.kultur_gesamt = (v.kultur_gesamt || 0) + r.kultur * h;
+    if (v.civics?.aktiv) v.civics.punkte = (v.civics.punkte || 0) + this.kulturPunkteRate(vid) * h;
     v.lager = v.lager || {};
     for (const gut of LAGERGUETER) {
       const zu = r.material[gut] || 0;

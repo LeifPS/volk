@@ -27,6 +27,7 @@ export const akteure = {
   // ---------- KI ----------
   kiDenken(vid) {
     this.kiTradition?.(this.z.voelker[vid]);
+    { const kv = this.z.voelker[vid]; if (kv && (kv.art === 'ki' || kv.ki?.bot) && !kv.civics?.aktiv) this.kiPolitik(kv); }
     const v = this.z.voelker[vid];
     const ki = v.ki;
     const intervall = (v.ki.bot ? 30 : this.spielerOnline() ? 35 : 150) * MIN / WIRTSCHAFT_TEMPO;
