@@ -9,6 +9,8 @@ import { EINHEIT, VERBESSERUNG, RELIGION, RELIGION_REGELN } from '../../shared/d
 import { hash01 } from '../../shared/zufall.js';
 import { sprite, hatSprite } from '../grafik/sprites.js';
 import { EINHEIT_SYMBOL, SYMBOL_GROESSE } from '../grafik/einheiten_symbole.js';
+import * as AN from './animation.js';
+import { WUNDER_NACH_ID } from '../../shared/daten/index.js';
 import { zeichneWege } from './wege.js';
 import { R, FELD_B, ZEILE_H, WELT_B, WELT_H, weltB, weltH, chunkCanvas, CHUNK_GROESSE, feldUnter } from './gelaende.js';
 import { Z, erkundet, aktuellesFeld, aktuelleHp, serverJetzt, volk, stadt, feldInfo, an } from '../kern/zustand.js';
@@ -19,6 +21,8 @@ let cv, ctx, dpr = 1, schmutzig = true, letzterFrame = 0;
 let sichtbar = new Set();
 let sichtVersion = -1;
 const effekte = [];            // Kampf-Effekte
+const tote = [];               // gefallene Einheiten (Tod-Animation)
+const zuletzt = new Map();     // Einheit -> letzter gezeichneter Stand (für Tod und Blickrichtung)
 export const overlay = { pfad: null, ziele: null, reichweite: null, gueltig: null, beschriftung: null, hover: -1, markierung: null, linse: null };
 export const optionen = { tagnacht: true, wetter: true };
 
@@ -112,7 +116,7 @@ function schleife(t) {
     schmutzig = true;
   }
   const bewegt = Z.ansicht && Object.values(Z.ansicht.einheiten).some((e) => e.pfad && e.pfad.length);
-  const intervall = schmutzig || effekte.length || kameraZiel ? 0 : bewegt ? 50 : 120;
+  const intervall = schmutzig || effekte.length || tote.length || kameraZiel ? 0 : AN.ruheIntervall(bewegt);
   if (t - letzterFrame < intervall) return;
   letzterFrame = t;
   schmutzig = false;
@@ -130,6 +134,7 @@ function sichtbereich() {
 
 function zeichne(t) {
   const s = skala();
+  AN.kontext(ctx);
   ctx.imageSmoothingEnabled = false;
   ctx.fillStyle = '#0b0d14'; ctx.fillRect(0, 0, cv.width, cv.height);
   if (!Z.ansicht) return;
@@ -197,6 +202,7 @@ function zeichne(t) {
       if (f && f.v && !st) {
         const sp2 = sprite('verbesserung', f.v, { farbe: volkFarbe(stadt(f.s)?.volk) });
         if (sp2) male(sp2, x - 24 * s, y - 20 * s, s, f.pl ? 0.5 : 1);
+        if (sp2 && !f.pl) AN.zeichneVerbesserungAnim(VERBESSERUNG[f.v]?.kette, x - 24 * s, y - 20 * s, s, t, i);
       }
       if (!st && hatSprite('deko', g.id) && !(f && f.v && ((DEKO_WEG.has(f.v) && g.hoehe < 3) || VERBESSERUNG[f.v]?.raum))) {
         const d = sprite('deko', g.id, { variante: k.variante[i] });
@@ -256,6 +262,7 @@ function zeichneNaturwunder(nw, s, t) {
   if (!bild) return;
   const [x, y] = weltZuSchirm(sx, (sy + maxY) / 2);
   male(bild, x - (bild.width / 2) * s, y - bild.height * 0.8 * s, s); // animiert über den gemeinsamen Takt der Hauptschleife
+  AN.zeichneNaturwunderAnim(x - (bild.width / 2) * s, y - bild.height * 0.8 * s, bild.width * s, bild.height * s, s, t, nw.id);
 }
 
 /** Weltwunder auf seinem Feld; während des Baus ein Gerüst um ein halb durchsichtiges Modell. */
@@ -265,7 +272,7 @@ function zeichneWunderFeld(f, x, y, s, t) {
   if (!bild) return;
   const breite = 56 * s, hoehe = bild.height / bild.width * breite;
   const x0 = x - breite / 2, y0 = y + 10 * s - hoehe;
-  if (f.wu) { ctx.drawImage(bild, Math.round(x0), Math.round(y0), Math.round(breite), Math.round(hoehe)); return; }
+  if (f.wu) { ctx.drawImage(bild, Math.round(x0), Math.round(y0), Math.round(breite), Math.round(hoehe)); AN.zeichneWunderAnim(id, x0, y0, breite, hoehe, s, t, WUNDER_NACH_ID[id]?.zeitalter || 0); return; }
   ctx.globalAlpha = 0.45; ctx.drawImage(bild, Math.round(x0), Math.round(y0), Math.round(breite), Math.round(hoehe)); ctx.globalAlpha = 1;
   // Baugerüst: senkrechte Stangen und Querbalken in Holzfarben, ein Kran mit pendelndem Haken
   const p = Math.max(1, Math.round(s));
@@ -403,8 +410,9 @@ function zeichneStadt(st, x, y, s, t) {
   if (st.zerstoert_bis && st.zerstoert_bis > serverJetzt()) { const r = sprite('deko', 'ruine', { variante: 0 }); if (r) male(r, x - 24 * s, y - 24 * s, s); }
   if (sp) male(sp, x - 32 * s, y - 44 * s, s);
   if (st.mauer) { const m = sprite('stadt', 'mauer', { farbe, zeitalter: st.mauer - 1 }); if (m) male(m, x - 32 * s, y - 44 * s, s); }
-  // Rauch aus Schornsteinen ab der Industrie
-  if (za >= 4 && optionen.wetter && ebeneVon(st.feld) === 0) {
+  // Leben in der Stadt: Rauch, Lichter bei Nacht, Leute, Fahne, Hafen
+  if (sp && v?.art !== 'stadtstaat' && !kolonie) AN.zeichneStadtAnim(st, x - 32 * s, y - 44 * s, s, t, { farbe, wetter: optionen.wetter && ebeneVon(st.feld) === 0, nacht: optionen.tagnacht && ebeneVon(st.feld) === 0 ? nachtAnteil() : 0, hafen: !!st.distrikte?.hafen });
+  else if (za >= 4 && optionen.wetter && ebeneVon(st.feld) === 0 && AN.bewegung()) {
     const p = (t / 1400) % 1;
     ctx.fillStyle = `rgba(140,140,140,${0.5 * (1 - p)})`;
     ctx.fillRect(Math.round(x + 8 * s), Math.round(y - (40 + p * 14) * s), Math.round(3 * s), Math.round(3 * s));
@@ -556,6 +564,9 @@ function zeichneEinheiten(liste, feld, s, t) {
     const [wx, wy] = einheitPosition(e, t);
     let [x, y] = weltZuSchirm(wx, wy);
     if (sortiert.length > 1) x += (n === 0 ? -9 : 7) * s;
+    // Kampf: Ausfall des Angreifers (Nahkampf), Rütteln und Aufblitzen beim Getroffenen
+    const ka = kampfZustand(e, aktuellesFeld(e));
+    x += ka.dx * s; y += ka.dy * s;
     const farbe = volkFarbe(e.volk);
     const ausgewaehlt = Z.auswahl?.art === 'einheit' && Z.auswahl.id === e.id;
     // Fußkreis in Volksfarbe
@@ -571,18 +582,26 @@ function zeichneEinheiten(liste, feld, s, t) {
     if (e.tier) bild = sprite('tier', e.tier);
     else bild = sprite('einheit', e.typ, { farbe });
     const bereich = d && ['see_zivil', 'see_nah', 'see_fern', 'u_boot', 'traeger', 'transport'].includes(d.klasse) ? 'see' : d && ['jaeger', 'bomber', 'rakete', 'atom'].includes(d.klasse) ? 'luft' : 'land';
-    let wipp = 0;
-    if (bereich === 'see') wipp = Math.round(Math.sin(t / 500 + e.id) * 1);
-    if (bereich === 'luft') wipp = Math.round(Math.sin(t / 400 + e.id) * 1.5) - 3;
-    if (imBoot) wipp = Math.round(Math.sin(t / 500 + e.id) * 1);
-    else if (e.pfad && e.pfad.length && bereich === 'land') wipp = Math.floor(t / 180) % 2 ? -1 : 0;
-    const gehtLinks = e.pfad && e.pfad.length && feldMitte(e.pfad[e.pfad.length - 1].f, R)[0] < wx - 1;
+    const laeuft = !!(e.pfad && e.pfad.length);
+    const bart = e.tier ? 'fuss' : AN.bewegungsArt(e.typ, imBoot ? 'see' : bereich, ebeneVon(aktuellesFeld(e)) === 1);
+    const wipp = AN.einheitVersatz(bart, laeuft, t, e.id).dy;
+    // Blickrichtung folgt der Bewegung und bleibt nach dem Anhalten erhalten
+    const alt = zuletzt.get(e.id);
+    let gehtLinks = alt?.links || false;
+    if (laeuft) { const zx = feldMitte(e.pfad[e.pfad.length - 1].f, R)[0]; if (Math.abs(zx - wx) > 1) gehtLinks = zx < wx; }
+    else if (ka.blick != null) gehtLinks = ka.blick;
+    zuletzt.set(e.id, { links: gehtLinks, typ: e.typ, tier: e.tier, volk: e.volk, feld: aktuellesFeld(e), wx, wy, gesehen: t });
+    if (!e.tier) AN.zeichneLaufZusatz(bart, laeuft, x, y, s, t, gehtLinks, e.id);
     if (bild) {
       const bx = x - (bild.width / 2) * s, by = y + 9 * s - bild.height * s + wipp * s;
       const schnitt = imBoot ? 7 : 0;   // im Boot sind die Beine verdeckt
       const hoehe = bild.height - schnitt;
-      if (gehtLinks) { ctx.save(); ctx.translate(Math.round(x), 0); ctx.scale(-1, 1); ctx.drawImage(bild, 0, 0, bild.width, hoehe, Math.round(-(bild.width / 2) * s), Math.round(by), Math.round(bild.width * s), Math.round(hoehe * s)); ctx.restore(); }
-      else ctx.drawImage(bild, 0, 0, bild.width, hoehe, Math.round(bx), Math.round(by), Math.round(bild.width * s), Math.round(hoehe * s));
+      const malen = () => {
+        if (gehtLinks) { ctx.save(); ctx.translate(Math.round(x), 0); ctx.scale(-1, 1); ctx.drawImage(bild, 0, 0, bild.width, hoehe, Math.round(-(bild.width / 2) * s), Math.round(by), Math.round(bild.width * s), Math.round(hoehe * s)); ctx.restore(); }
+        else ctx.drawImage(bild, 0, 0, bild.width, hoehe, Math.round(bx), Math.round(by), Math.round(bild.width * s), Math.round(hoehe * s));
+      };
+      malen();
+      if (ka.blitz > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = ka.blitz; malen(); ctx.restore(); }
     }
     if (imBoot) {
       const boot = sprite('deko', 'ruderboot', { farbe });
@@ -711,11 +730,60 @@ function zeichneOverlay(s, t) {
 }
 
 // ---------- Effekte ----------
+const KAMPF_MS = 1400;
+/** Wirkung laufender Kampf-Effekte auf eine Einheit: Ausfall (Nahkampf-Angreifer), Rütteln und Blitz (Getroffener), Blickrichtung. */
+function kampfZustand(e, feld) {
+  const z = { dx: 0, dy: 0, blitz: 0, blick: null };
+  if (!effekte.length) return z;
+  const jetzt = performance.now();
+  for (const ef of effekte) {
+    if (ef.art !== 'kampf') continue;
+    const p = (jetzt - ef.start) / KAMPF_MS;
+    if (p < 0 || p >= 1) continue;
+    const [ax, ay] = feldMitte(ef.von, R), [bx, by] = feldMitte(ef.nach, R);
+    const angreifer = ef.ae != null ? ef.ae === e.id : feld === ef.von;
+    if (angreifer && !ef.fern) {
+      z.blick = bx < ax;
+      if (AN.bewegung() && p < 0.35) { const q = Math.sin(p / 0.35 * Math.PI) * 0.45; z.dx += (bx - ax) * q; z.dy += (by - ay) * q; }
+    } else if (angreifer) z.blick = bx < ax;
+    else if (feld === ef.nach && ef.schadenV > 0) {
+      const treffer = ef.fern ? 0.4 : 0.22;
+      const q = (p - treffer) / 0.25;
+      if (q >= 0 && q < 1) { z.blitz = Math.max(z.blitz, (1 - q) * 0.75); if (AN.bewegung()) z.dx += Math.round(Math.sin(q * 40) * 2 * (1 - q)); }
+      z.blick = ax < bx;
+    }
+  }
+  return z;
+}
+/** Einheiten, die seit dem letzten Bild verschwunden sind und auf einem Kampffeld standen, fallen sichtbar. */
+function toteErkennen(t) {
+  const a = Z.ansicht; if (!a) return;
+  const jetzt = performance.now();
+  const felder = new Set();
+  for (const ef of effekte) if (ef.art === 'kampf' && jetzt - ef.start < 3000) { felder.add(ef.nach); felder.add(ef.von); }
+  for (const [id, l] of zuletzt) {
+    if (a.einheiten[id] && !a.einheiten[id].in) continue;
+    zuletzt.delete(id);
+    if (!felder.has(l.feld) || !AN.bewegung() || a.einheiten[id]?.in) continue;
+    const bild = l.tier ? sprite('tier', l.tier) : sprite('einheit', l.typ, { farbe: volkFarbe(l.volk) });
+    tote.push({ bild, wx: l.wx, wy: l.wy, links: l.links, feld: l.feld, start: jetzt + 350 });
+  }
+  // nicht mehr gezeichnete (z. B. aus dem Bild gelaufene) Einträge aufräumen
+  if (zuletzt.size > 3000) for (const [id, l] of zuletzt) if (t - l.gesehen > 60000) zuletzt.delete(id);
+}
 function zeichneEffekte(s, t) {
   const jetzt = performance.now();
+  toteErkennen(t);
+  for (let k = tote.length - 1; k >= 0; k--) {
+    const d = tote[k], p = (jetzt - d.start) / 1100;
+    if (p >= 1) { tote.splice(k, 1); continue; }
+    if (p < 0 || ebeneVon(d.feld) !== aktiveEbene()) continue;
+    const [x, y] = weltZuSchirm(d.wx, d.wy);
+    AN.zeichneTod(d.bild, x, y, s, p, d.links);
+  }
   for (let k = effekte.length - 1; k >= 0; k--) {
     const ef = effekte[k];
-    const p = (jetzt - ef.start) / 1400;
+    const p = (jetzt - ef.start) / KAMPF_MS;
     if (p >= 1) { effekte.splice(k, 1); continue; }
     if (ebeneVon(ef.nach) !== aktiveEbene()) continue;
     if (ef.art === 'atom') {
@@ -724,15 +792,13 @@ function zeichneEffekte(s, t) {
       continue;
     }
     const [ax, ay] = feldMitte(ef.von, R), [bx, by] = feldMitte(ef.nach, R);
-    if (ef.fern && p < 0.4) {
-      const q = p / 0.4;
-      const [x, y] = weltZuSchirm(ax + (bx - ax) * q, ay + (by - ay) * q - Math.sin(q * Math.PI) * 20);
-      ctx.fillStyle = '#ffe066'; ctx.fillRect(Math.round(x - 2 * s), Math.round(y - 2 * s), Math.round(4 * s), Math.round(4 * s));
-    } else if (p < 0.5) {
-      const [x, y] = weltZuSchirm(bx, by - 8);
-      ctx.fillStyle = `rgba(255,${200 - p * 200},80,${1 - p * 2})`;
-      ctx.beginPath(); ctx.arc(x, y, (6 + p * 24) * s, 0, Math.PI * 2); ctx.fill();
-    }
+    const [sax, say] = weltZuSchirm(ax, ay - 10), [sbx, sby] = weltZuSchirm(bx, by - 8);
+    const voll = AN.voll();
+    if (ef.fern) {
+      const art = AN.geschossArt(ef.typ) || 'kugel';
+      if (p < 0.4) { if (voll) AN.zeichneGeschoss(art, sax, say, sbx, sby, p / 0.4, s); else { const q = p / 0.4; ctx.fillStyle = '#ffe066'; ctx.fillRect(Math.round(sax + (sbx - sax) * q - 2 * s), Math.round(say + (sby - say) * q - 2 * s), Math.round(4 * s), Math.round(4 * s)); } }
+      else if (p < 0.75) AN.zeichneEinschlag(voll ? art : 'kugel', sbx, sby, (p - 0.4) / 0.35, s);
+    } else if (p > 0.15 && p < 0.55) AN.zeichneEinschlag(voll ? 'nah' : 'kugel', sbx, sby, (p - 0.15) / 0.4, s);
     const textAuf = (wx, wy, text, farbe) => {
       const [x, y] = weltZuSchirm(wx, wy - 24 - p * 26);
       ctx.font = `700 ${Math.round(10 * Math.min(s, 3))}px Zahlen, Silkscreen, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -747,6 +813,8 @@ function zeichneEffekte(s, t) {
 
 // ---------- Tageszeit und Wetter (nur Optik) ----------
 export function tageszeit(t = serverJetzt()) { return (t / (2 * 3600 * 1000)) % 1; } // ein Tag = 2 Stunden
+/** 0 am Tag, 1 in tiefer Nacht (für Lichter in Städten), passend zu zeichneTageszeit. */
+function nachtAnteil() { const p = tageszeit(); if (p > 0.62 && p < 0.72) return (p - 0.62) / 0.1; if (p >= 0.72 && p < 0.92) return 1; if (p >= 0.92) return (1 - p) / 0.08; return 0; }
 function zeichneTageszeit() {
   const p = tageszeit();
   // 0..0.62 Tag, 0.62..0.72 Abend, 0.72..0.92 Nacht, 0.92..1 Morgen

@@ -5,13 +5,14 @@ import { T } from '../texte.js';
 import { Z, du, eigeneStaedte, eigeneEinheiten } from '../kern/zustand.js';
 import { befehl, abmelden } from '../kern/netz.js';
 import { optionen, neuZeichnen, zentriereAuf } from '../karte/render.js';
+import { setzeEffekte } from '../karte/animation.js';
 import { einstellungenSetzen, ton } from '../audio.js';
 import { EINHEIT } from '../../shared/daten/index.js';
 import { waehle } from './hud.js';
 
 const E = T.einst;
 const SCHLUESSEL = 'volk_einstellungen';
-const STANDARD = { ton: true, musik: true, lautstaerke: 0.6, tagnacht: true, wetter: true };
+const STANDARD = { ton: true, musik: true, lautstaerke: 0.6, tagnacht: true, wetter: true, effekte: 'voll' };
 
 const CSS = `
 .einst-gruppe { margin: 4px 0 14px; }
@@ -37,6 +38,7 @@ export function werte() { return { ...STANDARD, ...lokalLesen(), ...(du()?.einst
 export function anwenden(w = werte()) {
   optionen.tagnacht = w.tagnacht !== false;
   optionen.wetter = w.wetter !== false;
+  setzeEffekte(w.effekte);
   neuZeichnen();
   try { einstellungenSetzen(w); } catch (e) { console.error(e); }
 }
@@ -52,6 +54,15 @@ function setzen(neu) {
     if (r && !r.ok && r.fehler) fehler(r.fehler);
   }, 400);
   return w;
+}
+
+/** Auswahl aus mehreren Werten als Knopfreihe (z. B. Effekte: Voll / Reduziert / Aus). */
+function auswahl(sym, titel, text, key, werteListe, namen) {
+  const reihe = el('div.einst-knoepfe', { role: 'radiogroup', 'aria-label': titel });
+  const zeichne = () => { for (const k of reihe.children) { const an = k.dataset.w === werte()[key]; k.classList.toggle('gold', an); k.setAttribute('aria-checked', an ? 'true' : 'false'); } };
+  for (const w of werteListe) reihe.append(el('button.knopf.klein', { role: 'radio', 'data-w': w, onclick: () => { setzen({ [key]: w }); zeichne(); ton('klick'); } }, namen[w]));
+  zeichne();
+  return el('div.einst-zeile', symbol('ui', sym), el('div.txt', el('b', { text: titel }), el('span.klein', { text })), reihe);
 }
 
 function schalter(sym, titel, text, key) {
@@ -77,7 +88,8 @@ export function oeffneEinstellungen() {
     // Darstellung
     i.append(el('div.einst-gruppe', el('h3', { text: E.darstellung }),
       schalter('nacht', E.tagnacht, E.tagnachtText, 'tagnacht'),
-      schalter('regen', E.wetter, E.wetterText, 'wetter')));
+      schalter('regen', E.wetter, E.wetterText, 'wetter'),
+      auswahl('wunder', E.effekte, E.effekteText, 'effekte', ['voll', 'reduziert', 'aus'], E.effekteWerte)));
     // Konto
     const d = du();
     const kannNeu = !!d && !eigeneStaedte().length && !eigeneEinheiten().some((e) => e.typ === 'siedler' || EINHEIT[e.typ]?.faehigkeiten?.includes('gruenden'));

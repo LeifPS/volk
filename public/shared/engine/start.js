@@ -161,6 +161,7 @@ export const start = {
     const e = b.werte && typeof b.werte === 'object' ? b.werte : {};
     v.einstellungen = { ...(v.einstellungen || {}) };
     for (const k of ['ton', 'musik', 'lautstaerke', 'tagnacht', 'wetter']) if (k in e) v.einstellungen[k] = typeof e[k] === 'number' ? Math.max(0, Math.min(1, e[k])) : !!e[k];
+    if (['voll', 'reduziert', 'aus'].includes(e.effekte)) v.einstellungen.effekte = e.effekte;
     this.markiere('v' + v.id);
   },
 };

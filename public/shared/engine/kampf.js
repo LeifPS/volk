@@ -299,7 +299,7 @@ export const kampf = {
     e.abkling_bis = this.t + this.abklingzeit(e) * 1000;
     if (e.modus === 'befestigt' || e.modus === 'schlafen') e.modus = 'wach';
     const vonFeld = e.feld;
-    this.ausgehend.push({ art: 'kampf', von: vonFeld, nach: feld, fern: vs.art !== 'nah', schadenA: anAngr, schadenV: anVert, t: this.t });
+    this.ausgehend.push({ art: 'kampf', von: vonFeld, nach: feld, fern: vs.art !== 'nah', schadenA: anAngr, schadenV: anVert, t: this.t, typ: e.typ, ae: e.id });
     // Angreifer nimmt Schaden
     e.hp = Math.max(0, e.hp - anAngr);
     this.markiere('e' + e.id);
@@ -440,7 +440,7 @@ export const kampf = {
     e.hp = Math.max(0, e.hp - dmg);
     s.abkling_bis = this.t + KAMPF.stadtAbklingzeit;
     this.markiere('s' + s.id); this.markiere('e' + e.id);
-    this.ausgehend.push({ art: 'kampf', von: s.feld, nach: e.feld, fern: true, schadenA: 0, schadenV: dmg, t: this.t });
+    this.ausgehend.push({ art: 'kampf', von: s.feld, nach: e.feld, fern: true, schadenA: 0, schadenV: dmg, t: this.t, typ: 'stadt' });
     this.kampfVermerken(s.volk, e.volk);
     const n = EINHEIT[e.typ].name;
     this.meldung(s.volk, `${s.name} ${automatisch ? 'verteidigt sich und trifft' : 'beschießt'} ${n} (${dmg} Schaden).`, { art: 'kampf', feld: e.feld });

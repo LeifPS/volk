@@ -405,7 +405,7 @@ export const akteure = {
     e.hp -= dmg;
     r.abkling_bis = this.t + 30 * MIN;
     this.markiere('e' + e.id); this.markiere('e' + r.id);
-    this.ausgehend.push({ art: 'kampf', von: r.feld, nach: e.feld, schadenA: 0, schadenV: dmg, t: this.t });
+    this.ausgehend.push({ art: 'kampf', von: r.feld, nach: e.feld, schadenA: 0, schadenV: dmg, t: this.t, typ: 'tier', ae: r.id });
     const name = { wolf: 'Ein Wolfsrudel', baer: 'Ein Bär', tiger: 'Ein Tiger', jaguar: 'Ein Jaguar', krokodil: 'Ein Krokodil', schneeleopard: 'Ein Schneeleopard' }[r.tier] || 'Ein Raubtier';
     this.meldung(e.volk, `${name} hat ${d.name} angefallen (${dmg} Schaden).${d.klasse === 'spaeher' ? ' Der Späher konnte fliehen.' : ''}`, { art: 'kampf', feld: e.feld });
   },
