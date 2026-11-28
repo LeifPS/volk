@@ -3,7 +3,8 @@
 // eine Kurve (quadratische Bézierkurve mit dem Feldmittelpunkt als Kontrollpunkt), mehr Anschlüsse eine Kreuzung.
 // An den Kantenmitten stehen beide Hälften senkrecht auf der Kante, deshalb sind die Übergänge knickfrei.
 // Gezeichnet wird je Gelände-Chunk in eine Offscreen-Ebene, die nur neu entsteht, wenn sich die Wege dort ändern.
-import { BREITE, HOEHE, idx, nachbar, feldMitte } from '../../shared/hex.js';
+import { idxE, nachbar, feldMitte } from '../../shared/hex.js';
+import { EB } from './ebene.js';
 import { hash01 } from '../../shared/zufall.js';
 import { R, FELD_B, ZEILE_H, CHUNK_GROESSE } from './gelaende.js';
 import { Z, erkundet, an } from '../kern/zustand.js';
@@ -40,11 +41,12 @@ function staedtefelder() {
 /** Felder, deren Wege den Chunk berühren können (Rand um ein Feld erweitert). */
 function felderImChunk(cx, cy) {
   const x0 = cx * C - FELD_B, x1 = (cx + 1) * C + FELD_B, y0 = cy * C - ZEILE_H * 1.5, y1 = (cy + 1) * C + ZEILE_H * 1.5;
-  const z0 = Math.max(0, Math.floor(y0 / ZEILE_H) - 1), z1 = Math.min(HOEHE - 1, Math.ceil(y1 / ZEILE_H) + 1);
-  const s0 = Math.max(0, Math.floor(x0 / FELD_B) - 1), s1 = Math.min(BREITE - 1, Math.ceil(x1 / FELD_B) + 1);
+  const E = EB();
+  const z0 = Math.max(0, Math.floor(y0 / ZEILE_H) - 1), z1 = Math.min(E.hoehe - 1, Math.ceil(y1 / ZEILE_H) + 1);
+  const s0 = Math.max(0, Math.floor(x0 / FELD_B) - 1), s1 = Math.min(E.breite - 1, Math.ceil(x1 / FELD_B) + 1);
   const l = [];
   for (let z = z0; z <= z1; z++) for (let sp = s0; sp <= s1; sp++) {
-    const i = idx(sp, z);
+    const i = idxE(E.nr, sp, z);
     const f = Z.ansicht.felder[i];
     if (f && f.w && erkundet(i)) l.push(i);
   }

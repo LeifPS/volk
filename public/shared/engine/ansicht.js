@@ -102,6 +102,7 @@ export const ansicht = {
     if (e.pfad?.length) x.pfad = eigen ? e.pfad : e.pfad.filter((p) => sicht.has(p.f)).slice(0, 4);
     if (e.befoerderungen?.length) x.bef = e.befoerderungen;
     if (e.in) x.in = e.in;
+    if (e.flug_bis && e.flug_bis > this.t) x.flug_bis = e.flug_bis; // Start oder Landung läuft noch
     if (eigen) {
       x.ep = e.ep || 0; x.ep_max = this.epBenoetigt(e); x.stufe = this.einheitStufe(e); x.baum = this.befoerderungsBaum(e); x.abkling_bis = e.abkling_bis || 0; x.arbeit = e.arbeit || null; x.route = e.route || null; x.angriff = e.angriff ?? null;
       x.unterversorgt = !!e.unterversorgt; x.einsatz = e.einsatz || null; x.befoerderbar = this.befoerderungMoeglich(e); x.sicht = this.sichtweite(e);

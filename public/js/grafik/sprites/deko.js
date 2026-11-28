@@ -878,3 +878,293 @@ definiere('deko', 'ruderboot', {
     p.px(1, 6, '#e8f3f9').px(2, 7, '#e8f3f9').px(3, 7, PAL.wasserH).px(24, 7, PAL.wasserH).px(25, 6, '#e8f3f9').px(26, 7, '#e8f3f9');
   },
 });
+
+// ================= Weltraum-Ebene =================
+// Kühle Umrissfarbe für Objekte im All (statt des warmen Braun der Erde).
+const RAUMRAND = '#1c1b26';
+/** Liegt (x,y) auf der Hexfläche, wie sie auf der Karte unter der Deko liegt (Mitte 24/26, halbe Höhe 20)? */
+function imFeld(x, y, m = 2) {
+  const dy = Math.abs(y - 26); if (dy > 20 - m || y > 39) return false;
+  const hw = dy <= 10 ? 24 : 24 * (20 - dy) / 10;
+  return Math.abs(x - 23.5) <= hw - m;
+}
+/** Stern: art 0 = Punkt, 1 = kleines Kreuz, 2 = großes Funkelkreuz. */
+function stern(p, x, y, art, kern = '#e8eeff', arm = '#6e7aa6') {
+  p.px(x, y, kern);
+  if (art >= 1) p.px(x - 1, y, arm).px(x + 1, y, arm).px(x, y - 1, arm).px(x, y + 1, arm);
+  if (art >= 2) { const a2 = mische(arm, '#0e1326', 0.5); p.px(x - 2, y, a2).px(x + 2, y, a2).px(x, y - 2, a2).px(x, y + 2, a2); }
+}
+/** Sternenstaub: lockerer Schleier aus dunklen Punkten entlang einer Schräge. */
+function sternenstaub(p, x0, y0, x1, y1, n, r, farben) {
+  for (let i = 0; i < n; i++) {
+    const t = r(), x = Math.round(x0 + (x1 - x0) * t + (r() - 0.5) * 6), y = Math.round(y0 + (y1 - y0) * t + (r() - 0.5) * 3);
+    if (imFeld(x, y, 3) && !p.hole(x, y)) p.px(x, y, farben[Math.floor(r() * farben.length)]);
+  }
+}
+
+// ---------- Orbit (fast leer: wenige Sterne, Sternenstaub) ----------
+const STAUB = ['#161c34', '#1a2140', '#20284a'];
+definiere('deko', 'orbit', {
+  w: 48, h: 40, varianten: 4, umriss: false,
+  zeichne(p, o) {
+    const r = saat('orbit', o.variante), v = o.variante;
+    if (v === 0) { sternenstaub(p, 8, 30, 38, 18, 14, r, STAUB); stern(p, 31, 17, 1); stern(p, 14, 31, 0, '#7a86b0'); }
+    else if (v === 1) { stern(p, 17, 19, 2, '#ffffff', '#7a88c0'); stern(p, 33, 32, 0, '#8a94bc'); stern(p, 37, 21, 0, '#5a6690'); sternenstaub(p, 20, 34, 40, 28, 6, r, STAUB); }
+    else if (v === 2) { sternenstaub(p, 6, 22, 42, 32, 22, r, STAUB); stern(p, 26, 27, 1, '#ffeec8', '#8a7e6a'); stern(p, 12, 25, 0, '#6a76a0'); }
+    else {
+      // ferner Nebelfleck
+      for (const [x, y, c] of [[30, 20, '#241a3c'], [31, 20, '#2c2048'], [32, 21, '#241a3c'], [30, 21, '#2c2048'], [31, 21, '#3a2a5a'], [29, 22, '#1e1832'], [31, 22, '#241a3c']]) p.px(x, y, c);
+      stern(p, 31, 21, 0, '#b8a8e8');
+      stern(p, 15, 30, 1, '#d8e4ff', '#5a6896'); stern(p, 38, 33, 0, '#6a76a0');
+    }
+  },
+});
+
+// ---------- Erdorbit (Sterne, blaues Glimmen der Atmosphäre, Satellit) ----------
+/** Kleiner Satellit mit zwei Solarflügeln; (x,y) = Rumpfmitte. */
+function satellit(p, x, y, gross) {
+  const f = gross ? 4 : 3;
+  p.rect(x - 1 - f - 1, y - 1, f, 3, '#2a4a9a').rect(x + 2 + 1, y - 1, f, 3, '#2a4a9a');
+  p.rect(x - 1 - f - 1, y - 1, f, 1, '#6a9ae0').rect(x + 3, y - 1, f, 1, '#6a9ae0');
+  for (let i = 1; i < f; i += 2) { p.px(x - 1 - f - 1 + i, y, '#4a6ac0'); p.px(x + 3 + i, y + 1, '#1f3270'); }
+  p.px(x - 2, y, '#9aa5b1').px(x + 2, y, '#9aa5b1');
+  p.rect(x - 1, y - 1, 3, 3, '#d8a838').px(x - 1, y - 1, '#ffe68a').px(x + 1, y + 1, '#9a7020').px(x, y, '#f0c850');
+  p.px(x, y - 2, '#c8d0d8').px(x, y - 3, '#ff5a4a');
+}
+/** Dünner Bogen der Erdatmosphäre (flach, nur Glimmen). */
+function atmosphaere(p, cx, cy, rx, ry, a0, a1) {
+  for (let i = 0; i <= 60; i++) {
+    const a = a0 + (a1 - a0) * i / 60, x = Math.round(cx + Math.cos(a) * rx), y = Math.round(cy + Math.sin(a) * ry);
+    const mitte = Math.abs(i - 30) < 18;
+    if (!imFeld(x, y, 2)) continue;
+    p.px(x, y + 1, '#1f3a78');
+    p.px(x, y, mitte ? '#5a9ae8' : '#2f5aa8');
+    if (mitte && i % 3 !== 0) p.px(x, y - 1, Math.abs(i - 30) < 8 ? '#a8d4ff' : '#3a6ac0');
+  }
+}
+definiere('deko', 'erdorbit', {
+  w: 48, h: 40, varianten: 4, umriss: false,
+  zeichne(p, o) {
+    const r = saat('erdorbit', o.variante), v = o.variante;
+    const glimm = ['#1c3264', '#203a72'];
+    if (v === 0) { atmosphaere(p, 10, 60, 40, 30, -1.75, -0.95); stern(p, 30, 15, 1, '#ffffff', '#6a86c8'); stern(p, 13, 22, 0, '#8aa4d8'); }
+    else if (v === 1) {
+      sternenstaub(p, 6, 32, 40, 22, 14, r, glimm);
+      stern(p, 36, 33, 0, '#8aa4d8');
+      teil(p, (q) => satellit(q, 22, 22, true), RAUMRAND);
+      p.px(24, 30, '#3a5aa0').px(26, 31, '#2a4a8a');
+    }
+    else if (v === 2) { atmosphaere(p, 40, 58, 36, 26, -2.35, -1.55); stern(p, 17, 18, 2, '#ffffff', '#6a86c8'); stern(p, 31, 26, 0, '#8aa4d8'); }
+    else {
+      sternenstaub(p, 8, 24, 40, 34, 12, r, glimm);
+      stern(p, 14, 30, 1, '#e8f0ff', '#5a76b8');
+      teil(p, (q) => satellit(q, 32, 19, false), RAUMRAND);
+    }
+  },
+});
+
+// ---------- Mond ----------
+const MOND = { hh: '#e2e2e8', h: '#c4c4cc', b: '#a2a2ac', d: '#7a7a84', dd: '#5a5a64', ddd: '#44444e' };
+/** Flacher Krater: Lichtkante oben links außen, Schatten innen oben links, Licht innen unten rechts. */
+function krater(p, cx, cy, rx, T = MOND) {
+  const ry = Math.max(1.2, rx * 0.55);
+  // Wall: außen oben links hell, unten rechts dunkel
+  p.ellipse(cx + 0.6, cy + 0.6, rx + 1, ry + 0.8, T.d);
+  p.ellipse(cx - 0.5, cy - 0.4, rx + 0.9, ry + 0.7, T.hh);
+  p.ellipse(cx, cy, rx + 0.4, ry + 0.3, T.h);
+  // Schüssel: Schlagschatten oben links, beleuchtete Wand unten rechts
+  p.ellipse(cx, cy, rx - 0.3, ry - 0.3, T.ddd);
+  p.ellipse(cx + 0.9, cy + 0.7, rx - 0.9, ry - 0.6, T.hh);
+  p.ellipse(cx + 0.6, cy + 0.4, rx - 1.2, ry - 0.9, T.b);
+  if (rx >= 3) p.ellipse(cx + 0.2, cy + 0.1, rx - 2.2, ry - 1.4, T.dd);
+}
+/** Großer Krater mit aufgeworfenem Wall (Objekt mit Umriss). */
+function grosskrater(p, cx, cy, rx, ry, T = MOND, gipfel = false) {
+  // Außenhang (vorn sichtbar) und Wallkrone
+  p.ellipse(cx + 0.5, cy + 1.6, rx, ry + 0.4, T.d);
+  p.ellipse(cx + 0.5, cy + 2.2, rx - 1, ry - 0.2, T.dd);
+  p.ellipse(cx + 0.5, cy + 1.6, rx - 0.5, ry, T.d);
+  p.ellipse(cx, cy, rx, ry, T.b);
+  p.ellipse(cx - 0.7, cy - 0.5, rx - 0.8, ry - 0.6, T.h);
+  // Kraterschüssel: Boden hell, Schlagschatten des Walls oben links, Innenwand unten rechts im Licht
+  p.ellipse(cx + 0.2, cy + 0.3, rx - 2, ry - 1.4, T.hh);
+  p.ellipse(cx, cy + 0.1, rx - 2.2, ry - 1.6, T.ddd);
+  p.ellipse(cx + 1.4, cy + 0.9, rx - 3.2, ry - 2.2, T.dd);
+  p.ellipse(cx + 2.2, cy + 1.3, rx - 4.2, ry - 2.8, T.b);
+  p.ellipse(cx + 2.6, cy + 1.5, rx - 5.6, ry - 3.6, T.d);
+  // Lichtkante auf der Krone oben links
+  for (let i = 0; i <= 30; i++) {
+    const a = Math.PI * 0.95 + i / 30 * Math.PI * 0.6, x = Math.round(cx - 0.7 + Math.cos(a) * (rx - 0.8)), y = Math.round(cy - 0.5 + Math.sin(a) * (ry - 0.6));
+    p.px(x, y, T.hh);
+  }
+  if (gipfel) { const gx = Math.round(cx + 1.5), gy = Math.round(cy + 1); p.px(gx, gy, T.hh).px(gx - 1, gy, T.h).px(gx + 1, gy, T.b).px(gx, gy + 1, T.d).px(gx + 1, gy + 1, T.dd).px(gx - 1, gy + 1, T.b); }
+}
+const S_MOND = { hh: '#e2e2e8', h: '#bcbcc4', b: '#94949e', d: '#686872' };
+definiere('deko', 'mondboden', {
+  w: 48, h: 40, varianten: 4, umriss: false,
+  zeichne(p, o) {
+    const r = saat('mondboden', o.variante), T = [];
+    const K = (x, y, rx) => T.push(F((q) => krater(q, x, y, rx)));
+    const S = (x, y, s) => T.push(O(y + 0.5, (q) => fels(q, x, y, s, S_MOND), RAUMRAND));
+    const v = o.variante;
+    if (v === 0) { K(16, 27, 5); K(33, 34, 3); S(31, 24, 2); S(12, 35, 1); }
+    else if (v === 1) { K(26, 30, 6); K(13, 22, 3); S(37, 25, 1); S(15, 35, 2); S(18, 36, 0); }
+    else if (v === 2) { K(14, 30, 4); K(31, 22, 4); K(36, 34, 3); S(24, 34, 2); }
+    else { K(31, 27, 5); K(15, 34, 3); S(13, 24, 2); S(16, 25, 0); S(39, 35, 1); }
+    szene(p, T);
+    // feines Geröll
+    for (const [x, y] of streu(r, 7, 3, 14, 38)) if (imFeld(x, y, 3) && !p.hole(x, y) && !p.hole(x + 1, y)) p.px(x, y, MOND.d).px(x + 1, y, MOND.h);
+  },
+});
+definiere('deko', 'mondkrater', {
+  w: 48, h: 40, varianten: 4, umriss: false,
+  zeichne(p, o) {
+    const r = saat('mondkrater', o.variante), T = [];
+    const G = (x, y, rx, ry, gp) => T.push(O(y + ry, (q) => grosskrater(q, x, y, rx, ry, MOND, gp), RAUMRAND));
+    const K = (x, y, rx) => T.push(F((q) => krater(q, x, y, rx)));
+    const S = (x, y, s) => T.push(O(y + 0.5, (q) => fels(q, x, y, s, S_MOND), RAUMRAND));
+    const v = o.variante;
+    if (v === 0) { G(22, 27, 15, 7, true); K(39, 34, 2); S(9, 35, 1); }
+    else if (v === 1) { G(15, 24, 10, 5); G(31, 31, 12, 6, true); S(40, 24, 1); }
+    else if (v === 2) { G(26, 25, 13, 6, true); G(12, 33, 7, 3.5); K(36, 34, 2); }
+    else { G(30, 24, 10, 5); G(16, 31, 11, 5.5, true); S(38, 34, 2); K(9, 23, 2); }
+    szene(p, T);
+    for (const [x, y] of streu(r, 5, 3, 14, 38)) if (imFeld(x, y, 3) && !p.hole(x, y) && !p.hole(x + 1, y)) p.px(x, y, MOND.dd).px(x + 1, y, MOND.h);
+  },
+});
+
+// ---------- Mars ----------
+const MSAND = ['#8a3c22', '#a84e2c', '#c4673c', '#de885a'];
+const MFELS = { hh: '#e8a07a', h: '#c4704a', b: '#9a5034', d: '#6e3422' };
+const MBERG = { hh: '#e89a6c', h: '#c66c44', b: '#a05434', d: '#803e26', dd: '#5a2818', s: '#f2dcc8', sd: '#c8a08a' };
+definiere('deko', 'marsboden', {
+  w: 48, h: 40, varianten: 4, umriss: false,
+  zeichne(p, o) {
+    const r = saat('marsboden', o.variante), T = [];
+    const D = (cx, by, rl, rr, hh) => T.push(O(by - 4, (q) => { kuppe(q, cx, by, rl, rr, hh, MSAND, { grat: true, form: 0.8 }); for (let i = 2; i < hh; i += 2) q.linie(cx - rl * 0.7 + i, by - i * 0.5 + 1, cx - rl * 0.35 + i, by - i * 0.5, MSAND[1]); }, '#7a3218', by));
+    const S = (x, y, s) => T.push(O(y + 0.5, (q) => fels(q, x, y, s, MFELS), RAUMRAND));
+    const v = o.variante;
+    if (v === 0) { D(17, 32, 13, 7, 6); S(33, 29, 2); S(36, 30, 0); S(28, 37, 1); }
+    else if (v === 1) { D(28, 30, 15, 9, 7); S(12, 35, 2); S(38, 37, 1); }
+    else if (v === 2) { D(13, 28, 9, 6, 5); D(31, 36, 13, 8, 5); S(35, 25, 2); S(9, 36, 1); }
+    else { S(16, 27, 3); S(20, 28, 1); D(33, 33, 11, 7, 6); S(13, 37, 1); }
+    szene(p, T);
+    for (const [x, y] of streu(r, 6, 3, 14, 38)) if (imFeld(x, y, 3) && !p.hole(x, y) && !p.hole(x + 1, y)) p.px(x, y, '#7a3420').px(x + 1, y, '#d48a62');
+  },
+});
+/** Erloschener Schildvulkan mit flachem Gipfelkrater. */
+function marsvulkan(p, cx, by, w, h, r) {
+  const tops = berg(p, cx, by, w, h, MBERG, r, { krater: 3, schnee: 0, grat: 0.08 });
+  const ky = Math.min(...[-2, -1, 0, 1, 2].map((d) => tops[cx + d] ?? 99));
+  // Kraterrand: vorn hell, hinten dunkle Öffnung
+  for (let d = -3; d <= 3; d++) if (tops[cx + d] !== undefined) for (let y = tops[cx + d]; y < ky + 1; y++) p.px(cx + d, y, 'leer');
+  p.rect(cx - 3, ky + 1, 7, 1, MBERG.h).px(cx - 3, ky + 1, MBERG.hh).px(cx - 2, ky + 1, MBERG.hh).px(cx + 3, ky + 1, MBERG.d);
+  p.rect(cx - 2, ky, 5, 1, MBERG.dd).px(cx + 2, ky, MBERG.d).px(cx - 3, ky, MBERG.hh).px(cx + 3, ky, MBERG.b);
+  return tops;
+}
+definiere('deko', 'marsgebirge', {
+  w: 48, h: 40, varianten: 4, umriss: false,
+  zeichne(p, o) {
+    const r = saat('marsgebirge', o.variante), T = [];
+    const B = (cx, by, w, h, opt = {}) => T.push(O(by, (q) => berg(q, cx, by, w, h, MBERG, r, { schnee: 0.14, ...opt }), RAUMRAND));
+    const V = (cx, by, w, h) => T.push(O(by, (q) => marsvulkan(q, cx, by, w, h, r), RAUMRAND));
+    const S = (x, y, s) => T.push(O(y + 0.5, (q) => fels(q, x, y, s, MFELS), RAUMRAND));
+    const v = o.variante;
+    if (v === 0) { B(14, 32, 22, 22); B(34, 31, 22, 25, { versatz: 1 }); B(24, 37, 30, 33, { versatz: -1 }); }
+    else if (v === 1) { V(24, 37, 38, 30); S(9, 37, 1); S(39, 38, 2); }
+    else if (v === 2) { B(12, 33, 20, 21, { schnee: 0 }); B(27, 36, 30, 34, { versatz: 3 }); B(39, 37, 16, 17, { schnee: 0 }); }
+    else { V(31, 34, 28, 24); B(14, 37, 24, 30, { versatz: 1, grat: 0.12 }); S(39, 38, 1); }
+    szene(p, T);
+  },
+});
+
+// ---------- Eismond ----------
+const EISB = { hh: '#ffffff', h: '#eef8fe', b: '#c6e4f4', d: '#8cbcd8', dd: '#5a8eb2' };
+const EISRAND = '#3e6a8c';
+/** Flache Eisscholle: Oberseite hell, darunter eine schmale blaue Bruchkante. */
+function scholle(p, pkt, T = EISB) {
+  const unten = pkt.map(([x, y]) => [x, y + 2]);
+  p.poly(unten, T.d);
+  p.poly(pkt, T.h);
+  // Lichtkante oben links, Schattenkante rechts
+  for (let i = 0; i < pkt.length; i++) {
+    const [x0, y0] = pkt[i], [x1, y1] = pkt[(i + 1) % pkt.length];
+    if (x1 > x0 && y1 <= y0 + 1) p.linie(x0, y0, x1, y1, T.hh);
+  }
+  const [ax, ay] = pkt[0];
+  p.px(ax + 2, ay + 1, T.hh);
+}
+/** Riss im Eis (flach): dunkle Linie mit heller Kante. */
+function riss(p, punkte) {
+  for (let i = 0; i + 1 < punkte.length; i++) {
+    const [x0, y0] = punkte[i], [x1, y1] = punkte[i + 1];
+    p.linie(x0, y0 + 1, x1, y1 + 1, '#ffffff');
+    p.linie(x0, y0, x1, y1, '#6a9cc0');
+  }
+}
+function glitzer(p, x, y, gross) { p.px(x, y, '#ffffff'); if (gross) p.px(x - 1, y, '#bfe8ff').px(x + 1, y, '#bfe8ff').px(x, y - 1, '#bfe8ff').px(x, y + 1, '#bfe8ff'); }
+definiere('deko', 'eisboden', {
+  w: 48, h: 40, varianten: 4, umriss: false,
+  zeichne(p, o) {
+    const T = [];
+    const Sc = (y, pkt) => T.push(O(y, (q) => scholle(q, pkt), EISRAND));
+    const E = (x, y, s) => T.push(O(y + 0.5, (q) => eisbrocken(q, x, y, s), EISRAND));
+    const Ri = (pkt) => T.push(F((q) => riss(q, pkt)));
+    const v = o.variante;
+    if (v === 0) { Ri([[6, 30], [12, 28], [17, 31], [24, 29]]); Sc(30, [[12, 21], [23, 20], [26, 24], [18, 26], [10, 25]]); Sc(34, [[27, 30], [36, 29], [39, 33], [30, 34]]); E(35, 24, 1); }
+    else if (v === 1) { Ri([[20, 20], [24, 26], [22, 31], [27, 37]]); Sc(29, [[7, 26], [16, 25], [18, 29], [9, 30]]); Sc(33, [[29, 27], [41, 26], [40, 31], [31, 32]]); E(14, 37, 0); }
+    else if (v === 2) { Ri([[8, 24], [15, 26], [22, 24], [30, 27], [40, 25]]); Sc(36, [[14, 31], [26, 30], [29, 34], [16, 35]]); E(32, 31, 2); E(36, 32, 0); }
+    else { Ri([[28, 18], [31, 24], [38, 27]]); Ri([[10, 33], [17, 35]]); Sc(31, [[13, 23], [27, 22], [29, 28], [15, 29]]); Sc(37, [[24, 33], [33, 33], [34, 36], [25, 37]]); E(39, 37, 1); }
+    szene(p, T);
+    const g = [[[18, 22, 1], [31, 31, 0], [8, 33, 0]], [[11, 27, 1], [34, 28, 0], [30, 36, 0]], [[19, 32, 1], [11, 21, 0], [40, 34, 0]], [[20, 24, 1], [28, 34, 0], [9, 28, 0]]][v];
+    for (const [x, y, gr] of g) glitzer(p, x, y, gr);
+  },
+});
+
+// ---------- Asteroidenfeld ----------
+const AST = ['#262530', '#44424e', '#686672', '#94929c', '#c8c6cc'];
+/** Schwebender Felsbrocken: unregelmäßige Knolle mit Licht oben links, Kratergrübchen und Metallglanz. */
+function brocken(p, cx, cy, rad, r) {
+  const knollen = [[0, 0, rad, rad * 0.8]];
+  for (let i = 0; i < 3; i++) { const a = r() * Math.PI * 2; knollen.push([Math.cos(a) * rad * 0.45, Math.sin(a) * rad * 0.35, rad * (0.5 + r() * 0.25), rad * (0.4 + r() * 0.2)]); }
+  const drin = (x, y) => knollen.some(([dx, dy, rx, ry]) => { const u = (x - cx - dx) / (rx + 0.5), w = (y - cy - dy) / (ry + 0.5); return u * u + w * w <= 1; });
+  for (let y = Math.floor(cy - rad * 1.3); y <= Math.ceil(cy + rad * 1.3); y++) for (let x = Math.floor(cx - rad * 1.5); x <= Math.ceil(cx + rad * 1.5); x++) {
+    if (!drin(x, y)) continue;
+    const nx = (x - cx) / rad, ny = (y - cy) / (rad * 0.8);
+    let v = -nx * 0.6 - ny * 0.75 + (((x + y) & 1) ? 0.05 : -0.05);
+    if (!drin(x - 1, y - 1)) v += 0.35;
+    if (!drin(x + 1, y + 1)) v -= 0.3;
+    p.px(x, y, v > 0.75 ? AST[4] : v > 0.15 ? AST[3] : v > -0.45 ? AST[2] : AST[1]);
+  }
+  // Grübchen
+  const n = rad > 4 ? 2 : 1;
+  for (let i = 0; i < n; i++) {
+    const x = Math.round(cx + (r() - 0.3) * rad * 0.8), y = Math.round(cy + (r() - 0.3) * rad * 0.5);
+    if (drin(x - 1, y) && drin(x + 1, y + 1)) p.px(x, y, AST[1]).px(x + 1, y, AST[2]).px(x, y + 1, AST[3]);
+  }
+  // Metallader mit Glanzpunkt
+  const mx = Math.round(cx - rad * 0.3), my = Math.round(cy - rad * 0.1);
+  if (drin(mx, my) && drin(mx + 1, my + 1)) p.px(mx, my, '#e0c070').px(mx + 1, my + 1, '#a07a3a');
+  if (rad > 4) { const gx = Math.round(cx + rad * 0.35), gy = Math.round(cy + rad * 0.2); if (drin(gx, gy)) p.px(gx, gy, '#a8c4d4'); }
+}
+/** Weicher Schatten eines schwebenden Brockens auf dem Feld (flach, kein Umriss). */
+function schwebeschatten(p, x, y, rx) {
+  p.ellipse(x, y, rx, Math.max(0.8, rx * 0.32), '#544942');
+  p.ellipse(x - 0.4, y - 0.1, rx * 0.6, Math.max(0.5, rx * 0.2), '#4a403a');
+}
+definiere('deko', 'asteroiden', {
+  w: 48, h: 40, varianten: 4, umriss: false,
+  zeichne(p, o) {
+    const r = saat('asteroiden', o.variante), T = [];
+    // Brocken schweben: Schatten liegt deutlich tiefer und leicht rechts
+    const A = (x, y, rad, hoch) => { T.push(F((q) => schwebeschatten(q, x + 2, y + rad * 0.8 + hoch, rad * 0.9))); T.push(O(y + rad, (q) => brocken(q, x, y, rad, r), RAUMRAND)); };
+    const v = o.variante;
+    if (v === 0) { A(16, 20, 7, 7); A(34, 26, 5, 6); A(25, 34, 3, 3); }
+    else if (v === 1) { A(28, 19, 8, 8); A(12, 29, 4, 5); A(38, 34, 2, 3); }
+    else if (v === 2) { A(13, 24, 5, 6); A(32, 21, 6, 7); A(22, 34, 3, 3); }
+    else { A(22, 22, 9, 7); A(39, 31, 3, 4); A(10, 33, 2, 3); }
+    szene(p, T);
+    // Staubkörner zwischen den Brocken
+    for (const [x, y] of streu(r, 4, 4, 12, 36)) if (imFeld(x, y, 4) && !p.hole(x, y)) p.px(x, y, AST[2]);
+  },
+});

@@ -22,7 +22,7 @@ test('Karte nutzt keine engine-abhängigen Rechenfunktionen', async () => {
 
 test('Landanteil 40-50 %, mehrere Kontinente und Inseln', () => {
   const k = karte();
-  const land = [...k.gelaende].filter((g) => !GELAENDE[g].wasser).length / ANZAHL;
+  const land = [...k.gelaende.slice(0, ANZAHL)].filter((g) => !GELAENDE[g].wasser).length / ANZAHL;
   assert.ok(land >= 0.40 && land <= 0.50, 'Landanteil ' + land);
   const gross = k.landmasseGroesse.filter((n) => n >= 400).length;
   const insel = k.landmasseGroesse.filter((n) => n < 60).length;

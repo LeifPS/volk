@@ -11,7 +11,7 @@ Kernregel: Die Live-Welt muss nach jedem Schritt weiterlaufen (Migration, Karte 
 | 1 | Migrationsgerüst (`engine/migration.js`), Konsistenzprüfung (`engine/pruefung.js`), echter Altstand-Test, Versionsabgleich Client/Server, vorbestehende Testfehler | fertig |
 | 2 | Zeitalter KI und Fusion (45 Forschungen, 19 Einheiten, 15 Gebäude, 2 Wunder, 4 Verbesserungen, Seltene Erden, Deuterium, Musik, Sprites für alle 4 neuen Zeitalter) | fertig |
 | 3 | Zeitalter Weltraum und Sterne (44 Forschungen, 19 Einheiten, 13 Gebäude, 2 Wunder) | fertig |
-| 4 | Weltraum-Ebene | offen |
+| 4 | Weltraum-Ebene (Karte, Bewegung, Start/Landung, Kolonien, Weltraum-Verbesserungen, Client-Umschalter, Sprites) | fertig |
 | 5 | Naturwunder, Wunder-Platzierung | offen |
 | 6 | Distrikte | offen |
 | 7 | Civics, Regierungen, Politikkarten | offen |

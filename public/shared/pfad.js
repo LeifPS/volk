@@ -1,5 +1,5 @@
 // A*-Wegsuche auf der Hexkarte. Wird vom Server (Wahrheit) und vom Client (Vorschau/Ankunftszeit) genutzt.
-import { ANZAHL, abstand, nachbar } from './hex.js';
+import { GESAMT, abstand, nachbar } from './hex.js';
 
 class Halde {
   constructor() { this.k = []; this.p = []; }
@@ -25,9 +25,9 @@ class Halde {
   }
 }
 
-const G = new Float64Array(ANZAHL);
-const VON = new Int32Array(ANZAHL);
-const STEMPEL = new Uint32Array(ANZAHL);
+const G = new Float64Array(GESAMT);
+const VON = new Int32Array(GESAMT);
+const STEMPEL = new Uint32Array(GESAMT);
 let stempel = 0;
 
 /**

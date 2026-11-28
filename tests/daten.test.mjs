@@ -12,7 +12,7 @@ const {
 // ---------- Erlaubte Listen laut DATENFORMAT.md ----------
 const LAGERGUETER = ['gold', 'holz', 'stein', 'marmor', 'salz', 'lehm', 'kupfer', 'zinn', 'eisen', 'pferde', 'salpeter', 'kohle', 'oel', 'aluminium', 'uran', 'elefanten', 'seltene_erden', 'deuterium', 'titan', 'helium3', 'antimaterie'];
 const KLASSEN = ['zivil', 'spaeher', 'haendler', 'nahkampf', 'fernkampf', 'reiter', 'belagerung', 'flak', 'sanitaeter', 'see_zivil', 'see_nah', 'see_fern', 'u_boot', 'traeger', 'transport', 'jaeger', 'bomber', 'rakete', 'atom'];
-const FAEHIGKEITEN = ['gruenden', 'arbeiten', 'see_arbeiten', 'handel', 'erkunden', 'transport', 'traeger', 'tarnung', 'abfangen', 'heilen', 'einmalig', 'flaechenschaden', 'belagerung', 'kein_gegenschaden', 'tiefsee', 'gelaende_ignorieren'];
+const FAEHIGKEITEN = ['gruenden', 'arbeiten', 'see_arbeiten', 'handel', 'erkunden', 'transport', 'traeger', 'tarnung', 'abfangen', 'heilen', 'einmalig', 'flaechenschaden', 'belagerung', 'kein_gegenschaden', 'tiefsee', 'gelaende_ignorieren', 'raumschiff', 'raumtauglich'];
 const GEGEN = [...KLASSEN, 'stadt', 'luft', 'see', 'land'];
 const BEF_WIRKUNG = ['staerke', 'fern', 'reichweite', 'tempo', 'sicht', 'heilung', 'gelaende', 'gegen', 'verteidigung', 'angriff', 'abklingzeit_prozent'];
 const GEB_KATEGORIEN = ['nahrung', 'wissen', 'gold', 'produktion', 'kultur', 'zufriedenheit', 'militaer', 'verteidigung', 'see', 'luft', 'infrastruktur'];

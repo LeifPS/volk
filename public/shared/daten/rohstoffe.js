@@ -61,6 +61,10 @@ export const ROHSTOFFE = [
   // sondern danach nur auf Feldern ohne Rohstoff (siehe karte.js, zusatzRohstoffe). Neue Rohstoffe immer hinten anhängen.
   { id: 'seltene_erden', name: 'Seltene Erden', art: 'strategisch', gelaende: ['huegel', 'gebirge', 'kristallgebirge', 'wueste'], dichte: 0.022, zusatzschicht: true, verbesserung: 'mine', ertrag: { p: 2 }, liefert: { seltene_erden: 1 }, sichtbar_durch: 'lernende_maschinen', zweck: 'Roboter, Drohnen, KI-Gebäude und fast alles Spätere.' },
   { id: 'deuterium', name: 'Deuterium', art: 'strategisch', gelaende: ['kueste', 'meer', 'tiefsee'], dichte: 0.008, zusatzschicht: true, verbesserung: 'deuterium', ertrag: { p: 1 }, liefert: { deuterium: 1 }, sichtbar_durch: 'kernfusion', zweck: 'Brennstoff für Fusionsreaktoren, Plasmawaffen und Raumschiffe.' },
+  // --- Weltraum-Ebene: nur auf der Weltraumkarte verteilt (raum: true), siehe weltraumkarte.js ---
+  { id: 'helium3', name: 'Helium-3', art: 'strategisch', gelaende: ['mondboden', 'mondkrater'], dichte: 0, raum: true, verbesserung: 'heliumextraktor', ertrag: { p: 1 }, liefert: { helium3: 1 }, sichtbar_durch: 'helium3_abbau', zweck: 'Treibstoff für Raumjäger, Fähren und Sternenschiffe; Baustoff der Antimaterie-Fabrik.' },
+  { id: 'titan', name: 'Titan', art: 'strategisch', gelaende: ['marsboden', 'marsgebirge', 'asteroiden', 'mondkrater'], dichte: 0, raum: true, verbesserung: 'marsmine', verbesserung_alt: ['asteroidenbohrer', 'mondmine'], ertrag: { p: 2 }, liefert: { titan: 1 }, sichtbar_durch: 'orbitalbau', zweck: 'Leichtes, hartes Metall für Mondpanzer, Raumschiffe und die Gebäude der letzten Zeitalter.' },
+  { id: 'wassereis', name: 'Wassereis', art: 'bonus', gelaende: ['eisboden'], dichte: 0, raum: true, verbesserung: 'eisfoerderung', ertrag: { n: 3 }, sichtbar_durch: 'marsmission', zweck: 'Trinkwasser und Nahrung für Kolonien im All.' },
 ];
 
 export const ROHSTOFF_NACH_ID = Object.assign(Object.create(null), Object.fromEntries(ROHSTOFFE.map((r, i) => [r.id, { ...r, nr: i }])));

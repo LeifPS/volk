@@ -1,6 +1,6 @@
 // Einheiten: Erzeugen, Bewegung in Echtzeit (A* + Zeitstempel je Schritt), Stapelregel, Sicht/Nebel, Heilung, Befehle.
 import { karte, stadtGelaendeOk } from '../karte.js';
-import { ANZAHL, abstand, nachbarn, umkreis } from '../hex.js';
+import { GESAMT, abstand, nachbarn, umkreis, ebeneVon } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { EINHEIT, BEFOERDERUNG, BEFOERDERUNGEN, VERBESSERUNG, FREIGESCHALTET_DURCH, baumVon } from '../daten/index.js';
 import { sucheWeg } from '../pfad.js';
@@ -22,7 +22,7 @@ export function istMilitaer(d) { return schichtVon(d) === 'militaer'; }
 
 function b64(u8) { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); }
 function unb64(t, n) { const s = atob(t); const u = new Uint8Array(n); for (let i = 0; i < Math.min(n, s.length); i++) u[i] = s.charCodeAt(i); return u; }
-export const NEBEL_BYTES = Math.ceil(ANZAHL / 8);
+export const NEBEL_BYTES = Math.ceil(GESAMT / 8); // beide Ebenen; ältere, kürzere Nebeldaten werden beim Lesen aufgefüllt
 
 export const einheiten = {
   einheitDaten(e) { return EINHEIT[e.typ]; },
@@ -35,11 +35,12 @@ export const einheiten = {
     const e = this.z.einheiten[id];
     pruefe(e && e.volk === v.id, 'Das ist nicht deine Einheit.');
     pruefe(!e.umruestung || waehrendUmruestung, `Die Einheit wird gerade aufgerüstet (fertig in ${Math.ceil((e.umruestung?.fertig_um - this.t) / MIN)} min).`);
+    this.pruefeBereit(e);
     return e;
   },
 
   /** Eingeschifft: Landeinheit auf einem Wasserfeld. Sie wird nur übergesetzt und kann nichts tun (wie in Civ 6). */
-  eingeschifft(e) { return bereichVon(EINHEIT[e.typ]) === 'land' && !!GELAENDE[karte().gelaende[e.feld]]?.wasser; },
+  eingeschifft(e) { const g = GELAENDE[karte().gelaende[e.feld]]; return bereichVon(EINHEIT[e.typ]) === 'land' && !EINHEIT[e.typ].faehigkeiten?.includes('raumschiff') && !!(g?.wasser || g?.leer); },
   pruefeNichtEingeschifft(e, was) { pruefe(!this.eingeschifft(e), `Eingeschiffte Einheiten können nicht ${was}. Setze erst an Land über.`); },
 
   // ---------- Erzeugen / Entfernen ----------
@@ -132,6 +133,7 @@ export const einheiten = {
     const bereich = bereichVon(d);
     const st = this.stadtAuf(nach);
     if (st && st.volk !== vid && !this.verbuendet(vid, st.volk)) return Infinity;
+    if (ebeneVon(nach) === 1 || ebeneVon(von) === 1) return bereich === 'luft' ? Infinity : this.raumKosten(vid, d, von, nach, nurZiel);
     const f = this.z.felder[nach];
     if (bereich === 'luft') return Infinity;
     if (bereich === 'see') {
@@ -200,7 +202,8 @@ export const einheiten = {
   bewegeNach(e, ziel, o = {}) {
     const d = EINHEIT[e.typ];
     try {
-      pruefe(ziel >= 0 && ziel < ANZAHL, 'Ungültiges Ziel.');
+      pruefe(Number.isInteger(ziel) && ziel >= 0 && ziel < GESAMT, 'Ungültiges Ziel.');
+      pruefe(ebeneVon(ziel) === ebeneVon(e.feld), 'Das Ziel liegt auf der anderen Ebene. Zum Wechseln zwischen Erde und All dient der Raumhafen.');
       pruefe(bereichVon(d) !== 'luft', 'Flugzeuge werden verlegt (Befehl "Verlegen") oder greifen an.');
       pruefe(ziel !== e.feld || o.nachbar, 'Die Einheit steht schon dort.');
       if (!o.nachbar) {
@@ -463,10 +466,10 @@ export const einheiten = {
   befehl_stadt_gruenden(v, b) {
     const e = this.eigeneEinheit(v, b.einheit);
     const d = EINHEIT[e.typ];
-    pruefe(d.faehigkeiten?.includes('gruenden'), 'Nur Siedler können Städte gründen.');
+    pruefe(d.faehigkeiten?.includes('gruenden'), 'Nur Siedler und Kolonisten können Städte gründen.');
     this.pruefeNichtEingeschifft(e, 'Städte gründen');
     pruefe(!e.pfad?.length, 'Der Siedler ist noch unterwegs.');
-    const h = this.stadtGruendenHindernis(v.id, e.feld);
+    const h = this.ebeneGruendenHindernis(e, e.feld) || this.stadtGruendenHindernis(v.id, e.feld);
     pruefe(!h, h);
     const name = this.stadtName(v, b.name);
     const s = this.stadtGruenden(v.id, e.feld, name);

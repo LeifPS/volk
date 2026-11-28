@@ -20,6 +20,12 @@ export const T = {
   menue: { forschung: 'Forschung (F1)', staedte: 'Reich und Städte (F2)', diplomatie: 'Diplomatie und Handel (F3)', rangliste: 'Rangliste (F4)', lexikon: 'Lexikon (F5)', hilfe: 'Was soll ich tun? (H)', einstellungen: 'Einstellungen', meldungen: 'Meldungen (N)' },
   keineForschung: 'Keine Forschung aktiv – klicke hier!',
   naechste: 'Nächste Aktion', naechsteTip: 'Springt zur nächsten Einheit oder Stadt, die einen Befehl braucht (Leertaste).',
+  ebene: {
+    erde: 'Erde', weltraum: 'All', tip: 'Zwischen Erde und Weltraum umschalten (Taste E).',
+    starten: 'Ins All starten', startenTip: 'Startet vom Raumhafen in den Erdorbit (300 Gold, etwa 2 Stunden). Landeinheiten brauchen eine Orbitalfähre in der Stadt, die mitfliegt.',
+    landen: 'Landen', landenTip: 'Landet in deiner Stadt mit Raumhafen (300 Gold, etwa 2 Stunden). Landeinheiten brauchen eine Orbitalfähre in der Nähe.',
+    imAnflugAll: 'Start läuft, im Erdorbit einsatzbereit in', imAnflugErde: 'Landeanflug, einsatzbereit in',
+  },
   // Einheiten
   befehle: {
     bewegen: 'Bewegen', angreifen: 'Angreifen', gruenden: 'Stadt gründen', arbeiten: 'Bauen', auto_arbeit: 'Automatisch arbeiten', erkunden: 'Automatisch erkunden',

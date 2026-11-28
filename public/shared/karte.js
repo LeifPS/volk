@@ -1,6 +1,7 @@
 // Prozedurale Weltkarte aus festem Seed. Wird nie gespeichert, sondern bei Bedarf (einmal pro Prozess) erzeugt.
 // Nur exakte Arithmetik (siehe zufall.js), damit Client und Server auf jeder Engine dieselbe Karte erhalten.
-import { BREITE, HOEHE, ANZAHL, nachbarn, nachbar, umkreis, xVon, yVon } from './hex.js';
+import { BREITE, HOEHE, ANZAHL, GESAMT, RAUM_START, nachbarn, nachbar, umkreis, xVon, yVon } from './hex.js';
+import { weltraumErzeugen } from './weltraumkarte.js';
 import { fbm, hash01, wertrauschen } from './zufall.js';
 import { GELAENDE, GELAENDE_NR as G } from './daten/gelaende.js';
 import { ROHSTOFFE } from './daten/rohstoffe.js';
@@ -190,7 +191,7 @@ function erzeuge() {
   const rohstoff = new Uint8Array(ANZAHL); // 0 = keiner, sonst Nummer+1
   const proGelaende = GELAENDE.map(() => []);
   ROHSTOFFE.forEach((r, nr) => {
-    if (r.flaeche || r.zusatzschicht) return; // Zusatzschicht kommt erst nach dem Karten-Hash (siehe zusatzRohstoffe)
+    if (r.flaeche || r.zusatzschicht || r.raum) return; // Zusatzschicht kommt erst nach dem Karten-Hash (siehe zusatzRohstoffe), Weltraum-Rohstoffe nur im All
     for (const gid of r.gelaende) proGelaende[G[gid]].push([nr, r.dichte]);
   });
   for (let i = 0; i < ANZAHL; i++) {
@@ -225,6 +226,12 @@ function erzeuge() {
   k.hash = kartenHash(k);   // Hash der Grundkarte: seit der ersten Fassung unverändert (die Live-Welt steht darauf)
   zusatzRohstoffe(k);
   k.hashZusatz = kartenHash(k);
+  // Weltraum-Ebene: die Felder werden hinten angehängt (Feld-Index ab RAUM_START), die Erde bleibt unverändert.
+  const verlaengern = (a, Typ) => { const n = new Typ(GESAMT); n.set(a); return n; };
+  k.gelaende = verlaengern(k.gelaende, Uint8Array); k.fluss = verlaengern(k.fluss, Uint8Array); k.rohstoff = verlaengern(k.rohstoff, Uint8Array);
+  k.variante = verlaengern(k.variante, Uint8Array); k.landmasse = verlaengern(k.landmasse, Int32Array); k.hoehe = verlaengern(k.hoehe, Float64Array);
+  weltraumErzeugen(k);
+  k.hashRaum = kartenHash(k, RAUM_START, GESAMT);
   return k;
 }
 
@@ -258,10 +265,10 @@ function bfsAbstand(istZiel) {
   return d;
 }
 
-function kartenHash(k) {
+function kartenHash(k, von = 0, bis = ANZAHL) {
   let h = 0x811c9dc5;
   const mische = (v) => { h ^= v; h = Math.imul(h, 0x01000193); };
-  for (let i = 0; i < ANZAHL; i++) { mische(k.gelaende[i]); mische(k.fluss[i]); mische(k.rohstoff[i]); }
+  for (let i = von; i < bis; i++) { mische(k.gelaende[i]); mische(k.fluss[i]); mische(k.rohstoff[i]); }
   return (h >>> 0).toString(16);
 }
 
@@ -272,7 +279,7 @@ export const rohstoffVon = (i) => { const r = karte().rohstoff[i]; return r ? RO
 /** Ist das Feld als Stadtplatz grundsätzlich geeignet (ohne Besitz/Abstand)? */
 export function stadtGelaendeOk(i) {
   const g = GELAENDE[karte().gelaende[i]];
-  return !g.wasser && g.hoehe < 3 && g.id !== 'schnee';
+  return !g.wasser && !g.leer && g.hoehe < 3 && g.id !== 'schnee' && g.id !== 'asteroiden';
 }
 
 /** Bewertet einen möglichen Startplatz (höher = besser), 0 = ungeeignet. */

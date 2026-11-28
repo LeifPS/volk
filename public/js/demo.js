@@ -5,7 +5,8 @@ import { setzeUhr } from '../shared/uhr.js';
 import { Z, setzeVersatz } from './kern/zustand.js';
 import * as netz from './kern/netz.js';
 import { FORSCHUNGEN, EINHEITEN, GEBAEUDE, EINHEIT, ZEITALTER } from '../shared/daten/index.js';
-import { umkreis, abstand, nachbarn } from '../shared/hex.js';
+import { umkreis, abstand, nachbarn, idxE } from '../shared/hex.js';
+import { koerperMitte } from '../shared/weltraumkarte.js';
 import { karte, startWert } from '../shared/karte.js';
 import { GELAENDE } from '../shared/daten/gelaende.js';
 
@@ -60,6 +61,24 @@ export function baueDemo(zeitalter = 3, start = Date.now()) {
     if (d.faehigkeiten?.includes('arbeiten')) e.modus = 'auto_arbeit';
   }
   for (const st of staedte) s.erkunde(v.id, st.feld, 10);
+  // Weltraum (ab Weltraumzeitalter): Raumhafen, Kolonien auf Mond und Mars, Schiffe im Orbit
+  if (zeitalter >= 9) {
+    haupt.gebaeude.raumhafen = 1;
+    const mond = koerperMitte('mond'), mars = koerperMitte('mars');
+    const kol = [s.stadtGruenden(v.id, mond, 'Mondhafen'), s.stadtGruenden(v.id, mars, 'Rotfels')];
+    for (const st of kol) {
+      st.bev = 4 + (st.id % 3);
+      for (let k = 0; k < 6; k++) s.grenzwachstum(st.id);
+      s.autoBewirtschaften(st);
+      for (const i of st.arbeit) for (const vb of ['heliumextraktor', 'mondmine', 'marsmine', 'kuppelfarm']) { if (!s.verbesserungHindernis(v, i, vb, null)) { s.setzeFeld(i, { v: vb }); break; } }
+      s.erkunde(v.id, st.feld, 9);
+    }
+    for (const [typ, feld] of [['orbitalfaehre', idxE(1, 1, 18)], ['raumsonde', idxE(1, 8, 12)], ['mondpanzer', mond], ['raumlandetruppe', mars]]) {
+      const e = s.einheitErzeugen(v.id, typ, feld); if (e) s.erkunde(v.id, e.feld, 6);
+    }
+    for (let y = 0; y < 40; y += 3) s.erkunde(v.id, idxE(1, 1, y), 4);
+    staedte.push(...kol);
+  }
   // Bauaufträge
   for (const st of staedte) { const g = GEBAEUDE.find((x) => !s.bauHindernis(st, 'gebaeude', x.id)); if (g) { st.schlange.push({ art: 'gebaeude', id: g.id }); v.gold += 5000; v.lager.holz = 400; v.lager.stein = 400; s.bauSchlangeWeiter(st.id); } }
   // Forschung aktiv

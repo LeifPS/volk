@@ -240,6 +240,9 @@ export const bau = {
     const g = GELAENDE[k.gelaende[i]];
     if (vb.wasser && !g.wasser) return 'Das geht nur auf Wasser.';
     if (!vb.wasser && g.wasser) return 'Das geht nur an Land.';
+    if (g.leer) return 'Im leeren Raum kann man nichts bauen.';
+    if (g.raum && !vb.raum) return 'Im All gehen nur Weltraum-Verbesserungen (Minen, Extraktoren, Kuppelfarmen).';
+    if (!g.raum && vb.raum) return 'Das geht nur auf Mond, Mars, Eismond oder Asteroiden.';
     if (vb.gelaende && vb.gelaende.length && !vb.gelaende.includes(g.id)) return `Nicht auf ${g.name} möglich.`;
     if (vb.rohstoff_pflicht) {
       const rn = k.rohstoff[i]; const r = rn ? ROHSTOFFE[rn - 1] : null;

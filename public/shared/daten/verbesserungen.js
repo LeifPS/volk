@@ -77,6 +77,13 @@ export const VERBESSERUNGEN = [
   { id: 'eisenbahn', kette: 'strasse', stufe: 4, schicht: 'weg', name: 'Eisenbahn', beschreibung: 'Schienen und Dampfloks. Bewegungskosten 0,2, +1 Produktion.', gelaende: LAND_ALLE, ertrag: { p: 1 }, bewegung: 0.2, bauzeit: 8 * 3600 },
   { id: 'autobahn', kette: 'strasse', stufe: 5, schicht: 'weg', name: 'Autobahn', beschreibung: 'Asphalt und Brücken. Bewegungskosten 0,12.', gelaende: LAND_ALLE, ertrag: { g: 1 }, bewegung: 0.12, bauzeit: 16 * 3600 },
   { id: 'magnetbahn', kette: 'strasse', stufe: 6, schicht: 'weg', name: 'Magnetbahn', beschreibung: 'Lautlose Schwebebahnen auf leuchtenden Schienen. Bewegungskosten 0,08.', gelaende: LAND_ALLE, ertrag: { g: 1 }, bewegung: 0.08, bauzeit: 24 * 3600 },
+  // ---- Weltraum-Ebene: liefern nur, solange das Reich einen Raumhafen (oder Sternenhafen) hat ----
+  { id: 'mondmine', kette: 'mondmine', stufe: 1, name: 'Mondmine', beschreibung: 'Ein Bergwerk im Mondgestein. +3 Produktion, +2 Stein, erschließt Titan in Kratern.', gelaende: ['mondboden', 'mondkrater'], raum: true, ertrag: { p: 3 }, material: { stein: 2 }, bauzeit: 24 * 3600 },
+  { id: 'heliumextraktor', kette: 'heliumextraktor', stufe: 1, name: 'Helium-3-Extraktor', beschreibung: 'Erntemaschinen sieben Helium-3 aus dem Mondstaub. +2 Produktion, liefert Helium-3.', gelaende: ['mondboden', 'mondkrater'], raum: true, rohstoff_pflicht: ['helium3'], ertrag: { p: 2 }, bauzeit: 30 * 3600 },
+  { id: 'marsmine', kette: 'marsmine', stufe: 1, name: 'Marsmine', beschreibung: 'Ein Bergwerk im roten Fels. +3 Produktion, +2 Stein, erschließt Titan.', gelaende: ['marsboden', 'marsgebirge'], raum: true, ertrag: { p: 3 }, material: { stein: 2 }, bauzeit: 28 * 3600 },
+  { id: 'asteroidenbohrer', kette: 'asteroidenbohrer', stufe: 1, name: 'Asteroidenbohrer', beschreibung: 'Bohrt sich in treibende Felsbrocken. +4 Produktion, erschließt Titan.', gelaende: ['asteroiden'], raum: true, ertrag: { p: 4, g: 1 }, bauzeit: 30 * 3600 },
+  { id: 'eisfoerderung', kette: 'eisfoerderung', stufe: 1, name: 'Eisförderung', beschreibung: 'Schmilzt Eis zu Wasser für die Kolonie. +2 Nahrung, erschließt Wassereis.', gelaende: ['eisboden'], raum: true, ertrag: { n: 2 }, bauzeit: 20 * 3600 },
+  { id: 'kuppelfarm', kette: 'kuppelfarm', stufe: 1, name: 'Kuppelfarm', beschreibung: 'Gewächshäuser unter Glaskuppeln. +3 Nahrung auf jedem Himmelskörper.', gelaende: ['mondboden', 'marsboden', 'eisboden'], raum: true, ertrag: { n: 3 }, bauzeit: 20 * 3600 },
 ];
 
 export const VERBESSERUNG_NACH_ID = Object.assign(Object.create(null), Object.fromEntries(VERBESSERUNGEN.map((v, i) => [v.id, { ...v, nr: i + 1 }])));

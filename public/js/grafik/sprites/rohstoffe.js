@@ -977,9 +977,26 @@ FORM.antimaterie = (p) => {
   spule(13);
 };
 
+FORM.wassereis = (p) => {
+  // blau-weißer, facettierter Eisbrocken mit Glanzlicht, daneben ein kleiner Splitter
+  const E = { w: '#ffffff', h: '#e4f6fe', m: '#b0dcf2', b: '#78bce2', d: '#3f86bc', dd: '#2a5f92' };
+  p.poly([[2, 10], [4, 5], [8, 2], [12, 4], [13, 9], [11, 13], [5, 13]], E.m);
+  p.poly([[4, 5], [8, 2], [12, 4], [8, 7]], E.h);                 // Deckfläche
+  p.poly([[8, 7], [12, 4], [13, 9], [11, 13], [9, 12]], E.b);     // Schattenseite rechts
+  p.poly([[5, 13], [9, 12], [11, 13]], E.d);                      // Unterkante
+  p.linie(11, 13, 13, 9, E.d).linie(12, 12, 13, 10, E.dd);
+  p.linie(8, 7, 9, 12, E.m);                                      // Facettenkante
+  p.linie(4, 5, 8, 2, E.w).linie(2, 10, 4, 5, E.h);               // Lichtkanten oben links
+  p.px(5, 5, E.w).px(6, 4, E.w).px(4, 7, E.w).px(5, 6, E.h);
+  p.px(4, 10, '#d4eefa').px(5, 9, '#d4eefa').px(10, 8, '#a4d4f0').px(11, 6, '#a4d4f0');
+  // Splitter rechts unten
+  p.poly([[12, 13], [13, 11], [15, 12], [14, 14]], E.b).px(13, 11, E.w).px(13, 12, E.h).px(14, 14, E.d);
+  for (const [x, y] of [[2, 3], [14, 5], [1, 13]]) p.px(x, y, '#d8f6ff');
+};
+
 const IDS = ['weizen', 'reis', 'mais', 'fisch', 'wild', 'rinder', 'schafe', 'bananen', 'wale', 'muscheln', 'datteln', 'hirse', 'elefanten', 'pilze',
   'holz', 'stein', 'marmor', 'salz', 'lehm', 'kupfer', 'zinn', 'eisen', 'pferde', 'salpeter', 'kohle', 'oel', 'aluminium', 'uran',
   'wein', 'gewuerze', 'seide', 'weihrauch', 'edelsteine', 'gold_erz', 'silber', 'zucker', 'elfenbein', 'pelze', 'perlen', 'kakao', 'baumwolle', 'farbstoffe', 'tee', 'bernstein', 'kristalle', 'irrlichter',
-  'seltene_erden', 'deuterium'];
+  'seltene_erden', 'deuterium', 'helium3', 'titan', 'wassereis'];
 
 for (const id of IDS) definiere('rohstoff', id, { w: 16, h: 16, zeichne: (p) => { FORM[id](p); rand(p); } });

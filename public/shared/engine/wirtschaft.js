@@ -1,6 +1,6 @@
 // Wirtschaft: Felderträge, Stadterträge, Reichsraten, Integration über die Zeit, Wachstum, Grenzen, Unterhalt, Lager.
 import { karte } from '../karte.js';
-import { umkreis, abstand, nachbarn } from '../hex.js';
+import { umkreis, abstand, nachbarn, RAUM_START } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { ROHSTOFFE, LAGERGUETER, LAGER_NAMEN } from '../daten/rohstoffe.js';
 import { GEB, WUNDER_NACH_ID, FORSCHUNG, ROHSTOFF, VERBESSERUNG, STADTSTAATEN } from '../daten/index.js';
@@ -123,9 +123,11 @@ export const wirtschaft = {
       erg.unterhalt.gebaeude += sr.gebaeudeUnterhalt;
     }
     // Lieferungen aus erschlossenen Rohstoffen im Gebiet (Material, strategisch)
+    const raumhafen = this.hatRaumhafen(vid);
     for (const s of staedte) for (const i of s.gebiet || []) {
       const r = this.erschlossenerRohstoff(i, v);
       if (!r || !r.liefert) continue;
+      if (i >= RAUM_START && !raumhafen) continue; // Lieferungen aus dem All nur, solange das Reich einen Raumhafen hat
       const vb = VERBESSERUNG[this.z.felder[i].v];
       const lf = vb?.lieferfaktor || 1;
       for (const [m, x] of Object.entries(r.liefert)) erg.material[m] = (erg.material[m] || 0) + x * lf * (BAUSTOFFE.includes(m) ? F : WIRTSCHAFT_TEMPO);
@@ -215,7 +217,7 @@ export const wirtschaft = {
     r.g = m(r.g, pz.g) * zf * GOLD_FAKTOR;
     r.w = m(r.w, pz.w) * zf;
     r.k = m(r.k, pz.k) * zf * F;
-    for (const x of Object.keys(r.material)) r.material[x] *= F;
+    for (const x of Object.keys(r.material)) r.material[x] *= BAUSTOFFE.includes(x) ? F : WIRTSCHAFT_TEMPO; // strategische Güter (Antimaterie, Eisen ...) wie Rohstofflieferungen
     r.verbrauch = s.bev * NAHRUNG_PRO_EINWOHNER * F;
     r.ueberschuss = r.n - r.verbrauch;
     if (r.ueberschuss > 0 && r.zufriedenheit < 0) r.ueberschuss *= 0.5;

@@ -938,6 +938,249 @@ def('kanal', (p) => {
   });
 });
 
+// ---------- Weltraum-Verbesserungen (Mond, Mars, Eismond, Asteroiden) ----------
+const RAUM = { weiss: '#e8eef2', weissH: '#ffffff', weissD: '#aab4bc', metall: '#8a96a2', metallD: '#5a6470', dunkel: '#2e3440', glas: '#7ec4f0', glasH: '#d8f2ff', glasD: '#3a78b0', licht: '#ffe680', blau: '#5b8cff', rot: '#ff5a4a' };
+/** Glaskuppel auf Sockelring; (cx, yb) = Mitte der Unterkante. innen(q) zeichnet den Kuppelinhalt (wird auf die Glasfläche beschnitten). */
+function kuppel(q, cx, yb, rx, ry, innen) {
+  const k = new Pinsel(q.w, q.h);
+  if (innen) innen(k);
+  const drin = (x, y) => { const nx = (x - cx) / (rx + 0.5), ny = (yb - y) / (ry + 0.5); return y <= yb && nx * nx + ny * ny <= 1; };
+  for (let y = yb - ry - 1; y <= yb; y++) for (let x = cx - rx - 1; x <= cx + rx + 1; x++) {
+    if (!drin(x, y)) continue;
+    const nx = (x - cx) / (rx + 0.5);
+    const rand = !drin(x - 1, y) || !drin(x + 1, y) || !drin(x, y - 1);
+    let c;
+    if (rand) c = nx < -0.2 ? '#d4f0ff' : nx < 0.5 ? '#94d0f4' : '#5a9acb';
+    else {
+      // Inhalt scheint durch das leicht blau getönte Glas, rechte Seite liegt im Schatten
+      c = mische(k.hole(x, y) || '#24506e', '#7cc8f0', 0.22);
+      if (nx > 0.45) c = dunkel(c, 0.18);
+    }
+    q.px(x, y, c);
+  }
+  // Glasstreben (Meridiane), heller über dem Inhalt
+  for (const t of [-0.5, 0.5]) for (let y = yb - ry; y < yb; y++) {
+    const ny = (yb - y) / (ry + 0.5), x = Math.round(cx + t * rx * Math.sqrt(Math.max(0, 1 - ny * ny)));
+    if (drin(x - 1, y) && drin(x + 1, y) && drin(x, y - 1)) q.px(x, y, mische(q.hole(x, y), '#ffffff', 0.35));
+  }
+  // Glanzlicht oben links
+  for (let i = 0; i <= 5; i++) {
+    const a = Math.PI * 1.14 + i * 0.08, x = Math.round(cx + Math.cos(a) * (rx * 0.68)), y = Math.round(yb + Math.sin(a) * (ry * 0.68));
+    if (drin(x, y)) q.px(x, y, i === 0 || i === 5 ? '#c8ecff' : '#ffffff');
+  }
+  // Sockelring mit Spielerfarbe und Positionslichtern
+  q.rect(cx - rx - 1, yb + 1, 2 * rx + 3, 2, RAUM.weissD).rect(cx - rx - 1, yb + 1, 2 * rx + 3, 1, RAUM.weiss);
+  q.rect(cx - rx + 1, yb + 2, 2 * rx - 1, 1, 'S');
+  q.px(cx - rx - 1, yb + 2, RAUM.licht).px(cx + rx + 1, yb + 2, RAUM.licht);
+}
+/** Gitter-Förderturm aus Stahl mit Seilrad und Warnlicht; (x, yb) = linker Fuß. */
+function gitterturm(q, x, yb, b, h, farbe = RAUM.metall) {
+  q.linie(x, yb, x + 2, yb - h, hell(farbe, 0.25)).linie(x + b, yb, x + b - 2, yb - h, dunkel(farbe, 0.2));
+  for (let y = yb - h + 3; y < yb; y += 4) { const e = Math.round((yb - y) / h * 2); q.rect(x + 2 - e + 1, y, b - 4 + 2 * e - 1, 1, dunkel(farbe, 0.3)); q.linie(x + 2 - e + 1, y, x + b - 2 + e - 1, Math.min(yb, y + 4), farbe); }
+  q.kreis(x + b / 2, yb - h - 1, 2.2, '#f0a020'); q.kreis(x + b / 2, yb - h - 1, 0.9, 'leer'); q.px(Math.round(x + b / 2), yb - h - 1, RAUM.dunkel);
+  q.rect(Math.round(x + b / 2), yb - h + 1, 1, h - 4, '#3a3a40');
+  q.px(Math.round(x + b / 2), yb - h - 4, RAUM.rot);
+}
+/** Kastenmodul mit Fensterband (Halle/Schleuse). */
+function modul(q, x, yb, b, h, c = RAUM.weiss) {
+  q.rect(x, yb - h + 1, b, h, c).rect(x, yb - h + 1, b, 1, hell(c, 0.4)).rect(x + b - 2, yb - h + 2, 2, h - 1, dunkel(c, 0.25));
+  for (let i = x + 1; i < x + b - 2; i += 3) q.rect(i, yb - h + 3, 2, 1, RAUM.licht);
+}
+/** Raumschaufel-Lore mit Gesteinsladung. */
+function raumlore(q, x, yb, ladung) {
+  q.rect(x, yb - 3, 7, 3, RAUM.metall).rect(x, yb - 3, 7, 1, '#c8d0d8').rect(x + 5, yb - 2, 2, 2, RAUM.metallD);
+  q.rect(x + 1, yb - 5, 5, 2, ladung).px(x + 2, yb - 6, hell(ladung, 0.2)).px(x + 3, yb - 5, hell(ladung, 0.3)).px(x + 5, yb - 4, dunkel(ladung, 0.3));
+  q.px(x + 1, yb, RAUM.dunkel).px(x + 5, yb, RAUM.dunkel);
+  q.px(x + 6, yb - 3, RAUM.blau);
+}
+const MONDGRAU = '#9e9ea8';
+
+def('mondmine', (p) => {
+  fleck(p, 24, 27, 21, 3, '#7c7c86');
+  obj(p, (q) => {
+    // Mondgestein mit Kraternarben
+    felsen(q, 11, 27, 9, 7, MONDGRAU);
+    q.px(5, 19, '#d8d8e0').px(7, 17, '#d8d8e0').px(15, 22, '#6a6a74').px(16, 19, '#6a6a74');
+    q.ellipse(10, 17, 2, 1, '#6a6a74'); q.px(9, 16, '#c8c8d0').px(11, 18, '#c8c8d0');
+  });
+  obj(p, (q) => {
+    // Stollen mit Leuchtrahmen
+    q.rect(7, 22, 6, 5, '#16181f');
+    q.rect(6, 21, 8, 1, RAUM.weiss).rect(6, 22, 1, 5, RAUM.weiss).rect(13, 22, 1, 5, RAUM.weissD);
+    q.px(8, 21, RAUM.licht).px(11, 21, RAUM.licht);
+  });
+  obj(p, (q) => gitterturm(q, 36, 26, 9, 21));
+  obj(p, (q) => kuppel(q, 25, 24, 9, 8, (k) => {
+    // Kuppelhalle: warm beleuchtete Werkhalle mit Brecher und Erzhaufen
+    k.rect(15, 16, 21, 9, '#4a3a30');
+    k.rect(15, 21, 21, 4, '#c88a3a').rect(15, 21, 21, 1, '#f0c060');
+    k.rect(25, 17, 5, 5, '#3a3e46').rect(26, 18, 3, 1, '#ffd060').rect(29, 15, 1, 3, '#3a3e46');
+    k.ellipse(20, 22, 3, 1.5, '#6a6a74'); k.px(19, 21, '#b0b0ba').px(21, 21, '#e0c070');
+    for (const x of [18, 23, 32]) k.px(x, 17, '#fff2c0');
+  }));
+  schienen(p, 1, 17, 29);
+  obj(p, (q) => raumlore(q, 2, 29, '#8a8a94'));
+});
+
+def('heliumextraktor', (p) => {
+  fleck(p, 24, 27, 21, 3, '#7c7c86');
+  // Fahrspuren im Staub hinter dem Fahrzeug
+  for (let x = 2; x < 16; x += 2) { p.px(x, 29, '#66666f'); p.px(x + 1, 30, '#66666f'); }
+  obj(p, (q) => {
+    // Sammelstation hinten links: zwei gelbe Kugeltanks auf Stelzen
+    for (const [cx, r, yb] of [[8, 5, 19], [16, 3, 17]]) {
+      q.rect(cx - 2, yb, 1, 5, RAUM.metallD).rect(cx + 2, yb, 1, 5, RAUM.metallD);
+      q.kreis(cx, yb - r, r, '#c89a18');
+      q.ellipse(cx - 0.5, yb - r - 0.5, r - 0.8, r - 0.8, '#f2d34a');
+      q.ellipse(cx - 1.4, yb - r - 1.4, r * 0.4, r * 0.35, '#fff0a0');
+      q.px(Math.round(cx - r * 0.55), Math.round(yb - r * 1.55), '#ffffff');
+      q.rect(cx - r, yb - r, 2 * r + 1, 1, '#a87a10');
+    }
+    q.linie(11, 21, 15, 19, RAUM.metall);
+  });
+  obj(p, (q) => {
+    // Erntefahrzeug: Kettenlaufwerk, weißer Rumpf, gelbe Helium-Tanks
+    q.rect(14, 25, 20, 4, '#3a3e46').rect(14, 25, 20, 1, '#5a606a');
+    for (let x = 15; x < 33; x += 3) q.px(x, 27, '#8a909a');
+    q.px(13, 26, '#3a3e46').px(13, 27, '#3a3e46').px(34, 26, '#3a3e46').px(34, 27, '#3a3e46');
+    q.rect(15, 18, 15, 7, RAUM.weiss).rect(15, 18, 15, 1, RAUM.weissH).rect(28, 19, 2, 6, RAUM.weissD);
+    q.rect(16, 22, 11, 1, 'S').rect(16, 23, 11, 1, 'S-');
+    // liegende Tanks auf dem Rücken
+    q.rect(16, 14, 11, 4, '#e8c030');
+    q.rect(16, 14, 11, 1, '#fff0a0').rect(16, 15, 11, 1, '#f2d34a').rect(16, 17, 11, 1, '#b8900a');
+    q.rect(21, 14, 1, 4, '#a87a10');
+    q.px(15, 15, RAUM.metall).px(15, 16, RAUM.metall).px(27, 15, RAUM.metall).px(27, 16, RAUM.metall);
+    // Kanzel mit Fenster
+    q.rect(28, 14, 4, 5, RAUM.weiss).rect(29, 15, 3, 2, RAUM.glas).px(29, 15, RAUM.glasH);
+    q.px(30, 12, RAUM.rot).px(30, 13, RAUM.metall);
+    // Ausleger mit Siebtrommel vorn
+    q.linie(31, 20, 36, 22, RAUM.metallD).linie(31, 21, 36, 23, RAUM.metall);
+    q.kreis(38, 25, 3.6, '#5a6470'); q.kreis(38, 25, 2.6, '#9aa5b1'); q.kreis(37.5, 24.5, 1.2, '#c8d0d8');
+    for (const [dx, dy] of [[-3, -2], [3, -2], [-3, 2], [3, 2], [0, -4], [0, 4], [-4, 0], [4, 0]]) q.px(38 + dx, 25 + dy, '#3a3e46');
+    q.px(38, 25, '#3a3e46');
+  });
+  // aufgewirbelter Mondstaub vor der Trommel (ohne Umriss)
+  for (const [x, y, c] of [[43, 27, '#d8d8de'], [44, 25, '#c4c4cc'], [45, 28, '#b0b0b8'], [42, 29, '#c4c4cc'], [44, 23, '#b0b0b8'], [46, 26, '#d8d8de'], [41, 21, '#c4c4cc']]) p.px(x, y, c);
+});
+
+def('marsmine', (p) => {
+  fleck(p, 24, 27, 20, 3, '#7a3820');
+  obj(p, (q) => {
+    // roter Fels mit Schichtbändern
+    felsen(q, 31, 27, 13, 9, '#a8502e');
+    for (const [x, y, l] of [[22, 21, 5], [30, 16, 6], [36, 22, 5]]) q.rect(x, y, l, 1, '#c86a40');
+    for (const [x, y, l] of [[25, 24, 4], [38, 19, 3]]) q.rect(x, y, l, 1, '#7a3a22');
+    q.px(28, 14, '#e08a5a').px(26, 15, '#e08a5a');
+  });
+  obj(p, (q) => {
+    // Stolleneingang mit Druckschleuse
+    q.rect(31, 21, 7, 6, '#1a1210');
+    q.rect(30, 20, 9, 1, RAUM.weiss).rect(30, 21, 1, 6, RAUM.weiss).rect(38, 21, 1, 6, RAUM.weissD);
+    q.px(32, 20, '#f0a020').px(36, 20, '#f0a020');
+  });
+  obj(p, (q) => {
+    // Bohrgerüst mit Bohrgestänge
+    q.linie(5, 27, 9, 4, '#e8a030').linie(17, 27, 13, 4, '#b07018');
+    q.linie(6, 27, 10, 4, '#f0b848');
+    for (let y = 9; y < 27; y += 5) { const e = Math.round((y - 4) / 23 * 4); q.rect(9 - e, y, 5 + 2 * e, 1, '#b07018'); q.linie(9 - e, y, 13 + e, Math.min(27, y + 5), '#d8902a'); }
+    q.rect(8, 3, 7, 2, RAUM.weiss).rect(8, 3, 7, 1, RAUM.weissH);
+    q.rect(11, 5, 1, 21, '#4a4e58').rect(10, 22, 3, 4, RAUM.metall).px(10, 22, '#c8d0d8');
+    q.px(11, 1, RAUM.rot).rect(11, 2, 1, 1, RAUM.metall);
+  });
+  obj(p, (q) => modul(q, 18, 27, 9, 6));
+  obj(p, (q) => { q.rect(19, 18, 1, 4, RAUM.metallD); q.rect(19, 16, 4, 2, 'S').rect(19, 17, 4, 1, 'S-'); });
+  schienen(p, 26, 46, 29);
+  obj(p, (q) => raumlore(q, 38, 29, '#b05a34'));
+});
+
+/** Treibender Felsbrocken (für den Asteroidenbohrer). */
+function asteroid(q, cx, cy, rx, ry) {
+  q.ellipse(cx, cy, rx, ry, '#6e6a72');
+  q.ellipse(cx - 3, cy - 2, rx * 0.6, ry * 0.55, '#6e6a72');
+  q.ellipse(cx + 4, cy + 1, rx * 0.55, ry * 0.6, '#6e6a72');
+  q.ellipse(cx - 2, cy - 2, rx * 0.55, ry * 0.5, '#94929c');
+  q.ellipse(cx - 4, cy - 3, rx * 0.3, ry * 0.25, '#c8c6cc');
+  q.ellipse(cx + 5, cy + 2.5, rx * 0.4, ry * 0.35, '#4a4852');
+  for (const [x, y] of [[cx + 2, cy - 2], [cx - 5, cy + 2], [cx + 6, cy - 1]]) q.px(x, y, '#4a4852').px(x + 1, y + 1, '#94929c');
+  q.px(cx - 1, cy + 1, '#e0c070').px(cx, cy + 2, '#a07a3a').px(cx + 3, cy + 3, '#a8c4d4');
+}
+def('asteroidenbohrer', (p) => {
+  // Schatten des treibenden Brockens weit unten
+  p.ellipse(20, 29, 13, 1.6, '#4a403a'); p.ellipse(19, 29, 8, 1, '#3e3530');
+  obj(p, (q) => asteroid(q, 18, 16, 13, 9));
+  obj(p, (q) => {
+    // Bohrmodul haftet rechts am Felsen: Bohrkopf steckt im Gestein
+    q.poly([[30, 12], [30, 18], [25, 15]], '#c8d0d8'); q.linie(30, 12, 25, 15, '#ffffff');
+    for (const [x, y] of [[28, 13], [27, 15], [29, 16], [26, 15]]) q.px(x, y, '#6b7682');
+    q.rect(31, 11, 9, 9, RAUM.weiss).rect(31, 11, 9, 1, RAUM.weissH).rect(38, 12, 2, 8, RAUM.weissD);
+    q.rect(32, 13, 5, 1, RAUM.glas).px(32, 13, RAUM.glasH);
+    q.rect(32, 17, 6, 1, 'S').rect(32, 18, 6, 1, 'S-');
+    // Haltekrallen
+    q.linie(31, 11, 27, 8, RAUM.metall).linie(31, 19, 27, 22, RAUM.metall);
+    q.px(26, 8, RAUM.metallD).px(26, 22, RAUM.metallD);
+    // Solarflügel
+    q.rect(41, 5, 5, 6, '#2a4a9a').rect(41, 5, 5, 1, '#6a9ae0').rect(43, 6, 1, 5, '#4a6ac0');
+    q.rect(41, 20, 5, 6, '#2a4a9a').rect(41, 20, 5, 1, '#6a9ae0').rect(43, 21, 1, 5, '#4a6ac0');
+    q.rect(39, 10, 4, 1, RAUM.metall).rect(39, 20, 4, 1, RAUM.metall);
+    q.px(35, 9, RAUM.metall).px(35, 8, RAUM.rot);
+    // Ladebehälter mit Erz
+    q.rect(33, 21, 5, 3, RAUM.metall).rect(33, 21, 5, 1, '#c8d0d8').px(34, 20, '#e0c070').px(36, 20, '#a8c4d4');
+  });
+  // Funken an der Bohrstelle (ohne Umriss)
+  for (const [x, y, c] of [[25, 12, '#fff2a0'], [24, 10, '#ffc040'], [26, 9, '#ff8a20'], [24, 18, '#ffc040'], [23, 20, '#ff8a20'], [26, 19, '#fff2a0'], [22, 14, '#ffe680'], [25, 15, '#ffffff']]) p.px(x, y, c);
+});
+
+def('eisfoerderung', (p) => {
+  fleck(p, 24, 27, 21, 3, '#a8cce0');
+  // Schmelzwasserbecken und Risse im Eis
+  p.ellipse(13, 27, 7, 2, '#3d7fc4'); p.ellipse(12, 27, 5, 1, '#5aa0e0'); p.rect(9, 27, 3, 1, '#bfe2ff');
+  p.linie(30, 30, 36, 28, '#7aa8c8').linie(36, 28, 40, 30, '#7aa8c8');
+  obj(p, (q) => {
+    // Bohrturm mit Bohrkern im Eis
+    q.linie(28, 27, 31, 6, RAUM.metall).linie(38, 27, 35, 6, RAUM.metallD);
+    for (let y = 10; y < 27; y += 5) { const e = Math.round((y - 6) / 21 * 3); q.rect(31 - e, y, 5 + 2 * e, 1, RAUM.metallD); }
+    q.rect(30, 4, 7, 2, RAUM.weiss).rect(30, 4, 7, 1, RAUM.weissH).px(33, 2, RAUM.rot).px(33, 3, RAUM.metall);
+    // gezogener Bohrkern (Eiszylinder)
+    q.rect(32, 9, 3, 14, '#d8f0fc').rect(32, 9, 1, 14, '#ffffff').rect(34, 9, 1, 14, '#8cc0e0');
+    for (const y of [12, 16, 20]) q.rect(32, y, 3, 1, '#a8d8f0');
+    q.rect(31, 23, 5, 4, '#3a3e46').rect(31, 23, 5, 1, '#5a606a');
+  });
+  obj(p, (q) => {
+    // Schmelzanlage: Halle mit rot glühendem Schmelzfenster und Wassertank
+    modul(q, 15, 27, 12, 8);
+    q.rect(17, 24, 3, 2, '#ff7a3a').px(17, 24, '#ffd07a');
+    tank(q, 9, 23, 5, 7, '#7ab0d8'); q.rect(9, 20, 5, 1, '#3d7fc4');
+    q.linie(14, 19, 15, 20, RAUM.metall);
+    q.linie(27, 22, 30, 22, RAUM.metall);
+  });
+  // Dampfwolken (ohne Umriss)
+  for (const [x, y, rr] of [[22, 15, 1.6], [24, 12, 2.2], [22, 8, 2.6], [25, 5, 1.8]]) { p.ellipse(x + 0.5, y + 0.5, rr, rr * 0.8, '#8aa2b6'); p.ellipse(x, y, rr, rr * 0.8, '#d8e4ec'); p.ellipse(x - 0.4, y - 0.4, rr - 0.6, rr * 0.8 - 0.6, '#ffffff'); }
+});
+
+/** Pflanzreihen und Lichtleisten für die Kuppelfarm. */
+function beete(k, cx, yb, rx, ry, lila) {
+  k.rect(cx - rx, yb - ry, 2 * rx + 1, ry + 1, '#1e3a2a');
+  for (let r = 0; r < 3; r++) {
+    const y = yb - 1 - r * 2;
+    for (let x = cx - rx; x <= cx + rx; x++) k.px(x, y, (x + r) % 3 ? '#4cc23a' : '#2f8a2a');
+    for (let x = cx - rx + (r % 2); x <= cx + rx; x += 2) k.px(x, y - 1, (x + r) % 4 ? '#86ea5a' : '#3a9a30');
+  }
+  k.rect(cx - rx, yb, 2 * rx + 1, 1, '#5a3a22');
+  // Lichtreihe unter dem Dach
+  for (let x = cx - rx + 2; x <= cx + rx - 2; x += 2) k.px(x, yb - ry + 2, lila ? '#ff9af0' : '#fff6c0');
+}
+def('kuppelfarm', (p) => {
+  fleck(p, 24, 27, 21, 3, '#6e6e78');
+  obj(p, (q) => {
+    // Versorgungsgänge zwischen den Kuppeln
+    q.rect(14, 23, 22, 3, RAUM.weissD).rect(14, 23, 22, 1, RAUM.weiss);
+  });
+  obj(p, (q) => kuppel(q, 34, 23, 9, 9, (k) => beete(k, 34, 23, 9, 9, true)));
+  obj(p, (q) => kuppel(q, 12, 24, 8, 8, (k) => beete(k, 12, 24, 8, 8, false)));
+  obj(p, (q) => kuppel(q, 24, 27, 7, 6, (k) => beete(k, 24, 27, 7, 6, false)));
+  obj(p, (q) => { q.rect(44, 18, 1, 9, RAUM.metallD); q.px(44, 17, RAUM.rot); q.rect(2, 21, 1, 6, RAUM.metallD); q.px(2, 20, RAUM.blau); });
+});
+
 // ---------- Wege (nur Symbole 16x16) ----------
 function weg(id, zeichne) { definiere('verbesserung', id, { w: 16, h: 16, zeichne: (p) => { zeichne(p); rand(p); } }); }
 weg('pfad', (p) => {

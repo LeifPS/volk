@@ -1,11 +1,11 @@
 // Client-Zustand: die vom Server gelieferte Ansicht, Nebel, Auswahl und ein kleiner Ereignisbus.
 // Der Client legt nie Spielwerte fest; Fortschritte werden nur aus Server-Zeitstempeln berechnet.
-import { ANZAHL } from '../../shared/hex.js';
+import { GESAMT } from '../../shared/hex.js';
 import { setzeUhr, jetzt } from '../../shared/uhr.js';
 
 export const Z = {
   ansicht: null,        // letzte vollständige Ansicht (mit eingespielten Deltas)
-  nebel: new Uint8Array(Math.ceil(ANZAHL / 8)),
+  nebel: new Uint8Array(Math.ceil(GESAMT / 8)),
   konto: null,
   volk: null,
   versatz: 0,           // Serverzeit - lokale Zeit
@@ -24,7 +24,7 @@ export function setzeVersatz(v) { Z.versatz = v; setzeUhr(() => Date.now() + Z.v
 
 export function nebelSetzen(b64) {
   const s = atob(b64);
-  const n = new Uint8Array(Math.ceil(ANZAHL / 8));
+  const n = new Uint8Array(Math.ceil(GESAMT / 8));
   for (let i = 0; i < Math.min(n.length, s.length); i++) n[i] = s.charCodeAt(i);
   Z.nebel = n;
 }

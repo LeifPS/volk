@@ -1,14 +1,15 @@
 // Kartenrenderer: Canvas 2D, nur sichtbare Felder (Culling), vorgerenderte Gelände-Chunks, Sprites, Nebel, Grenzen,
 // Einheiten mit Interpolation, Städte, Effekte, Tag/Nacht und Wetter. Gezeichnet wird nur bei Änderung oder für Animationen.
 import { karte } from '../../shared/karte.js';
-import { BREITE, HOEHE, idx, nachbar, feldMitte, umkreis, abstand, STAUCHUNG } from '../../shared/hex.js';
+import { idxE, ebeneVon, nachbar, feldMitte, umkreis, abstand, STAUCHUNG } from '../../shared/hex.js';
+import { EB, aktiveEbene, setzeEbene, beiEbenenwechsel } from './ebene.js';
 import { GELAENDE } from '../../shared/daten/gelaende.js';
 import { ROHSTOFFE } from '../../shared/daten/rohstoffe.js';
 import { EINHEIT, VERBESSERUNG } from '../../shared/daten/index.js';
 import { hash01 } from '../../shared/zufall.js';
 import { sprite, hatSprite } from '../grafik/sprites.js';
 import { zeichneWege } from './wege.js';
-import { R, FELD_B, ZEILE_H, WELT_B, WELT_H, chunkCanvas, CHUNK_GROESSE, feldUnter } from './gelaende.js';
+import { R, FELD_B, ZEILE_H, WELT_B, WELT_H, weltB, weltH, chunkCanvas, CHUNK_GROESSE, feldUnter } from './gelaende.js';
 import { Z, erkundet, aktuellesFeld, aktuelleHp, serverJetzt, volk, stadt, feldInfo, an } from '../kern/zustand.js';
 
 export const kamera = { x: WELT_B / 2, y: WELT_H / 2, zoom: 1.5 };
@@ -42,15 +43,25 @@ export function weltZuSchirm(wx, wy) { const s = skala(); return [(wx - kamera.x
 export function schirmZuWelt(sx, sy) { const s = skala(); return [(sx * dpr - cv.width / 2) / s + kamera.x, (sy * dpr - cv.height / 2) / s + kamera.y]; }
 export function feldBeiSchirm(sx, sy) { const [wx, wy] = schirmZuWelt(sx, sy); return feldUnter(wx, wy); }
 export function zentriereAuf(i, sanft = false) {
+  if (i == null || i < 0) return;
+  if (ebeneVon(i) !== aktiveEbene()) { setzeEbene(ebeneVon(i)); sanft = false; }
   const [x, y] = feldMitte(i, R);
   if (sanft) { kameraZiel = { x, y, start: performance.now(), vx: kamera.x, vy: kamera.y }; } else { kamera.x = x; kamera.y = y; begrenzen(); }
   schmutzig = true;
 }
 let kameraZiel = null;
 export function begrenzen() {
-  kamera.x = Math.max(0, Math.min(WELT_B, kamera.x));
-  kamera.y = Math.max(0, Math.min(WELT_H, kamera.y));
+  kamera.x = Math.max(0, Math.min(weltB(), kamera.x));
+  kamera.y = Math.max(0, Math.min(weltH(), kamera.y));
 }
+// Jede Ebene merkt sich ihre eigene Kameraposition; das All startet auf dem Mond.
+const kameraJeEbene = [null, null];
+beiEbenenwechsel((neu) => {
+  kameraJeEbene[1 - neu] = { x: kamera.x, y: kamera.y };
+  const k = kameraJeEbene[neu];
+  if (k) { kamera.x = k.x; kamera.y = k.y; } else { kamera.x = weltB() * 0.25; kamera.y = weltH() * 0.5; }
+  kameraZiel = null; sichtVersion = -1; begrenzen(); schmutzig = true;
+});
 export function zoomen(richtung, sx = innerWidth / 2, sy = innerHeight / 2) {
   const i = ZOOMSTUFEN.indexOf(kamera.zoom);
   const ni = Math.max(0, Math.min(ZOOMSTUFEN.length - 1, (i < 0 ? 3 : i) + richtung));
@@ -110,8 +121,9 @@ function schleife(t) {
 
 function sichtbereich() {
   const [wx0, wy0] = schirmZuWelt(0, 0), [wx1, wy1] = schirmZuWelt(innerWidth, innerHeight);
-  const z0 = Math.max(0, Math.floor(wy0 / ZEILE_H) - 2), z1 = Math.min(HOEHE - 1, Math.ceil(wy1 / ZEILE_H) + 2);
-  const s0 = Math.max(0, Math.floor(wx0 / FELD_B) - 2), s1 = Math.min(BREITE - 1, Math.ceil(wx1 / FELD_B) + 1);
+  const E = EB();
+  const z0 = Math.max(0, Math.floor(wy0 / ZEILE_H) - 2), z1 = Math.min(E.hoehe - 1, Math.ceil(wy1 / ZEILE_H) + 2);
+  const s0 = Math.max(0, Math.floor(wx0 / FELD_B) - 2), s1 = Math.min(E.breite - 1, Math.ceil(wx1 / FELD_B) + 1);
   return { wx0, wy0, wx1, wy1, z0, z1, s0, s1 };
 }
 
@@ -122,11 +134,12 @@ function zeichne(t) {
   if (!Z.ansicht) return;
   const b = sichtbereich();
   // 1) Gelände-Chunks
-  const c0 = Math.max(0, Math.floor(b.wx0 / CHUNK_GROESSE)), c1 = Math.floor(b.wx1 / CHUNK_GROESSE);
-  const r0 = Math.max(0, Math.floor(b.wy0 / CHUNK_GROESSE)), r1 = Math.floor(b.wy1 / CHUNK_GROESSE);
+  const rand = aktiveEbene() === 1 ? -3 : 0; // im All auch links und oben vom Kartenrand zeichnen (Erde, Sterne)
+  const c0 = Math.max(rand, Math.floor(b.wx0 / CHUNK_GROESSE)), c1 = Math.floor(b.wx1 / CHUNK_GROESSE);
+  const r0 = Math.max(rand, Math.floor(b.wy0 / CHUNK_GROESSE)), r1 = Math.floor(b.wy1 / CHUNK_GROESSE);
   for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++) {
-    if (cx * CHUNK_GROESSE > WELT_B || cy * CHUNK_GROESSE > WELT_H) continue;
-    if (!chunkHatErkundetes(cx, cy)) continue;
+    if (cx * CHUNK_GROESSE > weltB() || cy * CHUNK_GROESSE > weltH()) continue;
+    if (aktiveEbene() === 0 && !chunkHatErkundetes(cx, cy)) continue;
     const [x0, y0] = weltZuSchirm(cx * CHUNK_GROESSE, cy * CHUNK_GROESSE);
     const [x1, y1] = weltZuSchirm((cx + 1) * CHUNK_GROESSE, (cy + 1) * CHUNK_GROESSE);
     ctx.drawImage(chunkCanvas(cx, cy), Math.round(x0), Math.round(y0), Math.round(x1) - Math.round(x0), Math.round(y1) - Math.round(y0));
@@ -154,7 +167,7 @@ function zeichne(t) {
   // 4) zeilenweise: Verbesserungen, Deko, Rohstoffe, Städte, Einheiten
   for (let z = b.z0; z <= b.z1; z++) {
     for (let sp = b.s0; sp <= b.s1; sp++) {
-      const i = idx(sp, z);
+      const i = idxE(aktiveEbene(), sp, z);
       if (!erkundet(i)) continue;
       const [mx, my] = feldMitte(i, R);
       const [x, y] = weltZuSchirm(mx, my);
@@ -165,7 +178,7 @@ function zeichne(t) {
         const sp2 = sprite('verbesserung', f.v, { farbe: volkFarbe(stadt(f.s)?.volk) });
         if (sp2) male(sp2, x - 24 * s, y - 20 * s, s, f.pl ? 0.5 : 1);
       }
-      if (!st && hatSprite('deko', g.id) && !(f && f.v && ['farm', 'bewaesserte_farm', 'windrad_farm', 'mechanisierte_farm', 'holzfaellerlager', 'saegewerk', 'mine', 'tiefe_mine', 'industriemine', 'steinbruch', 'grosser_steinbruch'].includes(f.v) && g.hoehe < 3)) {
+      if (!st && hatSprite('deko', g.id) && !(f && f.v && ((DEKO_WEG.has(f.v) && g.hoehe < 3) || VERBESSERUNG[f.v]?.raum))) {
         const d = sprite('deko', g.id, { variante: k.variante[i] });
         if (d) male(d, x - 24 * s, y - 26 * s, s);
       }
@@ -198,16 +211,21 @@ function zeichne(t) {
   zeichneEffekte(s, t);
   // 8) Namen der Städte oben drauf
   for (const st of Object.values(a.staedte)) {
-    if (!erkundet(st.feld)) continue;
+    if (!erkundet(st.feld) || ebeneVon(st.feld) !== aktiveEbene()) continue;
     const [mx, my] = feldMitte(st.feld, R);
     if (mx < b.wx0 - 100 || mx > b.wx1 + 100 || my < b.wy0 - 60 || my > b.wy1 + 60) continue;
     const [x, y] = weltZuSchirm(mx, my);
     stadtBanner(st, x, y - 40 * s, s);
   }
   // 9) Tag/Nacht und Wetter
-  if (optionen.tagnacht) zeichneTageszeit(t);
-  if (optionen.wetter) zeichneWetter(t);
+  if (aktiveEbene() === 0) { // im All gibt es weder Tageszeit noch Wetter
+    if (optionen.tagnacht) zeichneTageszeit(t);
+    if (optionen.wetter) zeichneWetter(t);
+  }
 }
+
+/** Verbesserungen, unter denen keine Gelände-Deko gezeichnet wird (sonst verdeckt die Deko sie). Weltraum-Verbesserungen immer. */
+const DEKO_WEG = new Set(['farm', 'bewaesserte_farm', 'windrad_farm', 'mechanisierte_farm', 'holzfaellerlager', 'saegewerk', 'mine', 'tiefe_mine', 'industriemine', 'robotermine', 'steinbruch', 'grosser_steinbruch']);
 
 function chunkHatErkundetes(cx, cy) {
   // grobe Prüfung über Stichproben der Felder im Chunk
@@ -241,7 +259,7 @@ function eckenRichtig() {
 function zeichneGrenzen(b, s) {
   const a = Z.ansicht;
   for (let z = b.z0; z <= b.z1; z++) for (let sp = b.s0; sp <= b.s1; sp++) {
-    const i = idx(sp, z);
+    const i = idxE(aktiveEbene(), sp, z);
     const f = a.felder[i];
     if (!f || !f.s || !erkundet(i)) continue;
     const st = a.staedte[f.s]; if (!st) continue;
@@ -281,7 +299,7 @@ function hexPfad(mx, my, s, f = 1) {
 }
 function zeichneNebel(b, s) {
   for (let z = b.z0; z <= b.z1; z++) for (let sp = b.s0; sp <= b.s1; sp++) {
-    const i = idx(sp, z);
+    const i = idxE(aktiveEbene(), sp, z);
     const [mx, my] = feldMitte(i, R);
     if (!erkundet(i)) {
       // weicher Rand: Felder neben Erkundetem bekommen einen gerasterten Übergang
@@ -306,12 +324,13 @@ function zeichneStadt(st, x, y, s, t) {
   const v = volk(st.volk);
   const farbe = volkFarbe(st.volk);
   const za = st.zeitalter || 0;
-  const sp = v?.art === 'stadtstaat' ? sprite('stadt', 'stadtstaat', { farbe }) : sprite('stadt', 'stadt', { farbe, zeitalter: za, groesse: groesseStufe(st.bev) });
+  const kolonie = ebeneVon(st.feld) === 1 && hatSprite('stadt', 'kolonie'); // Kolonien im All: Kuppelstädte
+  const sp = v?.art === 'stadtstaat' ? sprite('stadt', 'stadtstaat', { farbe }) : kolonie ? sprite('stadt', 'kolonie', { farbe, zeitalter: za, groesse: groesseStufe(st.bev) }) : sprite('stadt', 'stadt', { farbe, zeitalter: za, groesse: groesseStufe(st.bev) });
   if (st.zerstoert_bis && st.zerstoert_bis > serverJetzt()) { const r = sprite('deko', 'ruine', { variante: 0 }); if (r) male(r, x - 24 * s, y - 24 * s, s); }
   if (sp) male(sp, x - 32 * s, y - 44 * s, s);
   if (st.mauer) { const m = sprite('stadt', 'mauer', { farbe, zeitalter: st.mauer - 1 }); if (m) male(m, x - 32 * s, y - 44 * s, s); }
   // Rauch aus Schornsteinen ab der Industrie
-  if (za >= 4 && optionen.wetter) {
+  if (za >= 4 && optionen.wetter && ebeneVon(st.feld) === 0) {
     const p = (t / 1400) % 1;
     ctx.fillStyle = `rgba(140,140,140,${0.5 * (1 - p)})`;
     ctx.fillRect(Math.round(x + 8 * s), Math.round(y - (40 + p * 14) * s), Math.round(3 * s), Math.round(3 * s));
@@ -539,7 +558,7 @@ function zeichneOverlay(s, t) {
   }
   // Verbleibender Weg der ausgewählten, laufenden Einheit
   const sel = Z.auswahl?.art === 'einheit' ? Z.ansicht.einheiten[Z.auswahl.id] : null;
-  if (sel && sel.pfad && sel.pfad.length && !(overlay.pfad && overlay.pfad.felder)) {
+  if (sel && sel.pfad && sel.pfad.length && ebeneVon(sel.feld) === aktiveEbene() && !(overlay.pfad && overlay.pfad.felder)) {
     const jetzt = serverJetzt();
     const rest = sel.pfad.filter((p) => p.t > jetzt);
     if (rest.length) { pixelWeg([einheitPosition(sel, t), ...rest.map((p) => feldMitte(p.f, R))], '#ffe066', puls, true); schmutzig = true; }
@@ -553,7 +572,7 @@ function zeichneOverlay(s, t) {
   if (aus?.art === 'einheit' && Z.ansicht.einheiten[aus.id]) feld = aktuellesFeld(Z.ansicht.einheiten[aus.id]);
   else if (aus?.art === 'stadt' && Z.ansicht.staedte[aus.id]) feld = Z.ansicht.staedte[aus.id].feld;
   else if (aus?.art === 'feld') feld = aus.id;
-  if (feld != null) {
+  if (feld != null && ebeneVon(feld) === aktiveEbene()) {
     const [mx, my] = feldMitte(feld, R);
     ctx.strokeStyle = `rgba(255,224,102,${puls})`; ctx.lineWidth = Math.max(2, 2 * s); hexPfad(mx, my, s, 0.95); ctx.stroke();
   }
@@ -571,6 +590,7 @@ function zeichneEffekte(s, t) {
     const ef = effekte[k];
     const p = (jetzt - ef.start) / 1400;
     if (p >= 1) { effekte.splice(k, 1); continue; }
+    if (ebeneVon(ef.nach) !== aktiveEbene()) continue;
     if (ef.art === 'atom') {
       const [mx, my] = feldMitte(ef.nach, R); const [x, y] = weltZuSchirm(mx, my);
       ctx.fillStyle = `rgba(255,240,180,${1 - p})`; ctx.beginPath(); ctx.arc(x, y, (20 + p * 160) * s, 0, Math.PI * 2); ctx.fill();
@@ -639,7 +659,7 @@ export function objektBei(sx, sy) {
   const [wx, wy] = schirmZuWelt(sx, sy);
   let best = null, bestD = Infinity;
   for (const e of Object.values(Z.ansicht?.einheiten || {})) {
-    if (e.in) continue;
+    if (e.in || ebeneVon(e.feld) !== aktiveEbene()) continue;
     const [ex, ey] = einheitPosition(e, performance.now());
     const dx = wx - ex, dy = wy - (ey - 6);
     if (Math.abs(dx) < 12 && dy > -24 && dy < 12) { const d = dx * dx + dy * dy; if (d < bestD) { bestD = d; best = { art: 'einheit', id: e.id, feld: aktuellesFeld(e) }; } }

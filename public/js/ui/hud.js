@@ -9,7 +9,9 @@ import { LAGER_NAMEN } from '../../shared/daten/rohstoffe.js';
 import { ZEITALTER } from '../../shared/daten/zeitalter.js';
 import { karte } from '../../shared/karte.js';
 import { WIRTSCHAFT_TEMPO } from '../../shared/regeln.js';
-import { BREITE, HOEHE, idx, abstand, umkreis, feldMitte } from '../../shared/hex.js';
+import { BREITE, HOEHE, idx, idxE, xVon, yVon, ebeneVon, abstand, umkreis, feldMitte } from '../../shared/hex.js';
+import { EB, aktiveEbene, setzeEbene, beiEbenenwechsel } from '../karte/ebene.js';
+import { weltB, weltH } from '../karte/gelaende.js';
 import { kamera, zentriereAuf, neuZeichnen, overlay, volkFarbe } from '../karte/render.js';
 import { R, WELT_B, WELT_H } from '../karte/gelaende.js';
 import { ton } from '../audio.js';
@@ -39,7 +41,9 @@ export function aufbauen() {
   auswahlEl = el('div#auswahl.pix.versteckt');
   aktionenEl = el('div#aktionen');
   miniCv = el('canvas', { width: BREITE, height: HOEHE });
-  miniEl = el('div#minikarte.pix', miniCv);
+  ebenenKnopf = el('button#ebenenknopf.knopf.klein', { onclick: () => ebeneUmschalten(), tip: T.ebene.tip, 'aria-label': T.ebene.tip });
+  miniEl = el('div#minikarte.pix', miniCv, ebenenKnopf);
+  beiEbenenwechsel(() => { minikarteZeichnen(); ebenenKnopfZeichnen(); });
   naechsteEl = el('button#naechste.knopf.gold', { onclick: naechsteAktion, tip: T.naechsteTip }, symbol('ui', 'pfeil_rechts'), T.naechste);
   document.body.append(leiste, forschungsEl, auswahlEl, aktionenEl, miniEl, naechsteEl, el('div#meldungsleiste'));
   minikarteEingabe();
@@ -208,6 +212,17 @@ function einheitAktionen(e) {
     k.push(el('div.klein', { text: `Wird zu ${EINHEIT[e.umruestung.zu]?.name} aufgerüstet – fertig in ${dauerText(Math.max(0, e.umruestung.fertig_um - serverJetzt()))}. Bis dahin nicht einsatzbereit.` }));
     k.push(aktKnopf('aufloesen', B.aufloesen, async () => { if (await frageJaNein('Einheit auflösen?', `${d.name} wird aufgelöst. Die Aufrüstung geht verloren.`, 'Auflösen')) ausfuehren({ art: 'aufloesen', einheit: e.id }); }, { tip: BT.aufloesen }));
     aktionenEl.replaceChildren(...k); return;
+  }
+  if (e.flug_bis && e.flug_bis > serverJetzt()) {
+    k.push(el('div.klein', { text: (ebeneVon(e.feld) === 1 ? T.ebene.imAnflugAll : T.ebene.imAnflugErde) + ' ' + dauerText(Math.max(0, e.flug_bis - serverJetzt())) + '.' }));
+    aktionenEl.replaceChildren(...k); return;
+  }
+  // Start ins All bzw. Landung auf der Erde (nur für raumtaugliche Einheiten)
+  if (d.faehigkeiten?.includes('raumschiff') || d.faehigkeiten?.includes('raumtauglich')) {
+    const f = aktuellesFeld(e);
+    const st = Z.ansicht.staedte[feldInfo(f)?.s];
+    if (ebeneVon(f) === 0 && st && st.feld === f && st.volk === Z.volk) k.push(aktKnopf('stern_voll', T.ebene.starten, () => ausfuehren({ art: 'ebene_wechseln', einheit: e.id }).then((r) => { if (r) { ton('gruendung'); springe(r.feld); } }), { gold: true, tip: T.ebene.startenTip }));
+    if (ebeneVon(f) === 1 && GELAENDE[karte().gelaende[f]]?.id === 'erdorbit') k.push(aktKnopf('pfeil_links', T.ebene.landen, () => ausfuehren({ art: 'ebene_wechseln', einheit: e.id }).then((r) => { if (r) { ton('gruendung'); springe(r.feld); } }), { gold: true, tip: T.ebene.landenTip }));
   }
   if (d.faehigkeiten?.includes('gruenden')) k.push(aktKnopf('gruenden', B.gruenden, async () => { const r = await ausfuehren({ art: 'stadt_gruenden', einheit: e.id }); if (r) { ton('gruendung'); waehle({ art: 'stadt', id: r.stadt }); fenster_.tutorialEreignis('stadt_gegruendet'); } }, { gold: true, tip: BT.gruenden }));
   if (d.faehigkeiten?.includes('arbeiten') || d.faehigkeiten?.includes('see_arbeiten')) {
@@ -428,24 +443,47 @@ export function meldungsListe() {
   }, { breite: 'mittel' });
 }
 
+// ---------- Ebenen (Erde / Weltraum) ----------
+let ebenenKnopf = null;
+/** Hat das eigene Volk Zugang zum All (Raumhafen erforscht oder schon etwas dort)? Erst dann erscheint der Umschalter. */
+function weltraumBekannt() {
+  const a = Z.ansicht; if (!a) return false;
+  if (a.du?.forschung?.erforscht?.orbitalbau) return true;
+  return Object.values(a.einheiten).some((e) => e.volk === Z.volk && ebeneVon(e.feld) === 1) || Object.values(a.staedte).some((s) => s.volk === Z.volk && ebeneVon(s.feld) === 1);
+}
+function ebenenKnopfZeichnen() {
+  if (!ebenenKnopf) return;
+  const sichtbar = weltraumBekannt() || aktiveEbene() === 1;
+  ebenenKnopf.classList.toggle('versteckt', !sichtbar);
+  ebenenKnopf.replaceChildren(symbol('ui', aktiveEbene() === 1 ? 'karte' : 'stern_voll', { px: 16 }), el('span', { text: aktiveEbene() === 1 ? T.ebene.erde : T.ebene.weltraum }));
+}
+export function ebeneUmschalten() {
+  if (aktiveEbene() === 0 && !weltraumBekannt()) return;
+  setzeEbene(1 - aktiveEbene());
+  ton('klick');
+}
+
 // ---------- Minikarte ----------
 let miniBasis = null;
 function minikarteZeichnen() {
   if (!Z.ansicht) return;
+  ebenenKnopfZeichnen();
   const k = karte();
+  const E = EB();
+  if (miniCv.width !== E.breite) { miniCv.width = E.breite; miniCv.height = E.hoehe; }
   const ctx = miniCv.getContext('2d');
-  const img = ctx.createImageData(BREITE, HOEHE);
+  const img = ctx.createImageData(E.breite, E.hoehe);
   const farben = GELAENDE.map((g) => { const n = parseInt(g.farben[0].slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; });
   const besitz = {};
   for (const [i, f] of Object.entries(Z.ansicht.felder)) if (f.s) { const s = Z.ansicht.staedte[f.s]; if (s) besitz[i] = volkFarbe(s.volk); }
-  for (let i = 0; i < BREITE * HOEHE; i++) {
-    const o = i * 4;
+  for (let j = 0; j < E.anzahl; j++) {
+    const i = E.start + j, o = j * 4;
     if (!erkundet(i)) { img.data[o] = 11; img.data[o + 1] = 13; img.data[o + 2] = 20; img.data[o + 3] = 255; continue; }
     let c = farben[k.gelaende[i]];
     if (besitz[i]) { const n = parseInt(besitz[i].slice(1), 16); c = [(c[0] + ((n >> 16) & 255) * 2) / 3, (c[1] + ((n >> 8) & 255) * 2) / 3, (c[2] + (n & 255) * 2) / 3]; }
     img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = 255;
   }
-  for (const s of Object.values(Z.ansicht.staedte)) { if (!erkundet(s.feld)) continue; const o = s.feld * 4; img.data[o] = 255; img.data[o + 1] = 255; img.data[o + 2] = 255; }
+  for (const s of Object.values(Z.ansicht.staedte)) { if (!erkundet(s.feld) || ebeneVon(s.feld) !== E.nr) continue; const o = (s.feld - E.start) * 4; img.data[o] = 255; img.data[o + 1] = 255; img.data[o + 2] = 255; }
   miniBasis = img;
   minikarteRahmen();
 }
@@ -454,8 +492,9 @@ function minikarteRahmen() {
   const ctx = miniCv.getContext('2d');
   ctx.putImageData(miniBasis, 0, 0);
   // eigene Einheiten
-  for (const e of eigeneEinheiten()) { const f = aktuellesFeld(e); ctx.fillStyle = '#ffe066'; ctx.fillRect(f % BREITE, Math.floor(f / BREITE), 1, 1); }
-  const sx = BREITE / WELT_B, sy = HOEHE / WELT_H;
+  const E = EB();
+  for (const e of eigeneEinheiten()) { const f = aktuellesFeld(e); if (ebeneVon(f) !== E.nr) continue; ctx.fillStyle = '#ffe066'; ctx.fillRect(xVon(f), yVon(f), 1, 1); }
+  const sx = E.breite / weltB(), sy = E.hoehe / weltH();
   const bw = innerWidth / kamera.zoom * sx, bh = innerHeight / kamera.zoom * sy;
   ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
   ctx.strokeRect(Math.round(kamera.x * sx - bw / 2) + 0.5, Math.round(kamera.y * sy - bh / 2) + 0.5, Math.round(bw), Math.round(bh));
@@ -464,8 +503,9 @@ function minikarteEingabe() {
   let ziehen = false;
   const gehe = (ev) => {
     const r = miniCv.getBoundingClientRect();
-    const fx = (ev.clientX - r.left) / r.width * BREITE, fy = (ev.clientY - r.top) / r.height * HOEHE;
-    const i = idx(Math.max(0, Math.min(BREITE - 1, Math.floor(fx))), Math.max(0, Math.min(HOEHE - 1, Math.floor(fy))));
+    const E = EB();
+    const fx = (ev.clientX - r.left) / r.width * E.breite, fy = (ev.clientY - r.top) / r.height * E.hoehe;
+    const i = idxE(E.nr, Math.max(0, Math.min(E.breite - 1, Math.floor(fx))), Math.max(0, Math.min(E.hoehe - 1, Math.floor(fy))));
     zentriereAuf(i);
   };
   miniCv.addEventListener('pointerdown', (ev) => { ev.stopPropagation(); ziehen = true; miniCv.setPointerCapture(ev.pointerId); gehe(ev); });

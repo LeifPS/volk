@@ -394,7 +394,7 @@ const ROH = [
 
   // ======================= WELTRAUMZEITALTER (9) =======================
   // Spalte 56
-  ['orbitalbau', 'Orbitalbau', 'raumfahrt', 56, ['orbitalraketen', 'supraleiter'], ['g:raumhafen', 'e:raumsonde'], 'Werften und Häfen im Orbit: der Beginn eines neuen Zeitalters.'],
+  ['orbitalbau', 'Orbitalbau', 'raumfahrt', 56, ['orbitalraketen', 'supraleiter'], ['g:raumhafen', 'e:raumsonde', 'r:titan'], 'Werften und Häfen im Orbit: der Beginn eines neuen Zeitalters.'],
   ['leichtbau_titan', 'Titanlegierungen', 'industrie', 56, ['supraleiter', 'seltene_erden_abbau'], ['b:produktion_prozent=3'], 'Leicht wie Aluminium, hart wie Stahl: Titan für Raumschiffe und Türme.'],
   ['raumfahrtmedizin', 'Raumfahrtmedizin', 'wissen', 56, ['nanomedizin'], ['b:heilung_prozent=10'], 'Der Körper lernt, monatelang in der Schwerelosigkeit zu leben.'],
   // Spalte 57
@@ -402,15 +402,15 @@ const ROH = [
   ['raumjaeger_technik', 'Raumjäger', 'luft', 57, ['orbitalbau', 'hyperschalltechnik'], ['e:raumjaeger'], 'Wendige Jäger kämpfen zwischen Erde und Mond.'],
   ['orbitale_solarkraft', 'Orbitale Solarkraft', 'industrie', 57, ['orbitalbau', 'energienetz_global'], ['g:orbitalkraftwerk'], 'Riesige Sonnensegel im All schicken Energie zur Erde.'],
   ['raumanzug_infanterie', 'Raumlandetruppen', 'militaer', 57, ['orbitalbau', 'plasmawaffen'], ['e:raumlandetruppe'], 'Soldaten in Raumanzügen landen dort, wo es keine Luft gibt.'],
-  ['mondlandung', 'Mondbasis', 'raumfahrt', 57, ['orbitalbau', 'raumfahrtmedizin'], ['b:wissenschaft_prozent=3'], 'Die ersten Menschen bleiben auf dem Mond.'],
+  ['mondlandung', 'Mondbasis', 'raumfahrt', 57, ['orbitalbau', 'raumfahrtmedizin'], ['e:kolonist', 'v:mondmine', 'v:kuppelfarm'], 'Die ersten Menschen bleiben auf dem Mond: Kolonisten gründen Kuppelstädte im All.'],
   // Spalte 58
-  ['helium3_abbau', 'Helium-3-Abbau', 'industrie', 58, ['mondlandung', 'kernfusion'], ['b:produktion_prozent=3'], 'Der Mondstaub enthält den saubersten Brennstoff der Fusion.'],
+  ['helium3_abbau', 'Helium-3-Abbau', 'industrie', 58, ['mondlandung', 'kernfusion'], ['r:helium3', 'v:heliumextraktor'], 'Der Mondstaub enthält den saubersten Brennstoff der Fusion.'],
   ['orbitalabwehr_technik', 'Orbitalabwehr', 'militaer', 58, ['raumjaeger_technik', 'energieschilde'], ['g:orbitalabwehr', 'e:orbitalflak'], 'Geschütze, die bis in den Orbit reichen.'],
   ['orbitalbomber_technik', 'Orbitalbomber', 'luft', 58, ['raumjaeger_technik', 'hyperschallraketen'], ['e:orbitalbomber'], 'Bomber, die aus dem All angreifen.'],
-  ['asteroidenbergbau', 'Asteroidenbergbau', 'industrie', 58, ['mondlandung', 'leichtbau_titan'], ['b:produktion_prozent=3'], 'Ein einziger Felsbrocken im All enthält mehr Metall als ein ganzes Gebirge.'],
+  ['asteroidenbergbau', 'Asteroidenbergbau', 'industrie', 58, ['mondlandung', 'leichtbau_titan'], ['v:asteroidenbohrer', 'b:produktion_prozent=3'], 'Ein einziger Felsbrocken im All enthält mehr Metall als ein ganzes Gebirge.'],
   ['raumfrachter_technik', 'Raumfrachter', 'wirtschaft', 58, ['orbitalbau', 'drohnenlogistik'], ['e:raumfrachter', 'e:orbitalfaehre', 'b:handel_gold_prozent=10'], 'Frachter pendeln zwischen Erde, Mond und Stationen.'],
   // Spalte 59
-  ['marsmission', 'Marskolonie', 'raumfahrt', 59, ['mondlandung', 'raumfahrtmedizin'], ['b:sicht=1'], 'Der rote Planet wird zur zweiten Heimat.'],
+  ['marsmission', 'Marskolonie', 'raumfahrt', 59, ['mondlandung', 'raumfahrtmedizin'], ['v:marsmine', 'v:eisfoerderung', 'r:wassereis', 'b:sicht=1'], 'Der rote Planet wird zur zweiten Heimat.'],
   ['biokuppeln', 'Biokuppeln', 'wirtschaft', 59, ['mondlandung', 'vertikale_landwirtschaft'], ['g:biokuppel', 'b:nahrung_prozent=5'], 'Gärten unter Glas, auf der Erde wie im All.'],
   ['kinetische_waffen', 'Kinetische Orbitalwaffen', 'militaer', 59, ['orbitalabwehr_technik', 'schienenkanonen'], ['e:kinetischer_stab'], 'Ein Metallstab aus dem Orbit trifft mit der Wucht eines Meteoriten.'],
   ['schwerelosigkeitstaktik', 'Schwerelosigkeits-Taktik', 'militaer', 59, ['raumanzug_infanterie', 'gefechts_ki'], ['e:mondpanzer', 'b:erfahrung_prozent=10'], 'Kämpfen, wo oben und unten nichts mehr bedeuten.'],

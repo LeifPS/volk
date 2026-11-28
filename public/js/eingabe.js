@@ -3,7 +3,7 @@
 import { Z, einheitenAuf, stadtAuf, aktuellesFeld } from './kern/zustand.js';
 import { aktivitaet } from './kern/netz.js';
 import { feldBeiSchirm, objektBei, verschieben, zoomen, zoomAuf, kamera, overlay, neuZeichnen } from './karte/render.js';
-import { waehle, befehlAufFeld, zielGewaehlt, naechsteAktion, meldungsListe } from './ui/hud.js';
+import { waehle, befehlAufFeld, zielGewaehlt, naechsteAktion, meldungsListe, ebeneUmschalten } from './ui/hud.js';
 import * as F from './ui/fenster.js';
 import { fensterOffen, oberstesFenster, versteckeTip } from './ui/basis.js';
 import { ton, tonStarten } from './audio.js';
@@ -78,6 +78,7 @@ export function init(cv) {
     else if (k === 'F5') { e.preventDefault(); F.lexikon(); }
     else if (k === 'h' || k === 'H') F.hilfe();
     else if (k === 'n' || k === 'N') meldungsListe();
+    else if (k === 'e' || k === 'E') ebeneUmschalten();
     else if (k === '+' || k === '=') zoomen(1);
     else if (k === '-') zoomen(-1);
     else if (k === 'ArrowLeft' || k === 'a') verschieben(120, 0);
