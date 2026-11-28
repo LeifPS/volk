@@ -10,10 +10,11 @@ import { hash01 } from '../../shared/zufall.js';
 import { sprite, hatSprite } from '../grafik/sprites.js';
 import { EINHEIT_SYMBOL, SYMBOL_GROESSE } from '../grafik/einheiten_symbole.js';
 import * as AN from './animation.js';
+import { setzeNachbearbeitung, nachbearbeiten } from './nachbearbeitung.js';
 import { WUNDER_NACH_ID } from '../../shared/daten/index.js';
 import { zeichneWege } from './wege.js';
 import { R, FELD_B, ZEILE_H, WELT_B, WELT_H, weltB, weltH, chunkCanvas, CHUNK_GROESSE, feldUnter } from './gelaende.js';
-import { Z, erkundet, aktuellesFeld, aktuelleHp, serverJetzt, volk, stadt, feldInfo, an } from '../kern/zustand.js';
+import { Z, erkundet, aktuellesFeld, aktuelleHp, serverJetzt, volk, stadt, feldInfo, an, melde } from '../kern/zustand.js';
 
 export const kamera = { x: WELT_B / 2, y: WELT_H / 2, zoom: 1.5 };
 export const ZOOMSTUFEN = [0.5, 0.75, 1, 1.5, 2, 3, 4];
@@ -25,6 +26,8 @@ const tote = [];               // gefallene Einheiten (Tod-Animation)
 const zuletzt = new Map();     // Einheit -> letzter gezeichneter Stand (für Tod und Blickrichtung)
 export const overlay = { pfad: null, ziele: null, reichweite: null, gueltig: null, beschriftung: null, hover: -1, markierung: null, linse: null };
 export const optionen = { tagnacht: true, wetter: true };
+/** Gleitender Mittelwert der Zeichenzeit je Bild (ms) und Bildzähler, für Messung und Schutz der Nachbearbeitung. */
+export const leistung = { ms: 0, bilder: 0 };
 
 export function init(canvas) {
   cv = canvas;
@@ -42,6 +45,8 @@ function groesse() {
   schmutzig = true;
 }
 export function neuZeichnen() { schmutzig = true; }
+/** Shader-Nachbearbeitung an/aus (Einstellung); liefert, ob sie wirklich läuft. */
+export function shaderSetzen(an) { const ok = setzeNachbearbeitung(an, cv); schmutzig = true; return ok; }
 export const skala = () => kamera.zoom * dpr;
 
 export function weltZuSchirm(wx, wy) { const s = skala(); return [(wx - kamera.x) * s + cv.width / 2, (wy - kamera.y) * s + cv.height / 2]; }
@@ -121,7 +126,11 @@ function schleife(t) {
   letzterFrame = t;
   schmutzig = false;
   if (bewegt || sichtVersion < 0 || t - sichtVersion > 1000) { sichtbar = sichtBerechnen(); sichtVersion = t; }
+  const t0 = performance.now();
   zeichne(t);
+  const dauer = performance.now() - t0;
+  leistung.ms = leistung.ms ? leistung.ms * 0.95 + dauer * 0.05 : dauer; leistung.bilder++;
+  if (Z.ansicht) nachbearbeiten(cv, { zeitalter: Z.ansicht.du?.zeitalter || 0, ebene: aktiveEbene(), nacht: optionen.tagnacht && aktiveEbene() === 0 ? nachtAnteil() : 0, msBild: leistung.ms, beiAbschaltung: () => melde('shader_aus') });
 }
 
 function sichtbereich() {

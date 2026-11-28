@@ -535,7 +535,7 @@ T.hilfe = {
 
 T.einst = {
   titel: 'Einstellungen', ton: 'Soundeffekte', musik: 'Musik', lautstaerke: 'Lautstärke', tagnacht: 'Tag und Nacht', wetter: 'Wetter (Regen, Schnee, Nebel)',
-  tonText: 'Klicks, Kampf, Bau fertig …', musikText: 'Chiptune-Musik, je Zeitalter ein Thema.', tagnachtText: 'Die Karte wird nachts dunkler (nur Optik).', effekte: 'Effekte', effekteText: 'Animationen auf der Karte. Reduziert: nur Laufen und Atmen. Aus spart Akku.', effekteWerte: { voll: 'Voll', reduziert: 'Reduziert', aus: 'Aus' }, wetterText: 'Regen, Schnee und Nebel auf der Karte (nur Optik).',
+  tonText: 'Klicks, Kampf, Bau fertig …', musikText: 'Chiptune-Musik, je Zeitalter ein Thema.', tagnachtText: 'Die Karte wird nachts dunkler (nur Optik).', shaderAus: 'Licht und Farbwelten wurden abgeschaltet: Das Gerät ist dafür zu langsam. In den Einstellungen kannst du es wieder anschalten.', shader: 'Licht und Farbwelten', shaderText: 'Weiches Leuchten, Farbstimmung je Zeitalter und Vignette (WebGL). Schaltet sich auf langsamen Geräten selbst ab.', effekte: 'Effekte', effekteText: 'Animationen auf der Karte. Reduziert: nur Laufen und Atmen. Aus spart Akku.', effekteWerte: { voll: 'Voll', reduziert: 'Reduziert', aus: 'Aus' }, wetterText: 'Regen, Schnee und Nebel auf der Karte (nur Optik).',
   an: 'An', aus: 'Aus', darstellung: 'Darstellung', klang: 'Klang', konto: 'Konto', info: 'Über das Spiel',
   abmelden: 'Abmelden', abmeldenFrage: 'Wirklich abmelden? Dein Volk bleibt erhalten und ist offline geschützt.',
   neuanfang: 'Neuanfang', neuanfangText: 'Nur möglich, wenn du keine Stadt und keinen Siedler mehr hast. Du bekommst neue Starteinheiten an einem neuen Ort und 24 Stunden Schutz.',

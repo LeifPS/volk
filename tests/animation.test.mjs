@@ -24,3 +24,13 @@ test('Effekte-Stufen: aus bewegt nichts, voll zeichnet öfter', () => {
   assert.ok(ruheIntervall(false) < aus);
   setzeEffekte('quatsch'); assert.ok(ruheIntervall(false) === 50, 'unbekannt = voll');
 });
+
+test('Farbwelten: eine je Zeitalter, Tönung nah an neutral (Lesbarkeit)', async () => {
+  const { FARBWELTEN } = await import('../public/js/karte/nachbearbeitung.js');
+  const { ZEITALTER } = await import('../public/shared/daten/zeitalter.js');
+  assert.equal(FARBWELTEN.length, ZEITALTER.length);
+  for (const f of FARBWELTEN) {
+    for (const t of f.ton) assert.ok(t >= 0.88 && t <= 1.1);
+    assert.ok(f.saett > 0.8 && f.saett < 1.2 && f.kontrast >= 1 && f.kontrast < 1.15);
+  }
+});

@@ -133,3 +133,19 @@ h1 { font-size: 24px; } h2 { font-size: 18px; color: var(--akzent); } h3 { font-
 .eureka-zeile > span { overflow: hidden; text-overflow: ellipsis; }
 .eureka-zeile.erfuellt { color: #f2a6f2; }
 @media (max-width: 600px) { .eureka-zeile { display: none; } }
+
+/* ---------- Handy: obere Leiste und Menü passen in die Breite (Stufe 12) ---------- */
+@media (max-width: 600px) {
+  #leiste { flex-wrap: wrap; }
+  #leiste > * { max-width: 100%; }
+  #ressourcen { flex: 1 1 100%; gap: 8px; padding: 3px 8px;
+    -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
+  #menue { flex: 1 1 100%; overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; -webkit-overflow-scrolling: touch;
+    -webkit-mask-image: linear-gradient(90deg, #000 90%, transparent); mask-image: linear-gradient(90deg, #000 90%, transparent); }
+  #menue::-webkit-scrollbar { display: none; }
+  #menue > * { flex: 0 0 auto; }
+  .res { font-size: 12px; }
+  #forschungsanzeige, #kulturanzeige { width: 172px; padding: 4px 6px; }
+  #forschungsanzeige { top: calc(104px + var(--sicher-oben)); }
+  #kulturanzeige { top: calc(160px + var(--sicher-oben)); }
+}

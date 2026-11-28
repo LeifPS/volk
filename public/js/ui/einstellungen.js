@@ -2,9 +2,9 @@
 // Gespeichert auf dem Server (befehl 'einstellungen') und zusätzlich im localStorage als Rückfall.
 import { el, symbol, fenster, toast, fehler, frageJaNein } from './basis.js';
 import { T } from '../texte.js';
-import { Z, du, eigeneStaedte, eigeneEinheiten } from '../kern/zustand.js';
+import { Z, du, eigeneStaedte, eigeneEinheiten, an } from '../kern/zustand.js';
 import { befehl, abmelden } from '../kern/netz.js';
-import { optionen, neuZeichnen, zentriereAuf } from '../karte/render.js';
+import { optionen, neuZeichnen, zentriereAuf, shaderSetzen } from '../karte/render.js';
 import { setzeEffekte } from '../karte/animation.js';
 import { einstellungenSetzen, ton } from '../audio.js';
 import { EINHEIT } from '../../shared/daten/index.js';
@@ -12,7 +12,8 @@ import { waehle } from './hud.js';
 
 const E = T.einst;
 const SCHLUESSEL = 'volk_einstellungen';
-const STANDARD = { ton: true, musik: true, lautstaerke: 0.6, tagnacht: true, wetter: true, effekte: 'voll' };
+const HANDY = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+const STANDARD = { ton: true, musik: true, lautstaerke: 0.6, tagnacht: true, wetter: true, effekte: 'voll', shader: !HANDY };
 
 const CSS = `
 .einst-gruppe { margin: 4px 0 14px; }
@@ -28,6 +29,8 @@ const CSS = `
 .einst-knoepfe { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }`;
 function stil() { if (!document.getElementById('einst-stil')) document.head.append(el('style#einst-stil', { text: CSS })); }
 
+an('shader_aus', () => toast(E.shaderAus, 'info'));
+
 function lokalLesen() { try { return JSON.parse(localStorage.getItem(SCHLUESSEL) || '{}') || {}; } catch { return {}; } }
 function lokalSchreiben(w) { try { localStorage.setItem(SCHLUESSEL, JSON.stringify(w)); } catch { /* egal */ } }
 
@@ -39,6 +42,7 @@ export function anwenden(w = werte()) {
   optionen.tagnacht = w.tagnacht !== false;
   optionen.wetter = w.wetter !== false;
   setzeEffekte(w.effekte);
+  shaderSetzen(w.shader !== false);
   neuZeichnen();
   try { einstellungenSetzen(w); } catch (e) { console.error(e); }
 }
@@ -89,7 +93,8 @@ export function oeffneEinstellungen() {
     i.append(el('div.einst-gruppe', el('h3', { text: E.darstellung }),
       schalter('nacht', E.tagnacht, E.tagnachtText, 'tagnacht'),
       schalter('regen', E.wetter, E.wetterText, 'wetter'),
-      auswahl('wunder', E.effekte, E.effekteText, 'effekte', ['voll', 'reduziert', 'aus'], E.effekteWerte)));
+      auswahl('wunder', E.effekte, E.effekteText, 'effekte', ['voll', 'reduziert', 'aus'], E.effekteWerte),
+      schalter('stern_voll', E.shader, E.shaderText, 'shader')));
     // Konto
     const d = du();
     const kannNeu = !!d && !eigeneStaedte().length && !eigeneEinheiten().some((e) => e.typ === 'siedler' || EINHEIT[e.typ]?.faehigkeiten?.includes('gruenden'));

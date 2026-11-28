@@ -4,6 +4,9 @@ import { Pinsel } from './pixel.js';
 
 const REGISTER = new Map();   // 'kategorie:id' -> { w, h, zeichne, umriss }
 const CACHE = new Map();
+/** Höchstzahl gecachter Canvas (Speicher auf dem Handy). Darüber fliegt die ältere Hälfte raus; Gebrauchtes entsteht neu. */
+const CACHE_MAX = 2500;
+export function cacheGroesse() { return CACHE.size; }
 
 /**
  * Meldet ein Sprite an.
@@ -35,6 +38,7 @@ export function sprite(kategorie, id, o = {}) {
   if (c !== undefined) return c;
   const p = pinselFuer(kategorie, id, o);
   c = p ? p.alsCanvas(o.farbe) : null;
+  if (CACHE.size >= CACHE_MAX) { let n = CACHE.size >> 1; for (const k of CACHE.keys()) { CACHE.delete(k); if (--n <= 0) break; } }
   CACHE.set(schluessel, c);
   return c;
 }

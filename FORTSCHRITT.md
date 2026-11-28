@@ -20,7 +20,7 @@ Kernregel: Die Live-Welt muss nach jedem Schritt weiterlaufen (Migration, Karte 
 | 10 | Symbole über Einheiten (137 handgezeichnete 13×13-Symbole, Banner mit Lebenspunkten, Beförderungssternen, Zustand) | fertig |
 | 11 | Animationen (gemeinsamer Takt, Einstellung Effekte Voll/Reduziert/Aus) | fertig |
 | 11b | Handel und Diplomatie (Beziehungswert, Handelsabkommen, Embargo, Gesandter und Botschaften, KI-Reaktionen, Migration 5→6). Die übrigen Tiefensysteme aus 5b entfallen auf Wunsch von Leif | fertig |
-| 12 | Grafik-Politur | offen |
+| 12 | Grafik-Politur (Handy-Leiste, Farbwelten je Zeitalter, WebGL-Nachbearbeitung mit Rückfall, Sprite-Cache begrenzt, Leistungsmessung) | fertig |
 | 13 | Balancing, Last | offen |
 | 14 | Doku | offen |
 
