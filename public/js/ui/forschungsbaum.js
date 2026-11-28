@@ -1,6 +1,7 @@
 // Forschungs- und Kulturbaum (eine Ansicht, zwei Datenquellen, siehe QUELLEN): großes Vollbild-Fenster mit dem ganzen Baum (Canvas), Suche/Filter, Detailpanel und Warteschlangen-Leiste.
 // Verschieben per Ziehen (Maus/Touch), Zoom per Mausrad, Zwei-Finger-Geste und Knöpfen.
 import { el, symbol, fenster, fehler, toast, zahl, dauerText, balken, tip } from './basis.js';
+import { EUREKAS_FORSCHUNG, EUREKAS_CIVIC } from '../../shared/daten/eurekas.js';
 import { sprite } from '../grafik/sprites.js';
 import { T } from '../texte.js';
 import { an, du, forschungsFortschritt, serverJetzt } from '../kern/zustand.js';
@@ -20,10 +21,17 @@ for (const c of CIVICS) {
 const civicStand = () => du()?.civics;
 /** Kulturpunkte der aktiven Civic jetzt (zwischen zwei Server-Abrechnungen hochgerechnet). */
 function civicPunkte() { const c = civicStand(); if (!c?.aktiv) return 0; const seit = Math.max(0, serverJetzt() - (du()?.stand_um || serverJetzt())); return (c.punkte || 0) + (c.rate || 0) * seit / STD; }
+/** Eureka/Inspiration eines Knotens: Bedingungstext, erfüllt?, Stand [wert, ziel] (nur für nahe Zeitalter vom Server). */
+function eurekaInfo(daten, art, id) {
+  const eu = daten[id]; if (!eu) return null;
+  const e = du()?.eurekas;
+  return { text: eu.text, erfuellt: !!e?.erfuellt?.[art + ':' + id], stand: e?.stand?.[art]?.[id] || null };
+}
 const QUELLEN = {
   forschung: {
     name: 'forschung', liste: FORSCHUNGEN, nach: FORSCHUNG, nachfolger: NACHFOLGER, spaltenZeitalter: SPALTEN_ZEITALTER,
     zweige: ['see', 'wirtschaft', 'staat', 'wissen', 'raumfahrt', 'industrie', 'luft', 'militaer'], symbol: 'forschung',
+    eureka: (id) => eurekaInfo(EUREKAS_FORSCHUNG, 'f', id),
     stand: () => du()?.forschung, befehl: 'forschen', schlangeBefehl: 'forschung_schlange',
     fortschritt: () => forschungsFortschritt(), teil: (id) => du()?.forschung?.teil?.[id] || 0,
     dauerMs: (f) => { let d = f.dauer; if (f.wiederholbar) d *= 1 + 0.15 * (du()?.forschung?.erforscht?.[f.id] || 0); return d * 1000 / forschungZeitTempo(f.zeitalter || 0) / (1 + Math.max(0, du()?.raten?.wissenschaft || 0) / 100); },
@@ -32,6 +40,7 @@ const QUELLEN = {
   kultur: {
     name: 'kultur', liste: CIVICS, nach: CIVIC, nachfolger: CIVIC_NACHFOLGER, spaltenZeitalter: CIVIC_SPALTEN_ZEITALTER,
     zweige: ['wirtschaft', 'staat', 'wissen', 'militaer'], symbol: 'kultur',
+    eureka: (id) => eurekaInfo(EUREKAS_CIVIC, 'c', id),
     stand: civicStand, befehl: 'civic', schlangeBefehl: 'civic_schlange',
     fortschritt: () => { const c = civicStand(); const k = CIVIC[c?.aktiv]?.kosten; return k ? Math.min(1, civicPunkte() / k) : 0; },
     teil: (id) => (civicStand()?.teil?.[id] || 0) / (CIVIC[id]?.kosten || 1),
@@ -48,7 +57,7 @@ const LAYOUTS = {};
 // ---------- Maße (Weltkoordinaten) ----------
 const NW = 200, NH = 82;          // Knotengröße
 const CW = 268;                   // Spaltenabstand (Knoten + Linienkanal)
-const RH = 104;                   // Zeilenabstand
+const RH = 124;                   // Zeilenabstand (unter dem Knoten steht die Eureka-Bedingung)
 const PADX = 40, TOP = 52, UNTEN = 30;
 const KANAL = CW - NW;
 const MIN_ZOOM = 0.12;
@@ -470,12 +479,14 @@ function oeffneBaum(quelle, id) {
     if (animation) { animation(t); bitte(); }
     zeichne();
   }
+  const KUERZ = new Map();
   function kuerze(text, max, font) {
+    const k = font + max + text; const c = KUERZ.get(k); if (c) return c;
     ctx.font = font;
-    if (ctx.measureText(text).width <= max) return text;
     let t = text;
-    while (t.length > 1 && ctx.measureText(t + '…').width > max) t = t.slice(0, -1);
-    return t + '…';
+    if (ctx.measureText(text).width > max) { while (t.length > 1 && ctx.measureText(t + '…').width > max) t = t.slice(0, -1); t += '…'; }
+    if (KUERZ.size > 4000) KUERZ.clear();
+    KUERZ.set(k, t); return t;
   }
   const FONT_NAME = '700 15px Zahlen, Pixelify, Silkscreen, monospace';
   const FONT_GROSS = '700 26px Zahlen, Pixelify, Silkscreen, monospace';
@@ -621,6 +632,20 @@ function oeffneBaum(quelle, id) {
       }
       if (z === 'aktiv') { ctx.fillStyle = '#0b0d14'; ctx.fillRect(x + 6, y + NH - 22, NW - 12, 14); ctx.fillStyle = '#ffe066'; ctx.fillRect(x + 8, y + NH - 20, Math.round((NW - 16) * Q.fortschritt()), 10); }
     }
+    // Eureka-Bedingung unter dem Knoten (erfüllt: magenta leuchtend)
+    const eu = z !== 'erforscht' ? Q.eureka(fo.id) : null;
+    if (eu && detail) {
+      const ey = y + NH + 4, eh = 17;
+      if (eu.erfuellt) { ctx.fillStyle = 'rgba(232,80,232,.35)'; ctx.fillRect(x - 3, ey - 3, NW + 6, eh + 6); }
+      ctx.fillStyle = '#0b0d14'; ctx.fillRect(x, ey, NW, eh);
+      ctx.fillStyle = eu.erfuellt ? '#8a2a8e' : '#232838'; ctx.fillRect(x + 1, ey + 1, NW - 2, eh - 2);
+      const ik = sprite('ui', 'eureka'); if (ik) ctx.drawImage(ik, x + 3, ey + 1, 15, 15);
+      ctx.font = FONT_KLEIN; ctx.textBaseline = 'alphabetic';
+      let t = eu.text;
+      if (!eu.erfuellt && eu.stand && eu.stand[1] > 1) t += ` (${eu.stand[0]}/${eu.stand[1]})`;
+      ctx.fillStyle = eu.erfuellt ? '#ffd6ff' : '#b8b2c8';
+      ctx.fillText(kuerze(t, NW - 24, FONT_KLEIN), x + 21, ey + 13);
+    }
     // Markierungen
     const badge = (text, farbe, rx) => {
       ctx.font = '700 14px Zahlen, Silkscreen, Pixelify, monospace';
@@ -632,6 +657,12 @@ function oeffneBaum(quelle, id) {
       return w + 6;
     };
     let rx = 0;
+    if (eu && !detail && eu.erfuellt) {
+      const ik = sprite('ui', 'eureka');
+      ctx.fillStyle = '#0b0d14'; ctx.fillRect(x - 9, y - 11, 24, 24);
+      ctx.fillStyle = '#e850e8'; ctx.fillRect(x - 7, y - 9, 20, 20);
+      if (ik) ctx.drawImage(ik, x - 5, y - 7, 16, 16);
+    }
     if (z === 'schlange') rx += badge(String(fo_.schlange.indexOf(fo.id) + (fo_.aktiv ? 2 : 1)), '#5aa0e6', rx);
     if (fo.wiederholbar && erforscht()[fo.id]) rx += badge(B.stufe(erforscht()[fo.id] + (z === 'aktiv' ? 1 : 0)), '#a77de0', rx);
     if (fo.schluessel) { const k = sprite('ui', 'krone'); if (k) { ctx.fillStyle = '#0b0d14'; ctx.fillRect(x + NW - 23 - rx, y - 11, 22, 22); ctx.drawImage(k, x + NW - 20 - rx, y - 8, 16, 16); } }
@@ -740,7 +771,7 @@ function oeffneBaum(quelle, id) {
   function detailZeichnen(erzwingen) {
     if (!auswahl) return;
     const fo = Q.nach[auswahl], d = du(), fs = Q.stand();
-    const schl = JSON.stringify([auswahl, fs?.aktiv, fs?.schlange, fs?.erforscht?.[auswahl], Object.keys(fs?.erforscht || {}).length, Math.round(wissenschaft())]);
+    const schl = JSON.stringify([auswahl, fs?.aktiv, fs?.schlange, fs?.erforscht?.[auswahl], Object.keys(fs?.erforscht || {}).length, Math.round(wissenschaft()), Q.eureka(auswahl)]);
     if (!erzwingen && schl === detailSchl) { aktualisiereFortschritt(); return; }
     detailSchl = schl;
     const z = zust[auswahl];
@@ -764,6 +795,16 @@ function oeffneBaum(quelle, id) {
       const txt = el('div.klein');
       detailFortschritt = { bal, txt, aktiv: z === 'aktiv' };
       e.push(bal, txt);
+    }
+    // Eureka / Inspiration
+    const eu = Q.eureka(auswahl);
+    if (eu && z !== 'erforscht') {
+      const kopf = el('h3', symbol('ui', 'eureka'), ' ', TB().eurekaTitel);
+      if (eu.erfuellt) e.push(kopf, el('p.gold-t', { text: eu.text }), el('p.klein', symbol('ui', 'haken'), ' ', TB().eurekaErfuellt));
+      else {
+        e.push(kopf, el('p.klein', { text: TB().eurekaOffen }), el('p', el('b', { text: eu.text })));
+        if (eu.stand && eu.stand[1] > 1) e.push(balken(Math.min(1, eu.stand[0] / eu.stand[1]), 'blau'), el('div.klein', { text: TB().eurekaStand(eu.stand[0], eu.stand[1]) }));
+      }
     }
     // Voraussetzungen / Nachfolger
     if (fo.voraussetzungen.length) e.push(el('h3', { text: B.voraussetzungen }), el('div.fb-verweise', fo.voraussetzungen.map(verweis)));

@@ -20,6 +20,7 @@ import { wunderplatz } from './wunderplatz.js';
 import { distrikte } from './distrikte.js';
 import { civics } from './civics.js';
 import { religion } from './religion.js';
+import { eurekas } from './eurekas.js';
 import { ZUSTAND_VERSION, migriere } from './migration.js';
 
 export class SpielFehler extends Error {}
@@ -153,8 +154,11 @@ export class Spiel {
         try { e.notbremse?.(); } catch (e2) { /* egal */ }
       }
       if (++n > 500000) { this.fehlerProtokoll('Zu viele Ereignisse'); break; }
+      // Eurekas gebündelt prüfen, spätestens alle 15 Spielminuten (lange Nachholläufe bleiben so zeitlich genau genug)
+      if (this._eurekaOffen?.size && this.t - (this._eurekaUm || 0) >= 15 * 60000) this.eurekasSicherPruefen();
     }
     if (bis > this.t) this.t = bis;
+    this.eurekasSicherPruefen();
     if (this.z.zeit !== this.t) { this.z.zeit = this.t; this.schmutzig.add('g'); }
     return n;
   }
@@ -238,4 +242,4 @@ export const BEFEHLE = new Set([
   'meldungen_gelesen', 'tutorial', 'neuanfang', 'ping', 'einstellungen', 'tribut_fordern', 'ebene_wechseln', 'distrikt_spez', 'distrikt_reparieren', 'tradition_waehlen', 'civic', 'civic_schlange', 'regierung', 'karten', 'pantheon', 'religion_gruenden', 'religion_verstaerken', 'missionieren', 'glaubenskampf', 'inquisition',
 ]);
 
-Object.assign(Spiel.prototype, wirtschaft, bau, forschung, einheiten, kampf, diplomatie, akteure, ansicht, start, weltraum, naturwunder, wunderplatz, distrikte, civics, religion);
+Object.assign(Spiel.prototype, wirtschaft, bau, forschung, einheiten, kampf, diplomatie, akteure, ansicht, start, weltraum, naturwunder, wunderplatz, distrikte, civics, religion, eurekas);

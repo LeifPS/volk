@@ -35,7 +35,7 @@ export const T = {
   },
   kultur: {
     keineKultur: 'keine Kultur', titel: 'Kulturbaum', knopf: 'Kultur',
-    baum: { titel: 'Kulturbaum', leisteTitel: 'Civic:', keineAktiv: 'Keine Civic aktiv – wähle eine im Baum!', aktivTip: 'Aktuelle Civic. Klicken zeigt sie im Baum.', karteArt: (k) => `Politikkarte (${k})`, regierungArt: 'Regierung' }, aktiv: 'Civic', keine: 'Keine Civic gewählt', fertigIn: (t) => `fertig in ${t}`, kulturRate: (x) => `${x} Kulturpunkte pro Stunde`,
+    baum: { titel: 'Kulturbaum', leisteTitel: 'Civic:', keineAktiv: 'Keine Civic aktiv – wähle eine im Baum!', aktivTip: 'Aktuelle Civic. Klicken zeigt sie im Baum.', karteArt: (k) => `Politikkarte (${k})`, regierungArt: 'Regierung', eurekaTitel: 'Inspiration', eurekaErfuellt: 'Erfüllt – die Civic kostet 40 % weniger.', eurekaOffen: 'Wenn du das schaffst, kostet die Civic 40 % weniger:', eurekaTip: 'Inspiration erfüllt (-40 %)' }, aktiv: 'Civic', keine: 'Keine Civic gewählt', fertigIn: (t) => `fertig in ${t}`, kulturRate: (x) => `${x} Kulturpunkte pro Stunde`,
   },
   religion: {
     titel: 'Religion', glaube: 'Glaube', proStunde: 'pro Stunde',
@@ -570,8 +570,12 @@ T.tut = {
 };
 
 // Forschungsbaum (ui/forschungsbaum.js)
+T.eurekaErfuellt = 'Eureka erfüllt: 40 % geschenkt';
+T.eurekaZaehler = (n) => `${n} schon erfüllt`;
 T.baum = {
   titel: 'Forschungsbaum',
+  eurekaTitel: 'Eureka', eurekaErfuellt: 'Erfüllt – die Forschung kostet 40 % weniger.', eurekaOffen: 'Wenn du das schaffst, kostet die Forschung 40 % weniger:',
+  eurekaStand: (w, z) => `Stand: ${w} von ${z}`, eurekaTip: 'Eureka erfüllt (-40 %)',
   suche: 'Suchen …', keineTreffer: 'Nichts gefunden.',
   filter: 'Filter', filterTip: 'Hebt nur bestimmte Forschungen hervor. Wähle eine Forschung und dann „Braucht …“, um alles zu sehen, was darauf aufbaut.',
   filterAlle: 'Alle zeigen', filterErforschbar: 'Nur erforschbare', filterOffen: 'Noch nicht erforscht', zweigPraefix: 'Zweig: ', brauchtPraefix: 'Braucht: ',

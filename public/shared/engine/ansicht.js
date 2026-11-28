@@ -23,6 +23,7 @@ export const ansicht = {
       forschung: { aktiv: v.forschung.aktiv, fortschritt: v.forschung.fortschritt, fertig_um: this.forschungsZeit(v), schlange: v.forschung.schlange, erforscht: v.forschung.erforscht, teil: v.forschung.teil || {}, dauer_ms: v.forschung.aktiv ? Math.round(this.forschungsDauerMs(v, v.forschung.aktiv, r.wissenschaft)) : null },
       zeitalter: v.zeitalter || 0, tradition: v.tradition || null, glaube: rund(v.glaube || 0), pantheon: v.pantheon || null,
       civics: v.civics ? { aktiv: v.civics.aktiv, punkte: rund(v.civics.punkte || 0), erforscht: v.civics.erforscht, schlange: v.civics.schlange, teil: v.civics.teil || {}, fertig_um: this.civicZeit(v), rate: rund(this.kulturPunkteRate(v.id)) } : null,
+      eurekas: this.eurekaAnsicht(v),
       regierung: v.regierung || null, karten: v.karten || null, freier_tausch: !!v.freier_tausch, schutz_bis: v.schutz_bis, gegruendet: v.gegruendet, tutorial: v.tutorial, einstellungen: v.einstellungen || {},
       meldungen: (v.meldungen || []).slice(-80), gelesen_bis: v.gelesen_bis || 0, mangel_seit: v.mangel_seit || null, abkommen_bis: v.abkommen_bis || null,
       routen: this.aktiveRouten(vid).length, routenKapazitaet: this.routenKapazitaet(v), startfeld: v.startfeld, zuletzt_gesehen: v.zuletzt_gesehen_vorher || null,

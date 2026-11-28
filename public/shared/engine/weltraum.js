@@ -103,6 +103,7 @@ export const weltraum = {
     for (const u of angekommen) this.erkunde(v.id, u.feld, this.sichtweite(u));
     const namen = angekommen.map((u) => EINHEIT[u.typ].name).join(', ');
     this.meldung(v.id, nachOben ? `Start geglückt: ${namen} ${angekommen.length > 1 ? 'sind' : 'ist'} unterwegs in den Erdorbit.` : `Landeanflug auf ${zielStadt.name}: ${namen}.`, { art: 'einheit', feld: angekommen[0].feld });
+    this.zaehle(v.id, 'raumflug');
     return { feld: angekommen[0].feld, ebene: ebeneVon(angekommen[0].feld) };
   },
 

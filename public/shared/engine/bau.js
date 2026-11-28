@@ -229,7 +229,7 @@ export const bau = {
         this.meldung(v.id, `${s.name}: Der Distrikt ${d.name} ist fertig.`, { art: 'bau', feld });
       } else if (b.art === 'einheit') {
         const e = this.einheitErzeugen(v.id, b.id, s.feld, { stadt: s.id });
-        if (e) this.religionFuerEinheit(e, s);
+        if (e) { this.religionFuerEinheit(e, s); this.zaehle(v.id, 'einheit', d.klasse); }
         if (d.faehigkeiten?.includes('gruenden')) { s.bev = Math.max(1, s.bev - 1); s.nahrung = 0; if (!s.manuell) this.autoBewirtschaften(s); }
         if (e) this.meldung(v.id, `${s.name}: ${d.name} ist bereit.`, { art: 'einheit', feld: e.feld });
         else this.meldung(v.id, `${s.name}: ${d.name} konnte nicht aufgestellt werden (kein freier Platz). Die Kosten wurden erstattet.`, { art: 'warnung', feld: s.feld });

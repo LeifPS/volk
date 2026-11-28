@@ -125,6 +125,7 @@ export const diplomatie = {
     if (d.buendnis) this.meldung(o.id, `${v.name} hat das Bündnis gebrochen.`, { art: 'diplomatie', wichtig: true });
     this.aendern(v.id); this.aendern(o.id);
     if (v.schutz_bis > this.t) { v.schutz_bis = this.t; this.meldung(v.id, 'Dein Neulingsschutz ist beendet.', { art: 'diplomatie' }); }
+    this.zaehle(v.id, 'krieg'); this.zaehle(o.id, 'krieg');
     Object.assign(d, { krieg: true, seit: this.t, letzter_kampf: this.t, offene_grenzen: false, buendnis: false, auto_vorschlag: null });
     this.markiere('d' + this.diploSchluessel(v.id, o.id));
     for (const [id, a] of Object.entries(this.z.angebote)) if ((a.von === v.id && a.an === o.id) || (a.von === o.id && a.an === v.id)) { delete this.z.angebote[id]; this.markiere('a' + id); }

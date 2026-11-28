@@ -272,6 +272,7 @@ export const wirtschaft = {
     if (vid == null || !this.z.voelker[vid]) return;
     this.abrechnen(vid);
     delete this._raten[vid];
+    this.eurekaVormerken(vid);
     this.markiere('v' + vid);
   },
   /** Alle Völker abrechnen und Caches verwerfen (z. B. bei Jahreszeitwechsel). */

@@ -54,7 +54,7 @@ export function aufbauen() {
   document.body.append(leiste, forschungsEl, kulturEl, auswahlEl, aktionenEl, miniEl, naechsteEl, el('div#meldungsleiste'));
   minikarteEingabe();
   an('aenderung', (x) => { aktualisieren(); if (!x.gruppen || x.gruppen.has('nebel') || x.gruppen.has('felder') || x.gruppen.has('staedte') || x.voll) minikarteZeichnen(); });
-  an('meldungen', (l) => { for (const m of l) { toast(m.text, m.art === 'warnung' || m.art === 'krieg' ? 'warnung' : 'info', { onclick: m.feld != null ? () => springe(m.feld) : null }); if (m.art !== 'zeitalter') ton(m.art === 'forschung' ? 'forschung' : m.art === 'bau' ? 'bau' : m.art === 'kampf' || m.art === 'krieg' ? 'warnung' : m.art === 'stadt' ? 'gruendung' : 'meldung'); } });
+  an('meldungen', (l) => { for (const m of l) { toast(m.text, m.art === 'warnung' || m.art === 'krieg' ? 'warnung' : m.art === 'eureka' ? 'erfolg' : 'info', { onclick: m.feld != null ? () => springe(m.feld) : null }); if (m.art !== 'zeitalter') ton(m.art === 'forschung' || m.art === 'eureka' ? 'forschung' : m.art === 'bau' ? 'bau' : m.art === 'kampf' || m.art === 'krieg' ? 'warnung' : m.art === 'stadt' ? 'gruendung' : 'meldung'); } });
   setInterval(() => { if (Z.ansicht) { leisteZeichnen(); forschungZeichnen(); if (Z.auswahl) auswahlZeichnen(false); } }, 1000);
   setInterval(() => { if (Z.ansicht) minikarteRahmen(); }, 300);
   minikarteZeichnen();
@@ -116,6 +116,15 @@ export function einkommenFenster() {
 }
 
 // ---------- Forschung ----------
+/** Eureka-Zeile im Fortschritts-Panel: Bedingung der aktiven Forschung/Civic (oder "erfüllt") und Zähler aller Eurekas. */
+function eurekaZeile(art, id, daten) {
+  const e = du()?.eurekas; const eu = daten?.eureka; if (!eu) return null;
+  const erfuellt = !!e?.erfuellt?.[art + ':' + id], st = e?.stand?.[art]?.[id];
+  const anzahl = Object.keys(e?.erfuellt || {}).filter((k) => k.startsWith(art + ':')).length;
+  const text = erfuellt ? T.eurekaErfuellt : eu.text + (st && st[1] > 1 ? ` (${st[0]}/${st[1]})` : '');
+  return el('div.klein.eureka-zeile' + (erfuellt ? '.erfuellt' : ''), { tip: `${art === 'f' ? T.baum.eurekaTitel : T.kultur.baum.eurekaTitel}: ${eu.text} · ${T.eurekaZaehler(anzahl)}` },
+    symbol('ui', 'eureka', { px: 14 }), el('span', { text }));
+}
 /** Kultur-Anzeige unter der Forschung: aktive Civic mit Fortschritt und Restzeit (aus den Kulturpunkten pro Stunde). */
 function kulturZeichnen() {
   const c = du()?.civics; if (!kulturEl) return;
@@ -127,7 +136,7 @@ function kulturZeichnen() {
   const seit = Math.max(0, serverJetzt() - (du().stand_um || serverJetzt()));
   const p = Math.min(1, ((c.punkte || 0) + (c.rate || 0) * seit / 3600000) / civ.kosten);
   const rest = c.fertig_um ? c.fertig_um - serverJetzt() : null;
-  kulturEl.replaceChildren(el('div.zeile', symbol('ui', 'kultur', { px: 24 }), el('div', { style: { flex: 1, minWidth: 0 } }, el('div', { style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, el('b', { text: civ.name })), balken(p, 'lila'), el('div.klein', { text: `${Math.floor(p * 100)} % · ${rest != null ? 'fertig in ' + dauerText(rest) : T.kultur.keineKultur}` }))));
+  kulturEl.replaceChildren(el('div.zeile', symbol('ui', 'kultur', { px: 24 }), el('div', { style: { flex: 1, minWidth: 0 } }, el('div', { style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, el('b', { text: civ.name })), balken(p, 'lila'), el('div.klein', { text: `${Math.floor(p * 100)} % · ${rest != null ? 'fertig in ' + dauerText(rest) : T.kultur.keineKultur}` }), eurekaZeile('c', c.aktiv, civ))));
 }
 
 function forschungZeichnen() {
@@ -137,7 +146,7 @@ function forschungZeichnen() {
   const fo = FORSCHUNG[f.aktiv];
   const p = forschungsFortschritt();
   const rest = f.fertig_um ? f.fertig_um - serverJetzt() : null;
-  forschungsEl.replaceChildren(el('div.zeile', symbol('ui', 'forschung', { px: 24 }), el('div', { style: { flex: 1, minWidth: 0 } }, el('div', { style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, el('b', { text: fo.name })), balken(p, 'blau'), el('div.klein', { text: `${Math.floor(p * 100)} % · fertig in ${dauerText(rest)}` }))));
+  forschungsEl.replaceChildren(el('div.zeile', symbol('ui', 'forschung', { px: 24 }), el('div', { style: { flex: 1, minWidth: 0 } }, el('div', { style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, el('b', { text: fo.name })), balken(p, 'blau'), el('div.klein', { text: `${Math.floor(p * 100)} % · fertig in ${dauerText(rest)}` }), eurekaZeile('f', f.aktiv, fo))));
 }
 
 // ---------- Auswahl ----------

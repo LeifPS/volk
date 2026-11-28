@@ -400,6 +400,7 @@ export const kampf = {
   },
 
   einheitBesiegt(z, sieger) {
+    if (sieger && this.z.voelker[z.volk]?.art !== 'tiere') this.zaehle(sieger.volk, 'siege');
     const zv = this.z.voelker[z.volk];
     if (zv?.art === 'tiere') {
       const sv = this.z.voelker[sieger.volk];

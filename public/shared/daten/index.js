@@ -9,6 +9,8 @@ import { BEFOERDERUNGEN } from './befoerderungen.js';
 import { GEBAEUDE } from './gebaeude.js';
 import { WUNDER } from './wunder.js';
 import { FORSCHUNGEN } from './forschung.js';
+import { CIVICS as _CIVICS } from './civics.js';
+import { EUREKAS_FORSCHUNG, EUREKAS_CIVIC } from './eurekas.js';
 
 export * from './zeitalter.js';
 export * from './gelaende.js';
@@ -23,6 +25,7 @@ export * from './akteure.js';
 export * from './distrikte.js';
 export * from './naturwunder.js';
 export * from './civics.js';
+export * from './eurekas.js';
 export * from './religion.js';
 
 const nachId = (liste) => Object.assign(Object.create(null), Object.fromEntries(liste.map((x) => [x.id, x])));
@@ -53,3 +56,7 @@ for (const f of FORSCHUNGEN) for (const v of f.voraussetzungen) NACHFOLGER[v]?.p
 
 /** IDs der Startforschungen (ohne Voraussetzungen). */
 export const STARTFORSCHUNGEN = FORSCHUNGEN.filter((f) => f.voraussetzungen.length === 0).map((f) => f.id);
+
+// Eureka als eigenes Feld an jeder Forschung und Civic (Daten in eurekas.js, über die ID verknüpft).
+for (const f of FORSCHUNGEN) f.eureka = EUREKAS_FORSCHUNG[f.id] || null;
+for (const c of _CIVICS) c.eureka = EUREKAS_CIVIC[c.id] || null;

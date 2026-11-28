@@ -15,7 +15,7 @@ const STD = 3600e3, TAG = 24 * STD;
 // Effektive Tage je Zeitalter (Tempo-Update 2026-11-17: alles schneller, nur gegen Ende langsamer).
 // Atomzeit: gilt seit dem Ausbau bis zum Eintritt ins KI-Zeitalter (vorher bis zum Ende des Baums).
 // Neue Zeitalter (Endgame, Leifs Vorgabe: zusammen etwa 3 bis 5 Wochen für einen guten Spieler): KI, Fusion, Weltraum, Sterne.
-const ZIEL_TAGE = [0.3, 0.9, 1.1, 1.5, 3, 6.7, 6, 6, 7, 8, 9];
+const ZIEL_TAGE = [0.3, 0.9, 1.1, 1.5, 3, 6.7, 5, 6, 7, 8, 9]; // Atomzeit mit Eurekas etwas kürzer (Stufe 9), Feinabstimmung in Stufe 13
 const NZ = ZEITALTER.length;
 
 const s = new Spiel(leererZustand(uhr.jetzt()));
@@ -54,7 +54,7 @@ const nichtWiederholbar = FORSCHUNGEN.filter((f) => !f.wiederholbar).length;
 const fertig = s.forschungsAnzahl(v) >= nichtWiederholbar ? protokoll.fertig : null;
 const bericht = {
   tage: TAGE, forschungen: s.forschungsAnzahl(v), von: nichtWiederholbar, ganzerBaumNachTagen: fertig,
-  zeitalterBeginn: zeitalterAb.map((x) => +x.toFixed(2)), civicsBeiZeitalter, civicsGesamt: Object.keys(v.civics?.erforscht || {}).length, ergebnisse, minGold: Math.round(minGold), maxUnterhaltAnteil: +maxUnterhaltAnteil.toFixed(2), engineFehler: fehler.length,
+  zeitalterBeginn: zeitalterAb.map((x) => +x.toFixed(2)), civicsBeiZeitalter, civicsGesamt: Object.keys(v.civics?.erforscht || {}).length, eurekas: Object.keys(v.eurekas || {}).length, ergebnisse, minGold: Math.round(minGold), maxUnterhaltAnteil: +maxUnterhaltAnteil.toFixed(2), engineFehler: fehler.length,
   ki: s.alleVoelker().filter((x) => x.art === 'ki').map((x) => ({ name: x.name, staedte: s.staedteVon(x.id).length, zeitalter: x.zeitalter })),
 };
 console.log(JSON.stringify(bericht, null, still ? 0 : 2));

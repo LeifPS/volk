@@ -16,7 +16,7 @@ Kernregel: Die Live-Welt muss nach jedem Schritt weiterlaufen (Migration, Karte 
 | 6 | Distrikte (8 + 3 im All, Stufen, Nachbarschaft, Spezialisierung, Plündern, 5 Traditionen mit einzigartigen Distrikten, Migration 3→4) | fertig |
 | 7 | Civics (120), Regierungen (8), Politikkarten (60), Kulturbaum, Regierungsfenster, Migration 4→5 | fertig |
 | 8 | Religion (Glaube, 12 Pantheons, 8 Religionen, 40 Glaubenssätze, Missionar, Apostel, Druck, Religionsfenster, Kartenansicht) | fertig |
-| 9 | Eurekas | offen |
+| 9 | Eurekas und Inspirationen (451 Bedingungen, Server-Prüfung, 40 % Rabatt, Anzeige im Baum und Fortschritts-Panel) | fertig |
 | 10 | Symbole über Einheiten | offen |
 | 11 | Animationen | offen |
 | 12 | Grafik-Politur | offen |
