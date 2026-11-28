@@ -10,7 +10,7 @@ import { FORSCHUNG } from '../daten/index.js';
 //  - Jeder Schritt hat einen Test mit dem echten Altstand (tests/daten/altstand-v1.json) in tests/migration.test.mjs.
 
 /** Aktuelle Version des Spielzustands. */
-export const ZUSTAND_VERSION = 2;
+export const ZUSTAND_VERSION = 3;
 
 /** Schritte: SCHRITTE[n] hebt einen Zustand von Version n auf n + 1. */
 export const SCHRITTE = {
@@ -32,6 +32,36 @@ export const SCHRITTE = {
         const n = fo.schlange.findIndex(moeglich);
         if (n >= 0) { fo.aktiv = fo.schlange[n]; fo.fortschritt = fo.teil[fo.aktiv] || 0; delete fo.teil[fo.aktiv]; fo.schlange.splice(n, 1); }
       }
+    }
+  },
+
+  /**
+   * 2 -> 3 (Naturwunder und Weltwunder auf Feldern):
+   *  - Naturwunder werden in die laufende Welt gesetzt, nur auf freie Felder (kein Besitz, keine Verbesserung, keine Einheit, Abstand zu Städten).
+   *  - Schon gebaute Weltwunder bekommen ein Feld im Gebiet ihrer Stadt (bevorzugt ein passendes ohne Verbesserung).
+   *  - Laufende und vorgemerkte Wunder-Aufträge bekommen ihr Feld; laufende setzen ihre Baustelle.
+   * Wer ein Naturwunder schon im erkundeten Gebiet hat, entdeckt es beim nächsten Erkunden nicht neu (es wird gleich zugeordnet).
+   */
+  2(z, spiel) {
+    if (!spiel || !z.global?.initialisiert) return;
+    spiel.naturwunderPlatzieren();
+    // Naturwunder, die schon jemand im erkundeten Gebiet hat, gelten als entdeckt (ohne Bonus, der Zeitpunkt ist unbekannt)
+    for (const nw of z.global.naturwunder || []) {
+      for (const v of Object.values(z.voelker)) {
+        if (v.art !== 'spieler' && v.art !== 'ki') continue;
+        const n = spiel.nebel(v.id);
+        if (nw.felder.some((i) => spiel.istErkundet(n, i))) { nw.entdeckt_von = nw.entdeckt_von ?? v.id; break; }
+      }
+    }
+    for (const [wid, w] of Object.entries(z.wunder || {})) {
+      if (!w.fertig || w.feld != null) continue;
+      const st = z.staedte[w.stadt];
+      if (!st) continue;
+      spiel.wunderAufFeld(wid, spiel.wunderPlatzAutomatisch(st, wid));
+    }
+    for (const st of Object.values(z.staedte)) {
+      for (const b of st.bau || []) if (b.art === 'wunder' && b.feld == null) { b.feld = spiel.wunderPlatzAutomatisch(st, b.id); if (b.feld != null) spiel.setzeFeld(b.feld, { wb: b.id }); }
+      for (const b of st.schlange || []) if (b.art === 'wunder' && b.feld == null) b.feld = spiel.wunderPlatzAutomatisch(st, b.id);
     }
   },
 };

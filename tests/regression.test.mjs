@@ -140,8 +140,10 @@ test('Barbaren ignorieren den Neulingsschutz, Raubtiere nicht, Offline-Spieler b
   assert.equal(s.kampfHindernis(v.id, b.id), null, 'Neulinge dürfen Barbaren bekämpfen');
   // Barbar neben einem Neuling geht tatsächlich zum Angriff über
   const ziel = s.einheitenVon(v.id).find((e) => e.typ === 'krieger');
-  const n = nachbarn(ziel.feld).find((i) => s.einheitenAuf(i).length === 0 && !s.stadtAuf(i));
+  for (const u of s.einheitenVon(v.id)) if (u !== ziel) s.einheitEntfernen(u.id); // nur der Krieger als Ziel (Barbaren bevorzugen sonst Zivilisten)
+  const n = nachbarn(ziel.feld).find((i) => s.einheitenAuf(i).length === 0 && !s.stadtAuf(i) && s.betretbar(b.id, { klasse: 'nahkampf', tempo: 2 }, i));
   const e = s.einheitErzeugen(b.id, 'krieger', n, {});
+  assert.equal(e.feld, n, 'Barbar steht neben dem Neuling');
   e.abkling_bis = 0; e.pfad = [];
   const hp = ziel.hp;
   s.barbarHandeln(b, e);

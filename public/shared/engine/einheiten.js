@@ -133,6 +133,7 @@ export const einheiten = {
     const bereich = bereichVon(d);
     const st = this.stadtAuf(nach);
     if (st && st.volk !== vid && !this.verbuendet(vid, st.volk)) return Infinity;
+    if (this.naturwunderAuf(nach)) return Infinity; // Naturwunder sind unpassierbar
     if (ebeneVon(nach) === 1 || ebeneVon(von) === 1) return bereich === 'luft' ? Infinity : this.raumKosten(vid, d, von, nach, nurZiel);
     const f = this.z.felder[nach];
     if (bereich === 'luft') return Infinity;
@@ -391,12 +392,12 @@ export const einheiten = {
     const v = this.z.voelker[vid];
     if (!v || v.art === 'tiere' || v.art === 'barbar') return;
     const n = this.nebel(vid);
-    let neu = false;
+    const neue = [];
     for (const i of umkreis(mitte, radius)) {
       const m = 1 << (i & 7);
-      if (!(n[i >> 3] & m)) { n[i >> 3] |= m; neu = true; (this._neuErkundet ||= {})[vid] ||= []; this._neuErkundet[vid].push(i); }
+      if (!(n[i >> 3] & m)) { n[i >> 3] |= m; neue.push(i); (this._neuErkundet ||= {})[vid] ||= []; this._neuErkundet[vid].push(i); }
     }
-    if (neu) { (this.z.nebel ||= {}); this.z.nebel[vid] = null; this.markiere('n' + vid); this.kontaktePruefen?.(vid, mitte, radius); }
+    if (neue.length) { (this.z.nebel ||= {}); this.z.nebel[vid] = null; this.markiere('n' + vid); this.kontaktePruefen?.(vid, mitte, radius); this.naturwunderEntdecken?.(vid, neue); }
   },
 
   /** Aktuell sichtbare Felder eines Volkes (inkl. Verbündeter und verbündeter Stadtstaaten). */
@@ -456,6 +457,8 @@ export const einheiten = {
   // ---------- Stadt gründen ----------
   stadtGruendenHindernis(vid, i) {
     if (!stadtGelaendeOk(i)) return 'Auf diesem Gelände kann keine Stadt stehen (nicht auf Wasser, Gebirge oder Eis).';
+    if (this.naturwunderAuf(i)) return 'Auf einem Naturwunder kann keine Stadt stehen.';
+    if (this.z.felder[i]?.wu || this.z.felder[i]?.wb) return 'Auf einem Weltwunder kann keine Stadt stehen.';
     const bes = this.besitzer(i);
     if (bes != null && bes !== vid) return 'Nicht auf fremdem Gebiet.';
     for (const s of this.alleStaedte()) if (abstand(s.feld, i) < STADT_MINDESTABSTAND) return `Zu nah an ${s.name}: Städte brauchen mindestens ${STADT_MINDESTABSTAND} Felder Abstand.`;

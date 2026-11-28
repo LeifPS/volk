@@ -62,10 +62,14 @@ export const ansicht = {
       if (f.br) x.br = 1;
       if (f.pl > this.t) x.pl = f.pl;
       if (f.fo > this.t) x.fo = f.fo;
+      if (f.wu) x.wu = f.wu;   // fertiges Weltwunder
+      if (f.wb) x.wb = f.wb;   // Wunder-Baustelle
+      if (f.d) x.d = f.d;     // Distrikt
+      if (f.db) x.db = f.db;   // Distrikt-Baustelle
       a.felder[i] = x;
     }
     for (const l of Object.values(this.z.lager)) if (erk(l.feld)) a.lager[l.id] = { id: l.id, feld: l.feld, typ: l.typ };
-    for (const [wid, w] of Object.entries(this.z.wunder)) a.wunder[wid] = { volk: w.volk, stadt: w.stadt, fertig: !!w.fertig, t: w.t };
+    for (const [wid, w] of Object.entries(this.z.wunder)) a.wunder[wid] = { volk: w.volk, stadt: w.stadt, fertig: !!w.fertig, t: w.t, feld: w.feld ?? null };
     a.welt.im_bau = [];
     for (const s of this.alleStaedte()) for (const b of s.bau || []) if (b.art === 'wunder' && (!b.geheim || s.volk === vid)) a.welt.im_bau.push({ wunder: b.id, volk: s.volk, fertig_um: s.volk === vid ? b.fertig_um : null });
     for (const an of Object.values(this.z.angebote)) if (an.von === vid || an.an === vid || an.parteien?.includes(vid)) a.angebote[an.id] = an;
@@ -74,6 +78,8 @@ export const ansicht = {
     a.welt.ereignisse = (this.z.global.ereignisse || []).filter((ev) => erk(ev.mitte)).map((ev) => ({ id: ev.id, typ: ev.typ, mitte: ev.mitte, start: ev.start, ende: ev.ende, aktiv: ev.aktiv }));
     a.welt.tribute = (this.z.global.tribute || []).filter((t) => t.von === vid || t.an === vid);
     a.welt.karte = karte().hash;
+    // Naturwunder, von denen das Volk mindestens ein Feld erkundet hat
+    a.welt.naturwunder = (this.z.global.naturwunder || []).filter((nw) => nw.felder.some((i) => erk(i))).map((nw) => ({ id: nw.id, felder: nw.felder, entdeckt_von: nw.entdeckt_von ?? null }));
     return a;
   },
 
@@ -153,6 +159,12 @@ export const ansicht = {
     const v = this.z.voelker[vid];
     pruefe(v && q && typeof q.art === 'string', 'Ungültige Anfrage.');
     if (q.art === 'rangliste') return this.rangliste();
+    if (q.art === 'wunderplaetze') {
+      const s = this.z.staedte[q.stadt];
+      pruefe(s && s.volk === vid, 'Das ist nicht deine Stadt.');
+      pruefe(typeof q.id === 'string' && WUNDER.some((w) => w.id === q.id), 'Unbekanntes Wunder.');
+      return { felder: this.wunderPlaetze(s, q.id) };
+    }
     if (q.art === 'bauliste') {
       const s = this.z.staedte[q.stadt];
       pruefe(s && s.volk === vid, 'Das ist nicht deine Stadt.');

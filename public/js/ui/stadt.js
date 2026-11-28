@@ -520,6 +520,7 @@ function wunderDialog(x, s) {
       el('div.gruen-t', { text: [...boniListe(d.reich), ...wirkungListe(d.wirkung)].join(' · ') }),
     )),
     el('div.st-hinweis', symbol('ui', 'krone', { px: 20 }), el('span', { text: S().wunderEinmalig })),
+    el('div.st-hinweis', symbol('ui', 'karte', { px: 20 }), el('span', { text: S().wunderFeld(d.platz?.text || 'auf einem Landfeld') })),
     imBau.length ? el('div.st-hinweis', symbol('ui', 'warnung', { px: 20 }), el('span', { text: S().wunderKonkurrenz(imBau.map((w) => Z.ansicht.voelker[w.volk]?.name || '?').join(', ')) })) : null,
     el('div.st-zeile', symbol('ui', 'zeit'), S().dauer + ': ' + dauerText(x.dauer)),
     kostenEl(x.kosten, x.fehlt),
@@ -528,7 +529,7 @@ function wunderDialog(x, s) {
     el('div.klein', { text: S().geheimText }),
   ].filter(Boolean)), { breite: 'schmal', fuss: true });
   f.fuss.append(el('button.knopf', { text: T.abbrechen, onclick: () => f.schliessen() }),
-    el('button.knopf.gold', { onclick: async () => { f.schliessen(); await senden({ art: 'bauen', stadt: s.id, typ: 'wunder', id: x.id, geheim: geheim || undefined, vormerken: x.fehlt ? true : undefined }, d.name); } }, symbol('ui', x.fehlt ? 'uhr' : 'wunder'), x.fehlt ? S().vormerken : S().wunderBauen));
+    el('button.knopf.gold', { onclick: async () => { f.schliessen(); const { wunderPlatzWaehlen } = await import('./hud.js'); await wunderPlatzWaehlen(s, x.id, { geheim: geheim || undefined, vormerken: x.fehlt ? true : undefined }); } }, symbol('ui', 'karte'), S().wunderPlatz));
 }
 
 function platzListe(s) {

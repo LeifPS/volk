@@ -1,5 +1,5 @@
 // Spielansicht: Ressourcenleiste, Forschungsanzeige, Auswahlpanel, Aktionsleiste, Minikarte, Meldungen, "Nächste Aktion".
-import { el, symbol, toast, fehler, zahl, vorzeichen, dauerText, uhrzeit, balken, fenster, frageJaNein, tip } from './basis.js';
+import { el, symbol, toast, fehler, zahl, vorzeichen, dauerText, uhrzeit, balken, fenster, frageJaNein, tip, alleFensterZu } from './basis.js';
 import { T } from '../texte.js';
 import { Z, an, du, volk, einheit, stadt, feldInfo, eigeneEinheiten, eigeneStaedte, aktuellesFeld, aktuelleHp, aktuellesGold, aktuellesLager, forschungsFortschritt, serverJetzt, stadtAuf, einheitenAuf, besitzerVon, erkundet } from '../kern/zustand.js';
 import { befehl, frage } from '../kern/netz.js';
@@ -348,6 +348,19 @@ function feldPanel(i) {
 }
 
 // ---------- Zielmodus (Handel, Luftangriff, Verlegen, Atomschlag, Stadtangriff) ----------
+/** Feld für ein Weltwunder wählen: gültige Felder leuchten grün, ein Klick darauf erteilt den Bauauftrag. */
+export async function wunderPlatzWaehlen(s, id, extra = {}) {
+  let felder;
+  try { felder = (await frage({ art: 'wunderplaetze', stadt: s.id, id })).felder; } catch (e) { fehler(e.message); return; }
+  if (!felder.length) { fehler('Im Gebiet der Stadt gibt es kein passendes Feld für dieses Wunder.'); return; }
+  alleFensterZu();
+  Z.zielmodus = { art: 'wunderplatz', id, stadt: s.id, felder, extra };
+  overlay.gueltig = felder;
+  zentriereAuf(s.feld, true);
+  toast('Wähle das Feld für das Weltwunder (grün markiert). Esc bricht ab.', 'info', { symbol: 'wunder' });
+  neuZeichnen();
+}
+
 function zielmodus(art, obj) {
   Z.zielmodus = { art, id: obj.id };
   const texte = { handel: 'Wähle die Zielstadt der Handelsroute (Linksklick auf eine Stadt).', luftangriff: 'Wähle das Ziel des Luftangriffs.', verlegen: 'Wähle die Stadt (oder den Träger), in die das Flugzeug verlegt wird.', atomschlag: 'Wähle das Ziel. Achtung: Wirkung im Umkreis von 2 Feldern!', stadt_angriff: 'Wähle die feindliche Einheit, die beschossen werden soll.' };
@@ -357,8 +370,14 @@ function zielmodus(art, obj) {
   neuZeichnen();
 }
 export async function zielGewaehlt(feld) {
-  const zm = Z.zielmodus; Z.zielmodus = null; overlay.reichweite = null; neuZeichnen();
+  const zm = Z.zielmodus; Z.zielmodus = null; overlay.reichweite = null; overlay.gueltig = null; neuZeichnen();
   if (!zm) return false;
+  if (zm.art === 'wunderplatz') {
+    if (!zm.felder.includes(feld)) { fehler('Auf diesem Feld kann das Wunder nicht stehen. Gültige Felder sind grün markiert.'); return true; }
+    const r = await ausfuehren({ art: 'bauen', stadt: zm.stadt, typ: 'wunder', id: zm.id, feld, ...zm.extra });
+    if (r) { toast('Der Bauplatz für das Weltwunder ist gewählt.', 'erfolg'); ton('bau'); }
+    return true;
+  }
   if (zm.art === 'handel') { const s = stadtAuf(feld); if (!s) { fehler('Dort ist keine Stadt.'); return true; } const r = await ausfuehren({ art: 'handelsroute', einheit: zm.id, stadt: s.id }); if (r) toast(`Die Karawane macht sich auf den Weg nach ${s.name}. Ankunft ${uhrzeit(r.ankunft)}.`, 'erfolg'); return true; }
   if (zm.art === 'luftangriff') { await ausfuehren({ art: 'luftangriff', einheit: zm.id, ziel: feld }); return true; }
   if (zm.art === 'atomschlag') { if (await frageJaNein('Atomschlag', 'Wirklich eine Atomwaffe einsetzen? Alles im Umkreis von 2 Feldern wird schwer beschädigt.', 'Einsetzen')) await ausfuehren({ art: 'atomschlag', einheit: zm.id, ziel: feld }); return true; }

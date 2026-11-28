@@ -4,6 +4,7 @@ import { umkreis, abstand, nachbarn, RAUM_START } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { ROHSTOFFE, LAGERGUETER, LAGER_NAMEN } from '../daten/rohstoffe.js';
 import { GEB, WUNDER_NACH_ID, FORSCHUNG, ROHSTOFF, VERBESSERUNG, STADTSTAATEN } from '../daten/index.js';
+import { NATURWUNDER_NACH_ID } from '../daten/naturwunder.js';
 import {
   STD, MIN, ERTRAG_RATE as F, WIRTSCHAFT_TEMPO, GOLD_FAKTOR, WISSEN_JE_EINWOHNER, NAHRUNG_PRO_EINWOHNER, BAUSTOFFE, STRATEGISCH, LAGER_BASIS_BAU, LAGER_BASIS_STRATEGISCH,
   STADT_RADIUS_ARBEIT, STADT_RADIUS_GRENZE_MAX, wachstumsBedarf, grenzKosten, zufriedenheitsFaktor, stadtUnzufriedenheit,
@@ -72,8 +73,13 @@ export const wirtschaft = {
   feldErtrag(i, v, mitMaterial = true) {
     const k = karte();
     const g = GELAENDE[k.gelaende[i]];
-    const e = { n: g.ertrag.n, p: g.ertrag.p, g: g.ertrag.g, w: g.wissen || 0, k: g.kultur || 0, material: {} };
+    const nw = this.naturwunderAuf(i);
+    const nwDef = nw ? NATURWUNDER_NACH_ID[nw.id] : null;
+    const e = nwDef ? { n: nwDef.ertrag.n, p: nwDef.ertrag.p, g: nwDef.ertrag.g, w: nwDef.ertrag.w || 0, k: nwDef.ertrag.k || 0, material: {} }
+      : { n: g.ertrag.n, p: g.ertrag.p, g: g.ertrag.g, w: g.wissen || 0, k: g.kultur || 0, material: {} };
     const f = this.z.felder[i];
+    if (f && (f.wu || f.wb)) return { n: 0, p: 0, g: 0, w: 0, k: 0, material: {} }; // Weltwunder-Feld wird nicht bewirtschaftet
+    if (nwDef) { if (k.fluss[i] && !g.wasser) e.g += 1; return e; }
     if (f && f.fo && f.fo > this.t) return { n: 0, p: 0, g: 0, w: 0, k: 0, material: {} };
     if (k.fluss[i] && !g.wasser) e.g += 1;
     if (mitMaterial && g.material) for (const [m, x] of Object.entries(g.material)) e.material[m] = (e.material[m] || 0) + x;
@@ -452,6 +458,7 @@ export const wirtschaft = {
     pruefe(s && s.volk === v.id, 'Das ist nicht deine Stadt.');
     const i = b.feld | 0;
     pruefe(s.gebiet.includes(i) && i !== s.feld, 'Dieses Feld gehört nicht zu dieser Stadt.');
+    pruefe(!b.an || !(this.z.felder[i]?.wu || this.z.felder[i]?.wb), 'Auf diesem Feld steht ein Weltwunder.');
     pruefe(abstand(s.feld, i) <= STADT_RADIUS_ARBEIT, `Einwohner können nur Felder im Umkreis von ${STADT_RADIUS_ARBEIT} bewirtschaften.`);
     this.aendern(v.id);
     s.manuell = true;

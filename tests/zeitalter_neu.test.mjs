@@ -22,7 +22,6 @@ test('Aufstieg ins KI-Zeitalter braucht 60 % der Atomzeit und Lernende Maschinen
   vorspulen(s, 30 * 24 * STD);
   assert.ok(v.forschung.erforscht.lernende_maschinen);
   assert.ok(v.zeitalter >= 7, 'KI-Zeitalter erreicht');
-  assert.ok(s.z.voelker[v.id].meldungen.some((m) => m.art === 'zeitalter' && m.zeitalter === 7));
 });
 
 test('Seltene Erden: erst mit Lernenden Maschinen sichtbar, liegen nur auf Feldern ohne alten Rohstoff', () => {

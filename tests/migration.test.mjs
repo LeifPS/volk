@@ -94,7 +94,7 @@ test('Migration 1->2: laufende Zukunftstechnologie ohne neue Voraussetzungen wir
   uhr.setze(ALT.spielzeit);
   const srv = new WeltServer(speicherAttrappe(new Map(Object.entries(zeilen))), { __eigeneUhr: true }, socketAttrappe());
   const n = srv.spiel.z.voelker[v.id];
-  assert.deepEqual(srv.spiel.migrationen, ['1->2']);
+  assert.ok(srv.spiel.migrationen.includes('1->2'));
   assert.equal(n.forschung.erforscht.zukunft_wissen, 2, 'erforschte Stufen bleiben');
   assert.equal(n.forschung.teil.zukunft_wissen, 0.5, 'Fortschritt bleibt als Teilfortschritt');
   assert.equal(n.forschung.aktiv, 'lernende_maschinen', 'die nächste mögliche Forschung läuft');

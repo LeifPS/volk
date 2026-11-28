@@ -61,6 +61,14 @@ export function baueDemo(zeitalter = 3, start = Date.now()) {
     if (d.faehigkeiten?.includes('arbeiten')) e.modus = 'auto_arbeit';
   }
   for (const st of staedte) s.erkunde(v.id, st.feld, 10);
+  // Weltwunder: eines fertig neben der Hauptstadt, eines als Baustelle in der zweiten Stadt
+  const fertigW = zeitalter >= 1 ? 'pyramiden' : null;
+  const platzMitAbstand = (st, wid) => s.wunderPlaetze(st, wid).sort((x, y) => Math.abs(abstand(x, st.feld) - 2) - Math.abs(abstand(y, st.feld) - 2))[0] ?? s.wunderPlatzAutomatisch(st, wid);
+  if (fertigW) { const f = platzMitAbstand(haupt, fertigW); if (f != null) { s.z.wunder[fertigW] = { volk: v.id, stadt: haupt.id, fertig: true, t }; s.wunderAufFeld(fertigW, f); } }
+  if (staedte[1] && zeitalter >= 2) { const wid = zeitalter >= 5 ? 'freiheitsstatue' : 'grosse_mauer'; const f = platzMitAbstand(staedte[1], wid); if (f != null) s.setzeFeld(f, { wb: wid, v: null }); }
+  // Das nächste Naturwunder ist entdeckt und sichtbar
+  const nwNah = [...(s.z.global.naturwunder || [])].sort((x, y) => abstand(x.felder[0], haupt.feld) - abstand(y.felder[0], haupt.feld))[0];
+  if (nwNah) s.erkunde(v.id, nwNah.felder[0], 4);
   // Weltraum (ab Weltraumzeitalter): Raumhafen, Kolonien auf Mond und Mars, Schiffe im Orbit
   if (zeitalter >= 9) {
     haupt.gebaeude.raumhafen = 1;

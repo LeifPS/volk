@@ -656,7 +656,7 @@ T.stadt = {
   vormerkenText: 'Du kannst den Auftrag vormerken: Er startet automatisch, sobald alles da ist.', vormerken: 'Vormerken',
   inAuftrag: (n) => `${n} wurde in Auftrag gegeben.`, vorgemerkt: (n) => `${n} ist vorgemerkt und startet, sobald das Material da ist.`,
   wunderEinmalig: 'Einmalig im ganzen Server: Nur wer es zuerst fertigstellt, bekommt es.', wunderKonkurrenz: (v) => `Achtung, auch diese Völker bauen es gerade: ${v}.`,
-  wunderBauen: 'Wunder bauen', geheim: 'Geheim bauen', geheimKurz: 'geheim',
+  wunderBauen: 'Wunder bauen', wunderPlatz: 'Bauplatz wählen', wunderFeld: (t) => `Weltwunder stehen auf einem eigenen Feld im Stadtgebiet. Dieses Wunder steht ${t}. Eine Verbesserung auf dem Feld wird abgerissen.`, geheim: 'Geheim bauen', geheimKurz: 'geheim',
   geheimTip: 'Andere Spieler erfahren nicht, dass du dieses Wunder baust.', geheimText: 'Geheim: Niemand wird über den Baubeginn informiert – aber du siehst dann auch nicht, ob es Konkurrenz gibt, die dich überrascht.',
   staerkeEinheitTip: 'Kampfstärke', fernTip: 'Fernkampfstärke', reichweiteEinheitTip: 'Reichweite in Feldern', tempoTip: 'Tempo (Bewegungspunkte)', unterhaltEinheitTip: 'Unterhalt in Gold pro Stunde',
   unterhaltKurz: (u) => `Unterhalt ${u}/h`,

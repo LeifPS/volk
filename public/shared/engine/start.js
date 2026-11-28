@@ -50,6 +50,7 @@ export const start = {
       this.einheitErzeugen(v.id, 'krieger', feld);
       for (let i = 0; i < 3; i++) this.grenzwachstum(st.id);
     }
+    this.naturwunderPlatzieren();
     this.tiereNachfuellen();
     for (let i = 0; i < BARBAREN.basisLager; i++) this.lagerGruenden();
     this.markiere('g');
@@ -82,6 +83,7 @@ export const start = {
       const w = startWert(i);
       if (w <= 0) continue;
       if (this.besitzer(i) != null) continue;
+      if (this.nwKarte().size && umkreis(i, 2).some((j) => this.naturwunderAuf(j))) continue;
       let ok = true;
       for (const b of belegt) if (abstand(b, i) < minAbstand) { ok = false; break; }
       if (!ok) continue;

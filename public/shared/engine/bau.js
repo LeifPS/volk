@@ -56,6 +56,7 @@ export const bau = {
       if (this.z.wunder[id]?.fertig) return `Dieses Wunder hat bereits ${this.volk(this.z.wunder[id].volk)?.name || 'jemand'} gebaut.`;
       for (const st of this.staedteVon(v.id)) if ([...(st.bau || []), ...(st.schlange || [])].some((b) => b.art === 'wunder' && b.id === id)) return `Dieses Wunder wird schon in ${st.name} gebaut.`;
       for (const n of d.benoetigt || []) if (!this.hatGebaeude(s, n)) return `Zuerst wird "${GEB[n]?.name || n}" gebraucht.`;
+      if (!this.wunderPlaetze(s, id).length) return `Im Gebiet der Stadt gibt es kein passendes Feld: ${d.name} steht ${d.platz?.text || 'auf einem Landfeld'}.`;
     }
     if (d.braucht_kueste && !this.istKuestenstadt(s)) return 'Das geht nur in einer Stadt an der Küste.';
     if (d.braucht_fluss && !this.istFlussstadt(s)) return 'Das geht nur in einer Stadt an einem Fluss oder See.';
@@ -104,6 +105,13 @@ export const bau = {
     s.schlange = s.schlange || [];
     const eintrag = { art: b.typ, id: b.id };
     if (b.typ === 'wunder' && b.geheim) eintrag.geheim = true;
+    if (b.typ === 'wunder') {
+      // Weltwunder stehen auf einem Feld im Stadtgebiet: der Spieler wählt es (KI und alte Clients bekommen das beste Feld)
+      const feld = b.feld != null ? b.feld | 0 : this.wunderPlatzAutomatisch(s, b.id);
+      const h2 = feld == null ? 'Kein passendes Feld für dieses Wunder.' : this.wunderPlatzHindernis(s, b.id, feld);
+      pruefe(!h2, h2);
+      eintrag.feld = feld;
+    }
     // sofort startbar? Dann Kosten jetzt prüfen und eine klare Meldung geben
     if ((s.bau || []).length < this.bauplaetze(s) && !s.schlange.length) {
       const kosten = this.bauKosten(s, b.typ, b.id);
@@ -136,7 +144,9 @@ export const bau = {
       const bezahlt = this.bezahle(v, kosten);
       const dauer = this.bauDauerMs(s, n.art, n.id);
       s.schlange.shift();
-      s.bau.push({ art: n.art, id: n.id, start: this.t, fertig_um: this.t + dauer, bezahlt, geheim: n.geheim || undefined });
+      const neuB = { art: n.art, id: n.id, start: this.t, fertig_um: this.t + dauer, bezahlt, geheim: n.geheim || undefined };
+      if (n.art === 'wunder') { neuB.feld = n.feld ?? this.wunderPlatzAutomatisch(s, n.id); this.wunderBaustelle(s, neuB); }
+      s.bau.push(neuB);
       if (n.art === 'wunder' && !n.geheim) for (const a of this.alleVoelker()) if (a.id !== v.id && a.art === 'spieler') this.meldung(a.id, `${v.name} hat mit dem Bau des Wunders "${WUNDER_NACH_ID[n.id].name}" begonnen.`, { art: 'wunder' });
     }
     this.markiere('s' + sid);
@@ -145,7 +155,13 @@ export const bau = {
   /** Wie bauHindernis, aber für einen Eintrag, der gerade aus der Schlange startet (er selbst zählt nicht als "schon in Bau"). */
   bauHindernisStart(s, n) {
     const schl = s.schlange; s.schlange = schl.slice(1);
-    try { return this.bauHindernis(s, n.art, n.id); } finally { s.schlange = schl; }
+    try {
+      const h = this.bauHindernis(s, n.art, n.id);
+      if (h || n.art !== 'wunder' || n.feld == null) return h;
+      const hf = this.wunderPlatzHindernis(s, n.id, n.feld);
+      if (hf) { const neu = this.wunderPlatzAutomatisch(s, n.id); if (neu == null) return hf; n.feld = neu; }
+      return null;
+    } finally { s.schlange = schl; }
   },
 
   bauFertig(sid) {
@@ -164,9 +180,10 @@ export const bau = {
         this.meldung(v.id, `${s.name}: ${d.name} ist fertig.`, { art: 'bau', feld: s.feld });
         if (d.wirkung?.sicht) this.erkunde(v.id, s.feld, 2 + d.wirkung.sicht);
       } else if (b.art === 'wunder') {
-        if (this.z.wunder[b.id]?.fertig) { this.erstatte(v, b.bezahlt, 1); continue; }
+        if (this.z.wunder[b.id]?.fertig) { this.wunderBaustelleWeg(b); this.erstatte(v, b.bezahlt, 1); continue; }
         this.z.wunder[b.id] = { volk: v.id, stadt: s.id, fertig: true, t: this.t };
         this.markiere('w' + b.id);
+        this.wunderAufFeld(b.id, b.feld ?? this.wunderPlatzAutomatisch(s, b.id));
         this.meldung(v.id, `Weltwunder vollendet: ${d.name} in ${s.name}!`, { art: 'wunder', feld: s.feld, wichtig: true });
         for (const a of this.alleVoelker()) if (a.id !== v.id) this.meldung(a.id, `${v.name} hat das Weltwunder "${d.name}" vollendet.`, { art: 'wunder' });
         this.wunderRennenVerloren(b.id, v.id);
@@ -191,7 +208,7 @@ export const bau = {
       const schl = (s.schlange || []).filter((b) => b.art === 'wunder' && b.id === wid);
       if (!vorher.length && !schl.length) continue;
       const v = this.z.voelker[s.volk];
-      for (const b of vorher) this.erstatte(v, b.bezahlt, 1);
+      for (const b of vorher) { this.erstatte(v, b.bezahlt, 1); this.wunderBaustelleWeg(b); }
       s.bau = s.bau.filter((b) => !(b.art === 'wunder' && b.id === wid));
       s.schlange = (s.schlange || []).filter((b) => !(b.art === 'wunder' && b.id === wid));
       this.meldung(v.id, `Das Rennen um "${WUNDER_NACH_ID[wid].name}" ist verloren. Das eingesetzte Material wurde vollständig erstattet.`, { art: 'wunder', feld: s.feld, wichtig: true });
@@ -210,6 +227,7 @@ export const bau = {
     } else {
       pruefe(s.bau && s.bau[nr], 'Diesen Auftrag gibt es nicht.');
       const [x] = s.bau.splice(nr, 1);
+      if (x.art === 'wunder') this.wunderBaustelleWeg(x);
       this.erstatte(v, x.bezahlt, ABBRUCH_ERSTATTUNG);
       this.meldung(v.id, `${s.name}: Auftrag abgebrochen, ${Math.round(ABBRUCH_ERSTATTUNG * 100)} % der Kosten wurden erstattet.`, { feld: s.feld });
     }
@@ -236,6 +254,8 @@ export const bau = {
     if (!this.freigeschaltet(v, 'verbesserung', id)) return `Dafür fehlt die Forschung "${this.forschungsName(FREIGESCHALTET_DURCH['verbesserung:' + id])}".`;
     if (this.besitzer(i) !== v.id) return 'Arbeiter dürfen nur innerhalb der eigenen Grenzen bauen.';
     if (this.stadtAuf(i)) return 'Auf einer Stadt kann man nicht bauen.';
+    if (this.naturwunderAuf(i)) return 'Ein Naturwunder bleibt, wie es ist.';
+    if (this.z.felder[i]?.wu || this.z.felder[i]?.wb) return 'Hier steht ein Weltwunder.';
     const k = karte();
     const g = GELAENDE[k.gelaende[i]];
     if (vb.wasser && !g.wasser) return 'Das geht nur auf Wasser.';

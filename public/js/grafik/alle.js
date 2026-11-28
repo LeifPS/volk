@@ -16,3 +16,5 @@ import './sprites/einheiten_zukunft_land.js';
 import './sprites/einheiten_zukunft_luft_see.js';
 import './sprites/gebaeude_zukunft.js';
 import './sprites/wunder_zukunft.js';
+import './sprites/kolonie.js';
+import './sprites/naturwunder.js';

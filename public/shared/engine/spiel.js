@@ -15,6 +15,8 @@ import { akteure } from './akteure.js';
 import { ansicht } from './ansicht.js';
 import { start } from './start.js';
 import { weltraum } from './weltraum.js';
+import { naturwunder } from './naturwunder.js';
+import { wunderplatz } from './wunderplatz.js';
 import { ZUSTAND_VERSION, migriere } from './migration.js';
 
 export class SpielFehler extends Error {}
@@ -231,4 +233,4 @@ export const BEFEHLE = new Set([
   'meldungen_gelesen', 'tutorial', 'neuanfang', 'ping', 'einstellungen', 'tribut_fordern', 'ebene_wechseln',
 ]);
 
-Object.assign(Spiel.prototype, wirtschaft, bau, forschung, einheiten, kampf, diplomatie, akteure, ansicht, start, weltraum);
+Object.assign(Spiel.prototype, wirtschaft, bau, forschung, einheiten, kampf, diplomatie, akteure, ansicht, start, weltraum, naturwunder, wunderplatz);

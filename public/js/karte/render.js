@@ -18,7 +18,7 @@ let cv, ctx, dpr = 1, schmutzig = true, letzterFrame = 0;
 let sichtbar = new Set();
 let sichtVersion = -1;
 const effekte = [];            // Kampf-Effekte
-export const overlay = { pfad: null, ziele: null, reichweite: null, hover: -1, markierung: null };
+export const overlay = { pfad: null, ziele: null, reichweite: null, gueltig: null, hover: -1, markierung: null };
 export const optionen = { tagnacht: true, wetter: true };
 
 export function init(canvas) {
@@ -160,6 +160,9 @@ function zeichne(t) {
   const forscht = a.du?.forschung?.erforscht || {};
   const za = a.du?.zeitalter || 0;
   const anim = Math.floor(t / 600);
+  // Naturwunder: Feld -> Naturwunder; gezeichnet wird beim untersten Feld (richtige Überdeckung)
+  const nwAuf = new Map();
+  for (const nw of a.welt?.naturwunder || []) for (const i of nw.felder) nwAuf.set(i, nw);
   // 2) Wege (unter allem), pixelgenau mit Kurven
   zeichneWege(ctx, b, weltZuSchirm);
   // 3) Grenzen
@@ -174,6 +177,13 @@ function zeichne(t) {
       const g = GELAENDE[k.gelaende[i]];
       const f = a.felder[i];
       const st = staedteAuf.get(i);
+      const nw = nwAuf.get(i);
+      if (nw) {
+        if (i === nw.felder[nw.felder.length - 1]) zeichneNaturwunder(nw, s, t);
+        const es0 = proFeld.get(i); if (es0) zeichneEinheiten(es0, i, s, t);
+        continue;
+      }
+      if (f && (f.wu || f.wb) && !st) { zeichneWunderFeld(f, x, y, s, t); const es1 = proFeld.get(i); if (es1 && (sichtbar.has(i) || es1.some((e) => e.volk === Z.volk))) zeichneEinheiten(es1, i, s, t); continue; }
       if (f && f.v && !st) {
         const sp2 = sprite('verbesserung', f.v, { farbe: volkFarbe(stadt(f.s)?.volk) });
         if (sp2) male(sp2, x - 24 * s, y - 20 * s, s, f.pl ? 0.5 : 1);
@@ -226,6 +236,38 @@ function zeichne(t) {
 
 /** Verbesserungen, unter denen keine Gelände-Deko gezeichnet wird (sonst verdeckt die Deko sie). Weltraum-Verbesserungen immer. */
 const DEKO_WEG = new Set(['farm', 'bewaesserte_farm', 'windrad_farm', 'mechanisierte_farm', 'holzfaellerlager', 'saegewerk', 'mine', 'tiefe_mine', 'industriemine', 'robotermine', 'steinbruch', 'grosser_steinbruch']);
+
+/** Naturwunder über seinen Feldern (Schwerpunkt), mit Animationsphase aus dem gemeinsamen Takt. */
+function zeichneNaturwunder(nw, s, t) {
+  let sx = 0, sy = 0, maxY = -Infinity;
+  for (const i of nw.felder) { const [mx, my] = feldMitte(i, R); sx += mx; sy += my; maxY = Math.max(maxY, my); }
+  sx /= nw.felder.length; sy /= nw.felder.length;
+  const bild = sprite('naturwunder', nw.id, { variante: Math.floor(t / 450) % 4 });
+  if (!bild) return;
+  const [x, y] = weltZuSchirm(sx, (sy + maxY) / 2);
+  male(bild, x - (bild.width / 2) * s, y - bild.height * 0.8 * s, s); // animiert über den gemeinsamen Takt der Hauptschleife
+}
+
+/** Weltwunder auf seinem Feld; während des Baus ein Gerüst um ein halb durchsichtiges Modell. */
+function zeichneWunderFeld(f, x, y, s, t) {
+  const id = f.wu || f.wb;
+  const bild = sprite('wunder', id);
+  if (!bild) return;
+  const breite = 56 * s, hoehe = bild.height / bild.width * breite;
+  const x0 = x - breite / 2, y0 = y + 10 * s - hoehe;
+  if (f.wu) { ctx.drawImage(bild, Math.round(x0), Math.round(y0), Math.round(breite), Math.round(hoehe)); return; }
+  ctx.globalAlpha = 0.45; ctx.drawImage(bild, Math.round(x0), Math.round(y0), Math.round(breite), Math.round(hoehe)); ctx.globalAlpha = 1;
+  // Baugerüst: senkrechte Stangen und Querbalken in Holzfarben, ein Kran mit pendelndem Haken
+  const p = Math.max(1, Math.round(s));
+  ctx.fillStyle = '#8a6a3c';
+  for (let k = 0; k <= 4; k++) ctx.fillRect(Math.round(x0 + k * breite / 4), Math.round(y0 + hoehe * 0.35), p, Math.round(hoehe * 0.65));
+  for (let k = 1; k <= 3; k++) ctx.fillRect(Math.round(x0), Math.round(y0 + hoehe * (0.35 + k * 0.16)), Math.round(breite), p);
+  ctx.fillStyle = '#c9a24a';
+  const kx = Math.round(x0 + breite * 0.85), ky = Math.round(y0 + hoehe * 0.05);
+  ctx.fillRect(kx, ky, p, Math.round(hoehe * 0.95)); ctx.fillRect(Math.round(x0 + breite * 0.35), ky, Math.round(breite * 0.55), p);
+  const pendel = Math.round(Math.sin(t / 700) * 3 * s);
+  ctx.fillStyle = '#3a3a3a'; ctx.fillRect(Math.round(x0 + breite * 0.5) + pendel, ky, p, Math.round(hoehe * 0.25));
+}
 
 function chunkHatErkundetes(cx, cy) {
   // grobe Prüfung über Stichproben der Felder im Chunk
@@ -544,6 +586,10 @@ function zeichneOverlay(s, t) {
   if (overlay.reichweite) {
     ctx.fillStyle = 'rgba(224,83,61,0.16)';
     for (const i of overlay.reichweite) { const [mx, my] = feldMitte(i, R); hexPfad(mx, my, s, 0.96); ctx.fill(); }
+  }
+  if (overlay.gueltig) { // z. B. mögliche Bauplätze für ein Weltwunder
+    ctx.fillStyle = `rgba(90,220,120,${0.18 + 0.12 * puls})`; ctx.strokeStyle = 'rgba(120,255,150,0.85)'; ctx.lineWidth = Math.max(1, 1.5 * s);
+    for (const i of overlay.gueltig) { if (ebeneVon(i) !== aktiveEbene()) continue; const [mx, my] = feldMitte(i, R); hexPfad(mx, my, s, 0.92); ctx.fill(); ctx.stroke(); }
   }
   if (overlay.ziele) {
     for (const i of overlay.ziele) { const [mx, my] = feldMitte(i, R); ctx.strokeStyle = `rgba(255,80,60,${puls})`; ctx.lineWidth = Math.max(2, 2 * s); hexPfad(mx, my, s, 0.9); ctx.stroke(); }
