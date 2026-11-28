@@ -17,7 +17,7 @@ Kernregel: Die Live-Welt muss nach jedem Schritt weiterlaufen (Migration, Karte 
 | 7 | Civics (120), Regierungen (8), Politikkarten (60), Kulturbaum, Regierungsfenster, Migration 4→5 | fertig |
 | 8 | Religion (Glaube, 12 Pantheons, 8 Religionen, 40 Glaubenssätze, Missionar, Apostel, Druck, Religionsfenster, Kartenansicht) | fertig |
 | 9 | Eurekas und Inspirationen (451 Bedingungen, Server-Prüfung, 40 % Rabatt, Anzeige im Baum und Fortschritts-Panel) | fertig |
-| 10 | Symbole über Einheiten | offen |
+| 10 | Symbole über Einheiten (137 handgezeichnete 13×13-Symbole, Banner mit Lebenspunkten, Beförderungssternen, Zustand) | fertig |
 | 11 | Animationen | offen |
 | 12 | Grafik-Politur | offen |
 | 13 | Balancing, Last | offen |

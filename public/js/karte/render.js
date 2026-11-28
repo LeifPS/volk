@@ -8,6 +8,7 @@ import { ROHSTOFFE } from '../../shared/daten/rohstoffe.js';
 import { EINHEIT, VERBESSERUNG, RELIGION, RELIGION_REGELN } from '../../shared/daten/index.js';
 import { hash01 } from '../../shared/zufall.js';
 import { sprite, hatSprite } from '../grafik/sprites.js';
+import { EINHEIT_SYMBOL, SYMBOL_GROESSE } from '../grafik/einheiten_symbole.js';
 import { zeichneWege } from './wege.js';
 import { R, FELD_B, ZEILE_H, WELT_B, WELT_H, weltB, weltH, chunkCanvas, CHUNK_GROESSE, feldUnter } from './gelaende.js';
 import { Z, erkundet, aktuellesFeld, aktuelleHp, serverJetzt, volk, stadt, feldInfo, an } from '../kern/zustand.js';
@@ -458,49 +459,94 @@ function einheitPosition(e, t) {
   return feldMitte(von, R);
 }
 
-// ---------- Einheiten-Banner (wie in Civilization: Schild in Volksfarbe mit Klassen-Symbol) ----------
+// ---------- Einheiten-Banner (wie in Civilization: Schild in Volksfarbe mit eigenem Symbol je Einheit) ----------
+// Das Symbol kommt aus grafik/einheiten_symbole.js (13×13 von Hand); auf hellen Volksfarben wird es dunkel gezeichnet.
+// Am Banner: Lebenspunkte als Leiste unter der Spitze, Beförderungsstufe als Sterne links, Zustand als Symbol rechts.
 const BANNER_IKON = 15;
 const BANNER_BREITE = (() => { const w = []; for (let r = 0; r < 19; r++) w.push(r < 13 ? 17 : 17 - 2 * (r - 12)); return w; })();
 const BANNER_CACHE = new Map();
-/** Eigenes Symbol je Einheit: ihr Sprite, zugeschnitten und auf 15×15 verkleinert. */
-function bannerIkon(typ, hell) {
-  const k = typ + (hell ? ':h' : ':d');
+function helligkeit(farbe) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(farbe || ''); if (!m) return 0.5;
+  const n = parseInt(m[1], 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+}
+/** Symbol einer Einheit als Canvas (SYMBOL_GROESSE²), Farben passend zur Volksfarbe. */
+function bannerIkon(typ, farbe) {
+  const hellesBanner = helligkeit(farbe) > 0.62;
+  const k = typ + (hellesBanner ? ':d' : ':h');
   if (BANNER_CACHE.has(k)) return BANNER_CACHE.get(k);
   let out = null;
-  const bild = sprite('einheit', typ, { farbe: '#8a8f9c' });
-  if (bild) {
-    const q = document.createElement('canvas'); q.width = bild.width; q.height = bild.height;
-    const qc = q.getContext('2d'); qc.drawImage(bild, 0, 0);
-    const dat = qc.getImageData(0, 0, q.width, q.height).data;
-    let x0 = q.width, y0 = q.height, x1 = -1, y1 = -1;
-    for (let y = 0; y < q.height; y++) for (let x = 0; x < q.width; x++) if (dat[(y * q.width + x) * 4 + 3] > 20) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
-    if (x1 >= x0) {
-      const bw = x1 - x0 + 1, bh = y1 - y0 + 1, f = Math.min(BANNER_IKON / bw, BANNER_IKON / bh, 1);
-      const w = Math.max(1, Math.round(bw * f)), h = Math.max(1, Math.round(bh * f));
-      out = document.createElement('canvas'); out.width = BANNER_IKON; out.height = BANNER_IKON;
-      const oc = out.getContext('2d'); oc.imageSmoothingEnabled = true; oc.imageSmoothingQuality = 'high';
-      oc.drawImage(q, x0, y0, bw, bh, Math.floor((BANNER_IKON - w) / 2), Math.floor((BANNER_IKON - h) / 2), w, h);
+  const muster = EINHEIT_SYMBOL[typ];
+  if (muster) {
+    const F = hellesBanner ? { '#': '#1c1f2b', '+': '#454b63', '-': '#f2efe6' } : { '#': '#f2efe6', '+': '#ffffff', '-': '#1c1f2b' };
+    const G = SYMBOL_GROESSE;
+    out = document.createElement('canvas'); out.width = G + 2; out.height = G + 2;
+    const oc = out.getContext('2d');
+    // weicher Schlagschatten (1 px nach rechts unten) für Lesbarkeit auf jeder Volksfarbe
+    oc.fillStyle = hellesBanner ? 'rgba(255,255,255,.35)' : 'rgba(0,0,0,.45)';
+    for (let y = 0; y < G; y++) for (let x = 0; x < G; x++) { const c = muster[y][x]; if (c === '#' || c === '+') oc.fillRect(x + 2, y + 2, 1, 1); }
+    for (let y = 0; y < G; y++) for (let x = 0; x < G; x++) { const c = muster[y][x]; if (c !== '.' && F[c]) { oc.fillStyle = F[c]; oc.fillRect(x + 1, y + 1, 1, 1); } }
+  } else {
+    // Rückfall: Sprite zugeschnitten und verkleinert
+    const bild = sprite('einheit', typ, { farbe: '#8a8f9c' });
+    if (bild) {
+      const q = document.createElement('canvas'); q.width = bild.width; q.height = bild.height;
+      const qc = q.getContext('2d'); qc.drawImage(bild, 0, 0);
+      const dat = qc.getImageData(0, 0, q.width, q.height).data;
+      let x0 = q.width, y0 = q.height, x1 = -1, y1 = -1;
+      for (let y = 0; y < q.height; y++) for (let x = 0; x < q.width; x++) if (dat[(y * q.width + x) * 4 + 3] > 20) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      if (x1 >= x0) {
+        const bw = x1 - x0 + 1, bh = y1 - y0 + 1, f = Math.min(BANNER_IKON / bw, BANNER_IKON / bh, 1);
+        const w = Math.max(1, Math.round(bw * f)), h = Math.max(1, Math.round(bh * f));
+        out = document.createElement('canvas'); out.width = BANNER_IKON; out.height = BANNER_IKON;
+        const oc = out.getContext('2d'); oc.imageSmoothingEnabled = true;
+        oc.drawImage(q, x0, y0, bw, bh, Math.floor((BANNER_IKON - w) / 2), Math.floor((BANNER_IKON - h) / 2), w, h);
+      }
     }
   }
   BANNER_CACHE.set(k, out);
   return out;
 }
-function zeichneBanner(x, yUnten, s, farbe, typ, ausgewaehlt) {
+/**
+ * Banner zeichnen; gibt die Oberkante zurück. o: { hp (0..100), stufe (Beförderungsstufe, 1 = keine), ausgewaehlt }.
+ */
+function zeichneBanner(x, yUnten, s, farbe, typ, o = {}) {
   const p = Math.max(1, Math.round(s * 0.75)); // Pixelgröße des Banners
   const h = BANNER_BREITE.length;
   const x0 = Math.round(x), y0 = Math.round(yUnten) - (h + 1) * p;
-  const rand = ausgewaehlt ? '#ffe066' : '#0b0d14';
+  const rand = o.ausgewaehlt ? '#ffe066' : '#0b0d14';
   ctx.fillStyle = rand;
   ctx.fillRect(x0 - Math.floor((BANNER_BREITE[0] + 2) / 2) * p, y0 - p, (BANNER_BREITE[0] + 2) * p, p);
   for (let r = 0; r < h; r++) { const w = BANNER_BREITE[r] + 2; ctx.fillRect(x0 - Math.floor(w / 2) * p, y0 + r * p, w * p, p); }
   ctx.fillRect(x0 - p, y0 + h * p, 3 * p, p);
   ctx.fillStyle = farbe;
   for (let r = 0; r < h; r++) { const w = BANNER_BREITE[r]; ctx.fillRect(x0 - Math.floor(w / 2) * p, y0 + r * p, w * p, p); }
+  // Licht oben, Schatten unten (Pixelstil)
   ctx.fillStyle = 'rgba(255,255,255,0.28)';
   ctx.fillRect(x0 - Math.floor(BANNER_BREITE[0] / 2) * p, y0, BANNER_BREITE[0] * p, p);
-  // Einheit direkt auf der Volksfarbe
-  const ik = bannerIkon(typ, false);
-  if (ik) { const was = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false; ctx.drawImage(ik, x0 - Math.floor(BANNER_IKON / 2) * p, y0 + 2 * p, BANNER_IKON * p, BANNER_IKON * p); ctx.imageSmoothingEnabled = was; }
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  for (let r = 13; r < h; r++) { const w = BANNER_BREITE[r]; ctx.fillRect(x0 - Math.floor(w / 2) * p, y0 + r * p, w * p, p); }
+  const ik = bannerIkon(typ, farbe);
+  if (ik) {
+    const was = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false;
+    const off = Math.floor(ik.width / 2);
+    ctx.drawImage(ik, x0 - off * p, y0 + (ik.width === BANNER_IKON ? 2 : 1) * p, ik.width * p, ik.height * p);
+    ctx.imageSmoothingEnabled = was;
+  }
+  // Lebenspunkte: Leiste unter der Spitze (nur wenn verletzt)
+  if (o.hp != null && o.hp < 99.5) {
+    const bw = 17 * p, bh = Math.max(2, 2 * p), bx = x0 - Math.floor(17 / 2) * p, by = y0 + (h + 2) * p;
+    ctx.fillStyle = '#0b0d14'; ctx.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
+    ctx.fillStyle = '#3a2024'; ctx.fillRect(bx, by, bw, bh);
+    ctx.fillStyle = o.hp > 60 ? '#5fbf4a' : o.hp > 30 ? '#f0c040' : '#e0533d'; ctx.fillRect(bx, by, Math.max(p, Math.round(bw * o.hp / 100)), bh);
+  }
+  // Beförderungen: kleine Sterne links am Banner, von oben nach unten
+  const sterne = Math.min(5, Math.max(0, (o.stufe || 1) - 1));
+  for (let i = 0; i < sterne; i++) {
+    const sx = x0 - (Math.floor(BANNER_BREITE[0] / 2) + 4) * p, sy = y0 + i * 4 * p;
+    ctx.fillStyle = '#0b0d14'; ctx.fillRect(sx - p, sy - p, 5 * p, 5 * p);
+    ctx.fillStyle = '#ffd23a'; ctx.fillRect(sx + p, sy, p, 3 * p); ctx.fillRect(sx, sy + p, 3 * p, p);
+    ctx.fillStyle = '#fff3a0'; ctx.fillRect(sx + p, sy + p, p, p);
+  }
   return y0;
 }
 function zeichneEinheiten(liste, feld, s, t) {
@@ -548,7 +594,7 @@ function zeichneEinheiten(liste, feld, s, t) {
     }
     // Lebensbalken
     const hp = aktuelleHp(e);
-    if (hp < 99.5) {
+    if (hp < 99.5 && (e.tier || !d)) {
       const bw = 18 * s, bh = Math.max(2, 2 * s);
       const bx = Math.round(x - bw / 2), by = Math.round(y + 12 * s);
       ctx.fillStyle = '#0b0d14'; ctx.fillRect(bx - 1, by - 1, Math.round(bw) + 2, Math.round(bh) + 2);
@@ -558,7 +604,7 @@ function zeichneEinheiten(liste, feld, s, t) {
     let bannerOben = y - 24 * s;
     if (!e.tier && d) {
       const kopf = bild ? y + 9 * s - bild.height * s + wipp * s : y - 8 * s;
-      bannerOben = zeichneBanner(x, kopf - 1 * s, s, farbe, e.typ, ausgewaehlt);
+      bannerOben = zeichneBanner(x, kopf - 1 * s, s, farbe, e.typ, { ausgewaehlt, hp, stufe: 1 + (e.bef?.length || 0) });
     }
     // Status-Symbole
     if (e.volk === Z.volk) {
