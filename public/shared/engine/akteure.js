@@ -26,6 +26,7 @@ export const akteure = {
 
   // ---------- KI ----------
   kiDenken(vid) {
+    this.kiTradition?.(this.z.voelker[vid]);
     const v = this.z.voelker[vid];
     const ki = v.ki;
     const intervall = (v.ki.bot ? 30 : this.spielerOnline() ? 35 : 150) * MIN / WIRTSCHAFT_TEMPO;
@@ -75,11 +76,17 @@ export const akteure = {
       .sort((a, b) => (kat.indexOf(a.kategorie) + 1 || 99) * 2 + a.kosten.zeit / 3600 - ((kat.indexOf(b.kategorie) + 1 || 99) * 2 + b.kosten.zeit / 3600));
     const bezahlbar = geb.find((g) => this.kannBezahlen(v, g.kosten).ok);
     if (bezahlbar) wunsch.push(['gebaeude', bezahlbar.id]);
+    // Gebäude, die nur am fehlenden Distrikt scheitern: den Distrikt bauen (in der Reihenfolge der Persönlichkeit)
+    const fehlend = GEBAEUDE.filter((g) => this.gebaeudeDistrikt(g.id) && !this.hatDistrikt(s, this.gebaeudeDistrikt(g.id)) && this.freigeschaltet(v, 'gebaeude', g.id))
+      .sort((a, b) => (kat.indexOf(a.kategorie) + 1 || 99) - (kat.indexOf(b.kategorie) + 1 || 99));
+    for (const g of fehlend) { const did = this.gebaeudeDistrikt(g.id); if (!this.bauHindernis(s, 'distrikt', did)) { wunsch.splice(bezahlbar ? 1 : 0, 0, ['distrikt', did]); break; } }
     for (const [art, id] of wunsch) {
       if (!id || this.bauHindernis(s, art, id)) continue;
       const kosten = this.bauKosten(s, art, id);
       if (!this.kannBezahlen(v, kosten).ok) continue;
-      s.schlange.push({ art, id });
+      const eintrag = { art, id };
+      if (art === 'distrikt') { eintrag.feld = this.distriktPlatzAutomatisch(s, id); if (eintrag.feld == null) continue; }
+      s.schlange.push(eintrag);
       if (id === 'siedler') v.ki.letzter_siedler = this.t;
       this.bauSchlangeWeiter(s.id);
       return;

@@ -21,7 +21,7 @@ const PRO_EINWOHNER = ['w', 'g', 'k', 'p'];
 const BONUS = ['wissenschaft_prozent', 'gold_prozent', 'produktion_prozent', 'kultur_prozent', 'nahrung_prozent', 'zufriedenheit', 'tempo_land', 'tempo_see', 'heilung_prozent', 'stadt_staerke', 'stadt_hp', 'lager', 'unterhalt_rabatt', 'sicht', 'handel_gold_prozent', 'grenzwachstum_prozent', 'bauzeit_prozent', 'arbeiter_tempo', 'erfahrung_prozent', 'bauplaetze', 'handelsrouten'];
 const OPTIONEN = ['krieg', 'frieden', 'offene_grenzen', 'buendnis', 'forschungsabkommen', 'tribut', 'tausch', 'karten_tausch', 'stadtstaat_buendnis', 'aufruesten', 'bauplatz_2', 'bauplatz_3', 'einschiffen', 'tiefsee_einschiffen', 'pluendern', 'luftlandung', 'atomschlag'];
 const ZWEIGE = ['wirtschaft', 'militaer', 'see', 'wissen', 'staat', 'industrie', 'luft', 'raumfahrt'];
-const FREI_ARTEN = ['einheit', 'gebaeude', 'wunder', 'verbesserung', 'rohstoff', 'option', 'bonus'];
+const FREI_ARTEN = ['einheit', 'gebaeude', 'wunder', 'verbesserung', 'rohstoff', 'option', 'bonus', 'distrikt'];
 const PERSOENLICHKEITEN = ['haendler', 'forscher', 'bauer', 'krieger', 'seefahrer'];
 const SCHWERPUNKTE = ['handel', 'forschung', 'militaer', 'kultur', 'seefahrt', 'nahrung'];
 const STRATEGISCH_SICHTBAR = { kupfer: 'bergbau', zinn: 'bergbau', pferde: 'tierzucht', eisen: 'eisenverarbeitung', salpeter: 'schiesspulver', kohle: 'kohleabbau', oel: 'erdoelfoerderung', aluminium: 'elektrizitaet', uran: 'atomtheorie', seltene_erden: 'lernende_maschinen', deuterium: 'kernfusion' };
@@ -320,7 +320,7 @@ test('Rohstoffe: Zweck, Verbesserungsketten, Sichtbarkeit', () => {
 });
 
 test('Forschungen: Felder, Querverweise, Spalten, Zyklen, Erreichbarkeit', () => {
-  const ziele = { einheit: EINHEIT, gebaeude: GEB, wunder: WUNDER_NACH_ID, verbesserung: VERBESSERUNG, rohstoff: ROHSTOFF };
+  const ziele = { einheit: EINHEIT, gebaeude: GEB, wunder: WUNDER_NACH_ID, verbesserung: VERBESSERUNG, rohstoff: ROHSTOFF, distrikt: D.DISTRIKT };
   const jeSpalte = {};
   for (const f of FORSCHUNGEN) {
     const wo = `Forschung ${f.id}`;

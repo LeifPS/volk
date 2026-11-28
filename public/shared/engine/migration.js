@@ -2,6 +2,7 @@
 // Die Live-Welt läuft über alle Updates weiter: Jeder Spielstand mit kleinerer `version` wird beim Laden Schritt für Schritt
 // auf den aktuellen Stand gebracht. Jeder Schritt ist eine eigene Funktion, die genau einmal läuft (danach steigt `version`).
 import { FORSCHUNG } from '../daten/index.js';
+import { DISTRIKT_VON_GEBAEUDE } from '../daten/distrikte.js';
 
 // Regeln:
 //  - Ein Schritt darf nur Daten umformen oder ergänzen, nie die Erdkarte ändern (die Karte wird nicht gespeichert).
@@ -10,7 +11,7 @@ import { FORSCHUNG } from '../daten/index.js';
 //  - Jeder Schritt hat einen Test mit dem echten Altstand (tests/daten/altstand-v1.json) in tests/migration.test.mjs.
 
 /** Aktuelle Version des Spielzustands. */
-export const ZUSTAND_VERSION = 3;
+export const ZUSTAND_VERSION = 4;
 
 /** Schritte: SCHRITTE[n] hebt einen Zustand von Version n auf n + 1. */
 export const SCHRITTE = {
@@ -62,6 +63,28 @@ export const SCHRITTE = {
     for (const st of Object.values(z.staedte)) {
       for (const b of st.bau || []) if (b.art === 'wunder' && b.feld == null) { b.feld = spiel.wunderPlatzAutomatisch(st, b.id); if (b.feld != null) spiel.setzeFeld(b.feld, { wb: b.id }); }
       for (const b of st.schlange || []) if (b.art === 'wunder' && b.feld == null) b.feld = spiel.wunderPlatzAutomatisch(st, b.id);
+    }
+  },
+
+  /**
+   * 3 -> 4 (Distrikte): Spezialgebäude gehören jetzt in Distrikte. Jede Stadt bekommt kostenlos die Distrikte, deren Gebäude
+   * sie schon hat oder gerade baut. Platz: bestes freies Feld (Nachbarschaftsbonus, bevorzugt ohne Verbesserung); gibt es keins,
+   * ein beliebiges Landfeld des Gebiets (die Verbesserung dort weicht). Die Höchstzahl je Einwohner gilt für Altstände nicht.
+   * Findet sich gar kein Feld (sehr kleine Stadt), bekommt die Stadt den Distrikt ohne Feld: Gebäude wirken, nur der
+   * Nachbarschaftsbonus fehlt, bis die Stadt wächst (dann setzt die Engine ihn auf ein Feld, siehe distriktOhneFeldSetzen).
+   */
+  3(z, spiel) {
+    if (!spiel) return;
+    for (const st of Object.values(z.staedte)) {
+      const noetig = new Set();
+      for (const g of Object.keys(st.gebaeude || {})) if (DISTRIKT_VON_GEBAEUDE[g]) noetig.add(DISTRIKT_VON_GEBAEUDE[g]);
+      for (const b of [...(st.bau || []), ...(st.schlange || [])]) if (b.art === 'gebaeude' && DISTRIKT_VON_GEBAEUDE[b.id]) noetig.add(DISTRIKT_VON_GEBAEUDE[b.id]);
+      for (const did of [...noetig].sort()) {
+        if (st.distrikte?.[did]) continue;
+        const feld = spiel.distriktPlatzAutomatisch(st, did, false);
+        if (feld != null) spiel.distriktSetzen(st, did, feld);
+        else { st.distrikte ||= {}; st.distrikte[did] = { feld: null, spez: null }; }
+      }
     }
   },
 };

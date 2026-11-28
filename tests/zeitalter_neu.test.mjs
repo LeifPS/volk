@@ -44,6 +44,8 @@ test('KI-Labor bauen und Kampfroboter ausbilden kostet Seltene Erden', () => {
   bisZeitalter(s, v, 8);
   for (const id of ['lernende_maschinen', 'sprachverstehen', 'kampfroboter_technik']) v.forschung.erforscht[id] = 1;
   stadt.gebaeude.rechenzentrum = 1; stadt.gebaeude.forschungslabor = 1;
+  for (let k = 0; k < 4; k++) s.grenzwachstum(stadt.id);
+  s.distriktSetzen(stadt, 'campus', s.distriktPlatzAutomatisch(stadt, 'campus', false)); // Wissensgebäude stehen im Campus
   v.gold = 1e6; v.lager = { ...v.lager, stein: 1000, seltene_erden: 0, aluminium: 10 };
   let r = s.befehl(v.id, { art: 'bauen', stadt: stadt.id, typ: 'gebaeude', id: 'ki_labor' });
   assert.equal(r.ok, false, 'ohne Seltene Erden geht es nicht');

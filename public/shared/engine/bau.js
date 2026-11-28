@@ -1,9 +1,10 @@
 // Bauen: Stadtgebäude, Einheiten und Wunder in Städten (Bauplätze + Warteschlange) und Feldverbesserungen durch Arbeiter.
 import { karte } from '../karte.js';
-import { abstand, nachbar, nachbarn, umkreis } from '../hex.js';
+import { abstand, nachbar, nachbarn, umkreis, ebeneVon } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { ROHSTOFFE } from '../daten/rohstoffe.js';
-import { GEB, WUNDER_NACH_ID, EINHEIT, VERBESSERUNG, FREIGESCHALTET_DURCH } from '../daten/index.js';
+import { GEB, WUNDER_NACH_ID, EINHEIT, VERBESSERUNG, FREIGESCHALTET_DURCH, FORSCHUNG } from '../daten/index.js';
+import { DISTRIKT } from '../daten/distrikte.js';
 import { bauDauer, produktionTempo, ABBRUCH_ERSTATTUNG, STD, MIN } from '../regeln.js';
 import { pruefe } from './spiel.js';
 import { sucheWeg } from '../pfad.js';
@@ -32,7 +33,7 @@ export const bau = {
 
   bauDaten(art, id) {
     if (typeof id !== 'string') return null;
-    const t = art === 'gebaeude' ? GEB : art === 'wunder' ? WUNDER_NACH_ID : art === 'einheit' ? EINHEIT : null;
+    const t = art === 'gebaeude' ? GEB : art === 'wunder' ? WUNDER_NACH_ID : art === 'einheit' ? EINHEIT : art === 'distrikt' ? DISTRIKT : null;
     return t && Object.hasOwn(t, id) && id !== 'raubtier' ? t[id] : null;
   },
 
@@ -43,8 +44,19 @@ export const bau = {
     if (!d) return 'Unbekannter Bauauftrag.';
     if (!this.freigeschaltet(v, art, id)) return `Dafür fehlt die Forschung "${this.forschungsName(FREIGESCHALTET_DURCH[art + ':' + id])}".`;
     const laufend = [...(s.bau || []), ...(s.schlange || [])];
+    if (art === 'distrikt') {
+      if (this.hatDistrikt(s, id)) return 'Diesen Distrikt hat die Stadt schon.';
+      if (laufend.some((b) => b.art === 'distrikt' && b.id === id)) return 'Dieser Distrikt ist schon im Bau oder in der Warteschlange.';
+      if ((d.ebene || 0) !== ebeneVon(s.feld)) return d.ebene ? 'Dieser Distrikt gehört in eine Kolonie im All.' : 'Dieser Distrikt gehört auf die Erde.';
+      const geplant = laufend.filter((b) => b.art === 'distrikt').length;
+      if (this.distriktZahl(s) + geplant >= this.distriktMax(s)) return `Mehr Distrikte erst mit mehr Einwohnern (jetzt ${this.distriktMax(s)}; je 4 Einwohner einer mehr).`;
+      if (!this.distriktPlaetze(s, id).length) return d.wasser ? 'Ein Hafen braucht ein freies Küstenfeld im Stadtgebiet.' : 'Im Stadtgebiet ist kein freies Feld für diesen Distrikt.';
+      return null;
+    }
     if (art === 'gebaeude') {
       if (id === 'palast') return 'Den Palast hat nur die Hauptstadt.';
+      const did = this.gebaeudeDistrikt(id);
+      if (did && !this.hatDistrikt(s, did)) return `Zuerst wird der Distrikt "${DISTRIKT[did].name}" gebraucht.`;
       if (s.gebaeude[id]) return 'Dieses Gebäude steht hier schon.';
       if (laufend.some((b) => b.art === art && b.id === id)) return 'Dieses Gebäude ist schon im Bau oder in der Warteschlange.';
       if (d.ersetzt && !s.gebaeude[d.ersetzt] && !laufend.some((b) => b.id === d.ersetzt)) return `Zuerst wird "${GEB[d.ersetzt]?.name}" gebraucht.`;
@@ -76,10 +88,19 @@ export const bau = {
     return false;
   },
 
+  /** Für den Abschluss: Ist das geplante Distrikt-Feld noch frei (die eigene Baustelle zählt nicht)? */
+  distriktPlatzHindernisFertig(s, b) {
+    const f = this.z.felder[b.feld];
+    if (!f || f.s !== s.id) return 'Feld gehört nicht mehr zur Stadt.';
+    if (f.d || f.wu || f.wb) return 'Feld belegt.';
+    return null;
+  },
+
   ersetztKette(gid) { const l = []; let d = GEB[gid]; while (d && d.ersetzt) { l.push(d.ersetzt); d = GEB[d.ersetzt]; } return l; },
 
   bauKosten(s, art, id) {
     const d = this.bauDaten(art, id);
+    if (art === 'distrikt') { const uni = this.unikatFuer(s.volk, id); if (uni) return Object.fromEntries(Object.entries(d.kosten).map(([k, x]) => [k, k === 'zeit' ? x : Math.round(x * uni.kosten_faktor)])); }
     return { ...d.kosten };
   },
 
@@ -91,20 +112,27 @@ export const bau = {
     if (art === 'einheit') prozent += this.gebaeudeSumme(s, 'einheit_bauzeit_prozent');
     const v = this.z.voelker[s.volk];
     if (v.art === 'ki') prozent += 30;
-    return bauDauer(d.kosten.zeit / produktionTempo(d.zeitalter || 0), sr.p, prozent);
+    const za = art === 'distrikt' ? (FORSCHUNG[FREIGESCHALTET_DURCH['distrikt:' + id]]?.zeitalter || 0) : (d.zeitalter || 0);
+    return bauDauer(d.kosten.zeit / produktionTempo(za), sr.p, prozent);
   },
 
   /** Befehl: Bauauftrag in die Warteschlange (startet sofort, wenn ein Bauplatz frei ist). */
   befehl_bauen(v, b) {
     const s = this.z.staedte[b.stadt];
     pruefe(s && s.volk === v.id, 'Das ist nicht deine Stadt.');
-    pruefe(['gebaeude', 'einheit', 'wunder'].includes(b.typ), 'Unbekannte Bauart.');
+    pruefe(['gebaeude', 'einheit', 'wunder', 'distrikt'].includes(b.typ), 'Unbekannte Bauart.');
     const h = this.bauHindernis(s, b.typ, b.id);
     pruefe(!h, h);
     pruefe((s.schlange || []).length < 8, 'Die Warteschlange ist voll (höchstens 8 Aufträge).');
     s.schlange = s.schlange || [];
     const eintrag = { art: b.typ, id: b.id };
     if (b.typ === 'wunder' && b.geheim) eintrag.geheim = true;
+    if (b.typ === 'distrikt') {
+      const feld = b.feld != null ? b.feld | 0 : this.distriktPlatzAutomatisch(s, b.id);
+      const h3 = feld == null ? 'Kein freies Feld für diesen Distrikt.' : this.distriktPlatzHindernis(s, b.id, feld);
+      pruefe(!h3, h3);
+      eintrag.feld = feld;
+    }
     if (b.typ === 'wunder') {
       // Weltwunder stehen auf einem Feld im Stadtgebiet: der Spieler wählt es (KI und alte Clients bekommen das beste Feld)
       const feld = b.feld != null ? b.feld | 0 : this.wunderPlatzAutomatisch(s, b.id);
@@ -146,6 +174,7 @@ export const bau = {
       s.schlange.shift();
       const neuB = { art: n.art, id: n.id, start: this.t, fertig_um: this.t + dauer, bezahlt, geheim: n.geheim || undefined };
       if (n.art === 'wunder') { neuB.feld = n.feld ?? this.wunderPlatzAutomatisch(s, n.id); this.wunderBaustelle(s, neuB); }
+      if (n.art === 'distrikt') { neuB.feld = n.feld ?? this.distriktPlatzAutomatisch(s, n.id); if (neuB.feld != null) this.setzeFeld(neuB.feld, { db: n.id }); }
       s.bau.push(neuB);
       if (n.art === 'wunder' && !n.geheim) for (const a of this.alleVoelker()) if (a.id !== v.id && a.art === 'spieler') this.meldung(a.id, `${v.name} hat mit dem Bau des Wunders "${WUNDER_NACH_ID[n.id].name}" begonnen.`, { art: 'wunder' });
     }
@@ -188,6 +217,12 @@ export const bau = {
         for (const a of this.alleVoelker()) if (a.id !== v.id) this.meldung(a.id, `${v.name} hat das Weltwunder "${d.name}" vollendet.`, { art: 'wunder' });
         this.wunderRennenVerloren(b.id, v.id);
         for (const a of this.alleVoelker()) delete this._raten[a.id];
+      } else if (b.art === 'distrikt') {
+        const feld = b.feld != null && !this.distriktPlatzHindernisFertig(s, b) ? b.feld : this.distriktPlatzAutomatisch(s, b.id, false);
+        if (feld == null) { this.erstatte(v, b.bezahlt, 1); this.meldung(v.id, `${s.name}: Kein Platz mehr für den Distrikt ${d.name}, die Kosten wurden erstattet.`, { art: 'warnung', feld: s.feld }); continue; }
+        if (b.feld != null && b.feld !== feld) this.setzeFeld(b.feld, { db: null });
+        this.distriktSetzen(s, b.id, feld);
+        this.meldung(v.id, `${s.name}: Der Distrikt ${d.name} ist fertig.`, { art: 'bau', feld });
       } else if (b.art === 'einheit') {
         const e = this.einheitErzeugen(v.id, b.id, s.feld, { stadt: s.id });
         if (d.faehigkeiten?.includes('gruenden')) { s.bev = Math.max(1, s.bev - 1); s.nahrung = 0; if (!s.manuell) this.autoBewirtschaften(s); }
@@ -228,6 +263,7 @@ export const bau = {
       pruefe(s.bau && s.bau[nr], 'Diesen Auftrag gibt es nicht.');
       const [x] = s.bau.splice(nr, 1);
       if (x.art === 'wunder') this.wunderBaustelleWeg(x);
+      if (x.art === 'distrikt' && x.feld != null && this.z.felder[x.feld]?.db === x.id) this.setzeFeld(x.feld, { db: null });
       this.erstatte(v, x.bezahlt, ABBRUCH_ERSTATTUNG);
       this.meldung(v.id, `${s.name}: Auftrag abgebrochen, ${Math.round(ABBRUCH_ERSTATTUNG * 100)} % der Kosten wurden erstattet.`, { feld: s.feld });
     }
@@ -256,6 +292,7 @@ export const bau = {
     if (this.stadtAuf(i)) return 'Auf einer Stadt kann man nicht bauen.';
     if (this.naturwunderAuf(i)) return 'Ein Naturwunder bleibt, wie es ist.';
     if (this.z.felder[i]?.wu || this.z.felder[i]?.wb) return 'Hier steht ein Weltwunder.';
+    if (this.z.felder[i]?.d || this.z.felder[i]?.db) return 'Hier steht ein Distrikt.';
     const k = karte();
     const g = GELAENDE[k.gelaende[i]];
     if (vb.wasser && !g.wasser) return 'Das geht nur auf Wasser.';

@@ -241,7 +241,7 @@ function einheitAktionen(e) {
     if (!ZIVIL.has(d.klasse)) {
       k.push(aktKnopf('befestigen', B.befestigen, () => ausfuehren({ art: 'modus', einheit: e.id, modus: 'befestigt' }), { tip: BT.befestigen }));
       const f = feldInfo(aktuellesFeld(e));
-      if (f?.v && besitzerVon(aktuellesFeld(e)) && besitzerVon(aktuellesFeld(e)) !== Z.volk) k.push(aktKnopf('pluendern', B.pluendern, () => ausfuehren({ art: 'pluendern', einheit: e.id }), { tip: BT.pluendern }));
+      if ((f?.v || f?.d) && besitzerVon(aktuellesFeld(e)) && besitzerVon(aktuellesFeld(e)) !== Z.volk) k.push(aktKnopf('pluendern', B.pluendern, () => ausfuehren({ art: 'pluendern', einheit: e.id }), { tip: BT.pluendern }));
     }
     k.push(aktKnopf(e.modus === 'schlafen' ? 'tag' : 'schlafen', e.modus === 'schlafen' ? B.wach : B.schlafen, () => ausfuehren({ art: 'modus', einheit: e.id, modus: e.modus === 'schlafen' ? 'wach' : 'schlafen' }), { tip: BT.schlafen }));
   }
@@ -348,6 +348,20 @@ function feldPanel(i) {
 }
 
 // ---------- Zielmodus (Handel, Luftangriff, Verlegen, Atomschlag, Stadtangriff) ----------
+/** Feld für einen Distrikt wählen: gültige Felder leuchten grün und zeigen den Nachbarschaftsbonus (+x). */
+export async function distriktPlatzWaehlen(s, id, extra = {}) {
+  let felder;
+  try { felder = (await frage({ art: 'distriktplaetze', stadt: s.id, id })).felder; } catch (e) { fehler(e.message); return; }
+  if (!felder.length) { fehler('Im Gebiet der Stadt ist kein freies Feld für diesen Distrikt.'); return; }
+  alleFensterZu();
+  Z.zielmodus = { art: 'distriktplatz', id, stadt: s.id, felder: felder.map((f) => f.feld), extra };
+  overlay.gueltig = felder.map((f) => f.feld);
+  overlay.beschriftung = new Map(felder.map((f) => [f.feld, '+' + (Math.round(f.bonus * 10) / 10)]));
+  zentriereAuf(s.feld, true);
+  toast('Wähle das Feld für den Distrikt. Die Zahl zeigt den Nachbarschaftsbonus. Esc bricht ab.', 'info', { symbol: 'bau' });
+  neuZeichnen();
+}
+
 /** Feld für ein Weltwunder wählen: gültige Felder leuchten grün, ein Klick darauf erteilt den Bauauftrag. */
 export async function wunderPlatzWaehlen(s, id, extra = {}) {
   let felder;
@@ -370,8 +384,14 @@ function zielmodus(art, obj) {
   neuZeichnen();
 }
 export async function zielGewaehlt(feld) {
-  const zm = Z.zielmodus; Z.zielmodus = null; overlay.reichweite = null; overlay.gueltig = null; neuZeichnen();
+  const zm = Z.zielmodus; Z.zielmodus = null; overlay.reichweite = null; overlay.gueltig = null; overlay.beschriftung = null; neuZeichnen();
   if (!zm) return false;
+  if (zm.art === 'distriktplatz') {
+    if (!zm.felder.includes(feld)) { fehler('Hier kann der Distrikt nicht stehen. Gültige Felder sind grün markiert.'); return true; }
+    const r = await ausfuehren({ art: 'bauen', stadt: zm.stadt, typ: 'distrikt', id: zm.id, feld, ...zm.extra });
+    if (r) { toast('Der Distrikt wird gebaut.', 'erfolg'); ton('bau'); }
+    return true;
+  }
   if (zm.art === 'wunderplatz') {
     if (!zm.felder.includes(feld)) { fehler('Auf diesem Feld kann das Wunder nicht stehen. Gültige Felder sind grün markiert.'); return true; }
     const r = await ausfuehren({ art: 'bauen', stadt: zm.stadt, typ: 'wunder', id: zm.id, feld, ...zm.extra });

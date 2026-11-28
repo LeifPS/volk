@@ -535,8 +535,16 @@ export const kampf = {
     pruefe(istMilitaer(EINHEIT[e.typ]), 'Nur Militäreinheiten können plündern.');
     this.pruefeNichtEingeschifft(e, 'plündern');
     const f = this.z.felder[e.feld];
-    pruefe(f && f.v && !(f.pl > this.t), 'Hier gibt es nichts zu plündern.');
     const bes = this.besitzer(e.feld);
+    if (f && f.d) {
+      pruefe(bes != null && bes !== v.id, 'Das eigene Land plündert man nicht.');
+      const hd = this.kampfHindernis(v.id, bes); pruefe(!hd, hd);
+      pruefe(this.distriktPluendern(e.feld, v.id), 'Dieser Distrikt ist schon geplündert.');
+      const pg0 = Math.round(60 * (1 + this.befMax(e, 'pluendern_prozent') / 100));
+      this.aendern(v.id); v.gold += pg0; this.epGeben(e, EP.pluendern, bes); this.befoerderungPruefen(e); this.kampfVermerken(v.id, bes);
+      return { gold: pg0 };
+    }
+    pruefe(f && f.v && !(f.pl > this.t), 'Hier gibt es nichts zu plündern.');
     pruefe(bes != null && bes !== v.id, 'Das eigene Land plündert man nicht.');
     const h = this.kampfHindernis(v.id, bes);
     pruefe(!h, h);

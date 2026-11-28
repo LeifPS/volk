@@ -18,7 +18,7 @@ let cv, ctx, dpr = 1, schmutzig = true, letzterFrame = 0;
 let sichtbar = new Set();
 let sichtVersion = -1;
 const effekte = [];            // Kampf-Effekte
-export const overlay = { pfad: null, ziele: null, reichweite: null, gueltig: null, hover: -1, markierung: null };
+export const overlay = { pfad: null, ziele: null, reichweite: null, gueltig: null, beschriftung: null, hover: -1, markierung: null };
 export const optionen = { tagnacht: true, wetter: true };
 
 export function init(canvas) {
@@ -181,6 +181,14 @@ function zeichne(t) {
       if (nw) {
         if (i === nw.felder[nw.felder.length - 1]) zeichneNaturwunder(nw, s, t);
         const es0 = proFeld.get(i); if (es0) zeichneEinheiten(es0, i, s, t);
+        continue;
+      }
+      if (f && (f.d || f.db) && !st) { // Distrikt bzw. Distrikt-Baustelle
+        const besitzer = stadt(f.s)?.volk;
+        const ds = f.d ? sprite('distrikt', f.d, { zeitalter: volk(besitzer)?.zeitalter ?? 0, farbe: volkFarbe(besitzer) }) : sprite('distrikt', 'baustelle', {});
+        if (ds) male(ds, x - 32 * s, y - 44 * s, s, f.pl ? 0.55 : 1);
+        if (f.pl && f.d) { const rs = sprite('deko', 'ruine', { variante: 0 }); if (rs) male(rs, x - 24 * s, y - 24 * s, s, 0.8); }
+        const es2 = proFeld.get(i); if (es2 && (sichtbar.has(i) || es2.some((e) => e.volk === Z.volk))) zeichneEinheiten(es2, i, s, t);
         continue;
       }
       if (f && (f.wu || f.wb) && !st) { zeichneWunderFeld(f, x, y, s, t); const es1 = proFeld.get(i); if (es1 && (sichtbar.has(i) || es1.some((e) => e.volk === Z.volk))) zeichneEinheiten(es1, i, s, t); continue; }
@@ -590,6 +598,10 @@ function zeichneOverlay(s, t) {
   if (overlay.gueltig) { // z. B. mögliche Bauplätze für ein Weltwunder
     ctx.fillStyle = `rgba(90,220,120,${0.18 + 0.12 * puls})`; ctx.strokeStyle = 'rgba(120,255,150,0.85)'; ctx.lineWidth = Math.max(1, 1.5 * s);
     for (const i of overlay.gueltig) { if (ebeneVon(i) !== aktiveEbene()) continue; const [mx, my] = feldMitte(i, R); hexPfad(mx, my, s, 0.92); ctx.fill(); ctx.stroke(); }
+    if (overlay.beschriftung) {
+      ctx.font = `700 ${Math.round(11 * Math.min(s, 3))}px Zahlen, Silkscreen, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (const [i, text] of overlay.beschriftung) { if (ebeneVon(i) !== aktiveEbene()) continue; const [mx, my] = feldMitte(i, R); const [x, y] = weltZuSchirm(mx, my); ctx.fillStyle = '#000'; ctx.fillText(text, x + 1, y + 1); ctx.fillStyle = '#ffe066'; ctx.fillText(text, x, y); }
+    }
   }
   if (overlay.ziele) {
     for (const i of overlay.ziele) { const [mx, my] = feldMitte(i, R); ctx.strokeStyle = `rgba(255,80,60,${puls})`; ctx.lineWidth = Math.max(2, 2 * s); hexPfad(mx, my, s, 0.9); ctx.stroke(); }

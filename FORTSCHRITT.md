@@ -13,7 +13,7 @@ Kernregel: Die Live-Welt muss nach jedem Schritt weiterlaufen (Migration, Karte 
 | 3 | Zeitalter Weltraum und Sterne (44 Forschungen, 19 Einheiten, 13 Gebäude, 2 Wunder) | fertig |
 | 4 | Weltraum-Ebene (Karte, Bewegung, Start/Landung, Kolonien, Weltraum-Verbesserungen, Client-Umschalter, Sprites) | fertig |
 | 5 | Naturwunder (12, Platzierung, Entdeckung), Weltwunder auf Feldern, Migration 2→3 | fertig |
-| 6 | Distrikte | offen |
+| 6 | Distrikte (8 + 3 im All, Stufen, Nachbarschaft, Spezialisierung, Plündern, 5 Traditionen mit einzigartigen Distrikten, Migration 3→4) | fertig |
 | 7 | Civics, Regierungen, Politikkarten | offen |
 | 8 | Religion | offen |
 | 9 | Eurekas | offen |

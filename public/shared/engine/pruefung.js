@@ -29,11 +29,17 @@ export function zustandPruefen(spiel) {
       if (!t || !t[b.id]) p.push(`Stadt ${st.id}: unbekannter Bauauftrag ${b.art}:${b.id}`);
     }
     for (const i of st.gebiet || []) if (z.felder[i]?.s !== st.id) p.push(`Stadt ${st.id}: Gebietsfeld ${i} gehört laut Feld nicht ihr`);
+    for (const [did, x] of Object.entries(st.distrikte || {})) {
+      if (x.feld == null) continue;
+      if (z.felder[x.feld]?.d !== did) p.push(`Stadt ${st.id}: Distrikt ${did} fehlt auf Feld ${x.feld}`);
+      if (z.felder[x.feld]?.s !== st.id) p.push(`Stadt ${st.id}: Distrikt ${did} liegt außerhalb des Gebiets`);
+    }
   }
   for (const [i, f] of Object.entries(z.felder)) {
     if (f.s && !z.staedte[f.s]?.gebiet?.includes(+i)) p.push(`Feld ${i}: gehört Stadt ${f.s}, die es nicht kennt`);
     if (f.v && !VERBESSERUNG[f.v]) p.push(`Feld ${i}: unbekannte Verbesserung ${f.v}`);
     if (f.w && !VERBESSERUNG[f.w]) p.push(`Feld ${i}: unbekannter Weg ${f.w}`);
+    if (f.d && !z.staedte[f.s]?.distrikte?.[f.d]) p.push(`Feld ${i}: Distrikt ${f.d} ohne Stadt`);
   }
   for (const v of s.alleVoelker()) {
     if (!(v.gold >= 0 && Number.isFinite(v.gold))) p.push(`Volk ${v.id}: Gold ${v.gold}`);

@@ -78,7 +78,7 @@ export const wirtschaft = {
     const e = nwDef ? { n: nwDef.ertrag.n, p: nwDef.ertrag.p, g: nwDef.ertrag.g, w: nwDef.ertrag.w || 0, k: nwDef.ertrag.k || 0, material: {} }
       : { n: g.ertrag.n, p: g.ertrag.p, g: g.ertrag.g, w: g.wissen || 0, k: g.kultur || 0, material: {} };
     const f = this.z.felder[i];
-    if (f && (f.wu || f.wb)) return { n: 0, p: 0, g: 0, w: 0, k: 0, material: {} }; // Weltwunder-Feld wird nicht bewirtschaftet
+    if (f && (f.wu || f.wb || f.d)) return { n: 0, p: 0, g: 0, w: 0, k: 0, material: {} }; // Weltwunder- und Distriktfelder werden nicht bewirtschaftet
     if (nwDef) { if (k.fluss[i] && !g.wasser) e.g += 1; return e; }
     if (f && f.fo && f.fo > this.t) return { n: 0, p: 0, g: 0, w: 0, k: 0, material: {} };
     if (k.fluss[i] && !g.wasser) e.g += 1;
@@ -199,15 +199,28 @@ export const wirtschaft = {
     r.w += s.bev * WISSEN_JE_EINWOHNER; r.k += 1;
     const pz = { n: b.nahrung_prozent, p: b.produktion_prozent, g: b.gold_prozent, w: b.wissenschaft_prozent, k: b.kultur_prozent };
     let zuf = 3 + luxAnzahl + b.zufriedenheit - stadtUnzufriedenheit(s.bev, anzahlStaedte);
+    const aus = new Set(Object.keys(s.distrikte || {}).filter((id) => this.distriktGepluendert(s, id)));
+    const wirkungen = [];
     for (const gid of Object.keys(s.gebaeude || {})) {
       const d = GEB[gid]; if (!d) continue;
-      const wk = d.wirkung || {};
+      if (aus.has(this.gebaeudeDistrikt(gid))) continue; // Gebäude im geplünderten Distrikt ruhen
+      wirkungen.push(d.wirkung || {});
+      r.gebaeudeUnterhalt += d.unterhalt || 0;
+    }
+    for (const wk of this.distriktWirkungen(s)) wirkungen.push(wk);
+    r.distrikte = {};
+    for (const id of Object.keys(s.distrikte || {})) {
+      const de = this.distriktErtrag(s, id);
+      r.distrikte[id] = de.wert;
+      if (de.art && de.art !== 'glaube') r[de.art] += de.wert;
+      else if (de.art === 'glaube') r.glaube = (r.glaube || 0) + de.wert;
+    }
+    for (const wk of wirkungen) {
       r.n += wk.nahrung || 0; r.p += wk.produktion || 0; r.g += wk.gold || 0; r.w += wk.wissenschaft || 0; r.k += wk.kultur || 0;
       zuf += wk.zufriedenheit || 0;
       pz.n += wk.nahrung_prozent || 0; pz.p += wk.produktion_prozent || 0; pz.g += wk.gold_prozent || 0; pz.w += wk.wissenschaft_prozent || 0; pz.k += wk.kultur_prozent || 0;
       if (wk.pro_einwohner) { r.w += (wk.pro_einwohner.w || 0) * s.bev; r.g += (wk.pro_einwohner.g || 0) * s.bev; r.k += (wk.pro_einwohner.k || 0) * s.bev; r.p += (wk.pro_einwohner.p || 0) * s.bev; }
       if (wk.material) for (const [m, x] of Object.entries(wk.material)) r.material[m] = (r.material[m] || 0) + x;
-      r.gebaeudeUnterhalt += d.unterhalt || 0;
     }
     for (const [wid, w] of Object.entries(this.z.wunder)) {
       if (w.stadt !== s.id || !w.fertig) continue;
@@ -237,7 +250,8 @@ export const wirtschaft = {
 
   gebaeudeSumme(s, schluessel) {
     let x = 0;
-    for (const gid of Object.keys(s.gebaeude || {})) x += GEB[gid]?.wirkung?.[schluessel] || 0;
+    for (const gid of Object.keys(s.gebaeude || {})) { const did = this.gebaeudeDistrikt(gid); if (did && this.distriktGepluendert(s, did)) continue; x += GEB[gid]?.wirkung?.[schluessel] || 0; }
+    for (const wk of this.distriktWirkungen(s)) x += wk[schluessel] || 0;
     for (const [wid, w] of Object.entries(this.z.wunder)) if (w.stadt === s.id && w.fertig) x += WUNDER_NACH_ID[wid]?.wirkung?.[schluessel] || 0;
     return x;
   },
@@ -358,6 +372,7 @@ export const wirtschaft = {
     this.feldUebernehmen(s, f);
     this.meldung(s.volk, `Die Grenzen von ${s.name} sind gewachsen.`, { art: 'stadt', feld: f });
     if (!s.manuell) this.autoBewirtschaften(s);
+    this.distriktOhneFeldSetzen(s);
     delete this._raten[s.volk];
   },
 
@@ -459,6 +474,7 @@ export const wirtschaft = {
     const i = b.feld | 0;
     pruefe(s.gebiet.includes(i) && i !== s.feld, 'Dieses Feld gehört nicht zu dieser Stadt.');
     pruefe(!b.an || !(this.z.felder[i]?.wu || this.z.felder[i]?.wb), 'Auf diesem Feld steht ein Weltwunder.');
+    pruefe(!b.an || !this.z.felder[i]?.d, 'Auf diesem Feld steht ein Distrikt; er bringt seinen Ertrag von selbst.');
     pruefe(abstand(s.feld, i) <= STADT_RADIUS_ARBEIT, `Einwohner können nur Felder im Umkreis von ${STADT_RADIUS_ARBEIT} bewirtschaften.`);
     this.aendern(v.id);
     s.manuell = true;

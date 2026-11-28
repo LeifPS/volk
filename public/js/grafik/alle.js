@@ -18,3 +18,4 @@ import './sprites/gebaeude_zukunft.js';
 import './sprites/wunder_zukunft.js';
 import './sprites/kolonie.js';
 import './sprites/naturwunder.js';
+import './sprites/distrikte.js';

@@ -3,7 +3,7 @@ import { el as basisEl, symbol, fenster, frageJaNein, toast, fehler, zahl, vorze
 import { T } from '../texte.js';
 import { Z, an, du, stadt as stadtVon, feldInfo, eigeneStaedte, aktuellesGold, aktuellesLager, serverJetzt, erkundet } from '../kern/zustand.js';
 import { befehl, frage } from '../kern/netz.js';
-import { EINHEIT, GEB, WUNDER_NACH_ID, VERBESSERUNG, ROHSTOFFE, GELAENDE, ZEITALTER } from '../../shared/daten/index.js';
+import { EINHEIT, GEB, WUNDER_NACH_ID, VERBESSERUNG, ROHSTOFFE, GELAENDE, ZEITALTER, DISTRIKT, DISTRIKT_REGELN, TRADITION, TRADITIONEN } from '../../shared/daten/index.js';
 import { LAGER_NAMEN } from '../../shared/daten/rohstoffe.js';
 import { karte } from '../../shared/karte.js';
 import { abstand, umkreis, xVon, yVon } from '../../shared/hex.js';
@@ -24,7 +24,7 @@ function el(tag, attr, ...kinder) {
 
 
 const S = () => T.stadt;
-const REITER = ['uebersicht', 'bauen', 'gebaeude', 'felder'];
+const REITER = ['uebersicht', 'bauen', 'distrikte', 'gebaeude', 'felder'];
 const ERTRAEGE = ['n', 'p', 'g', 'w', 'k'];
 const ERTRAG_SYM = { n: 'nahrung', p: 'produktion', g: 'gold', w: 'wissenschaft', k: 'kultur' };
 const GF = REGELN.GOLD_FAKTOR ?? F, WJE = REGELN.WISSEN_JE_EINWOHNER ?? 0.5;
@@ -33,11 +33,14 @@ const FAK = { n: F, p: 1, g: GF, w: 1, k: F };
 const MIT_FAKTOR = { n: true, g: true, k: true };
 
 // ---------- gemeinsame Helfer (auch von reich.js genutzt) ----------
-export const bauDaten = (art, id) => (art === 'gebaeude' ? GEB[id] : art === 'wunder' ? WUNDER_NACH_ID[id] : EINHEIT[id]);
-export const bauName = (b) => bauDaten(b.art, b.id)?.name || b.id;
+export const bauDaten = (art, id) => (art === 'gebaeude' ? GEB[id] : art === 'wunder' ? WUNDER_NACH_ID[id] : art === 'distrikt' ? DISTRIKT[id] : EINHEIT[id]);
+/** Einzigartiger Distrikt des eigenen Volkes (Tradition) für einen Grund-Distrikt, sonst null. */
+export const unikat = (id) => { const t = TRADITION[du()?.tradition]; return t && t.distrikt === id ? t.unikat : null; };
+export const bauName = (b) => (b.art === 'distrikt' && unikat(b.id)?.name) || bauDaten(b.art, b.id)?.name || b.id;
 export function bauSymbol(art, id, px) {
   if (art === 'einheit') return symbol('einheit', id, { farbe: du()?.farbe, px });
   if (art === 'wunder') return symbol('wunder', id, { px });
+  if (art === 'distrikt') return symbol('distrikt', id, { px, zeitalter: du()?.zeitalter || 0, farbe: du()?.farbe });
   return symbol('gebaeude', id, { px, zeitalter: du()?.zeitalter || 0 });
 }
 const z1 = (x) => zahl(x, Math.abs(x) < 10 && Math.round(x) !== x ? 1 : 0);
@@ -222,12 +225,13 @@ function zeichne() {
   const scroll = f.inhalt.scrollTop;
   f.element.querySelector('.kopf h1').replaceChildren(s.name, el('span.st-sub', { text: (s.hauptstadt ? S().hauptstadt + ' · ' : '') + S().einwohner(s.bev) }));
   z.symbolEl.replaceChildren(symbol('stadt', 'stadt', { farbe: du()?.farbe, zeitalter: s.zeitalter || 0, groesse: s.bev >= 12 ? 3 : s.bev >= 6 ? 2 : 1, px: 40 }));
-  const reiter = el('div.reiter.st-reiter', REITER.map((r) => el('button.knopf' + (r === z.reiter ? '.gold' : ''), { onclick: () => { z.reiter = r; z.schl = ''; zeichne(); f.inhalt.scrollTop = 0; } }, symbol('ui', { uebersicht: 'stadt', bauen: 'bau', gebaeude: 'lager', felder: 'karte' }[r]), S().reiter[r])));
+  const reiter = el('div.reiter.st-reiter', REITER.map((r) => el('button.knopf' + (r === z.reiter ? '.gold' : ''), { onclick: () => { z.reiter = r; z.schl = ''; zeichne(); f.inhalt.scrollTop = 0; } }, symbol('ui', { uebersicht: 'stadt', bauen: 'bau', distrikte: 'stern_voll', gebaeude: 'lager', felder: 'karte' }[r]), S().reiter[r])));
   const koerper = el('div');
   f.inhalt.replaceChildren(reiter, koerper);
   if (s.zerstoert_bis > serverJetzt()) koerper.append(el('div.st-warn', symbol('ui', 'warnung', { px: 24 }), el('div', el('b', { text: S().zerstoert }), el('div.klein', { text: S().zerstoertText(dauerText(s.zerstoert_bis - serverJetzt()), uhrzeit(s.zerstoert_bis)) }))));
   if (z.reiter === 'uebersicht') uebersicht(s, koerper);
   else if (z.reiter === 'bauen') bauen(s, koerper);
+  else if (z.reiter === 'distrikte') distrikteReiter(s, koerper);
   else if (z.reiter === 'gebaeude') gebaeude(s, koerper);
   else felder(s, koerper);
   f.inhalt.scrollTop = scroll;
@@ -383,7 +387,7 @@ function bauen(s, k) {
   const links = el('div', platzListe(s), schlangeListe(s));
   z.listeEl = el('div');
   const steuer = el('div.st-steuer',
-    ['alle', 'gebaeude', 'einheit', 'wunder'].map((g) => el('button.knopf.klein' + (z.filter === g ? '.gold' : ''), { onclick: () => { z.filter = g; zeichne(); } }, S().filter[g])),
+    ['alle', 'distrikt', 'gebaeude', 'einheit', 'wunder'].map((g) => el('button.knopf.klein' + (z.filter === g ? '.gold' : ''), { onclick: () => { z.filter = g; zeichne(); } }, S().filter[g])),
     el('span', { style: { flex: 1 } }),
     el('label.st-chk', { tip: S().sortTip }, symbol('ui', 'menue'), (() => { const sel = el('select', { onchange: (e) => { z.sort = e.target.value; listeZeichnen(stadtVon(z.id)); } }, Object.entries(S().sortierung).map(([w, t]) => el('option', { value: w, text: t, selected: w === z.sort || null }))); return sel; })()),
     el('label.st-chk', { tip: S().alleTip }, (() => { const c = el('input', { type: 'checkbox', checked: z.alle || null, onchange: (e) => { z.alle = e.target.checked; z.liste = null; ladeListe(); } }); return c; })(), S().alleZeigen),
@@ -428,8 +432,9 @@ function listeZeichnen(s) {
   const z = offen; if (!z || !z.listeEl || !s) return;
   const l = (z.liste || []).filter((x) => !(x.art === 'gebaeude' && x.id === 'palast'));
   const teile = [];
-  for (const art of ['gebaeude', 'einheit', 'wunder']) {
+  for (const art of ['distrikt', 'gebaeude', 'einheit', 'wunder']) {
     if (z.filter !== 'alle' && z.filter !== art) continue;
+    if (art === 'distrikt' && !l.some((x) => x.art === 'distrikt') && z.filter === 'alle') continue;
     const g = sortiere(l.filter((x) => x.art === art), art);
     teile.push(el('div.st-gruppe', el('h3', { text: S().gruppe[art] + ' (' + g.length + ')' })));
     if (art === 'wunder') teile.push(el('div.st-hinweis', symbol('ui', 'wunder', { px: 20 }), el('span.klein', { text: S().wunderHinweis })));
@@ -493,6 +498,7 @@ async function bestellen(x, s) {
   }
   if (x.grund) { fehler(x.grund); ton('fehler'); return; }
   if (x.art === 'wunder') { wunderDialog(x, s); return; }
+  if (x.art === 'distrikt') { const { distriktPlatzWaehlen } = await import('./hud.js'); await distriktPlatzWaehlen(s, x.id, { vormerken: x.fehlt ? true : undefined }); return; }
   const b = { art: 'bauen', stadt: s.id, typ: x.art, id: x.id };
   const sofort = (s.bau || []).length < (s.bauplaetze || 1) && !(s.schlange || []).length;
   if (x.fehlt && !sofort) return senden(b, d.name);
@@ -571,6 +577,47 @@ function schlangeListe(s) {
 }
 
 // ---------- Gebäude ----------
+// ---------- Distrikte ----------
+const DISTRIKT_SYM = { w: "wissenschaft", g: "gold", p: "produktion", k: "kultur", n: "nahrung", glaube: "stern_voll" };
+function distrikteReiter(s, k) {
+  const D = s.distrikte || {};
+  const ids = Object.keys(D);
+  k.append(el('div.st-zeile', { style: { marginBottom: '6px' } }, el('span', { text: S().distrikteAnzahl(ids.length, s.distrikteMax ?? 1) }), el('span.klein', { text: ' · ' + S().distrikteRegel })));
+  if (!ids.length) k.append(el('p', { text: S().keineDistrikte }));
+  for (const id of ids) {
+    const d = DISTRIKT[id], x = D[id]; if (!d) continue;
+    const jetzt = serverJetzt();
+    const sterne = el('span', Array.from({ length: 3 }, (_, n) => symbol('ui', n < x.stufe ? 'stern_voll' : 'stern_leer', { px: 14 })));
+    const naechste = d.stufen[x.stufe] ? GEB[d.stufen[x.stufe]]?.name : null;
+    const quellen = (x.quellen || []).reduce((m, q) => { m[q.text] = (m[q.text] || 0) + q.wert; return m; }, {});
+    const kopf = el('div.st-zeile', bauSymbol('distrikt', id, 56), el('div', { style: { flex: 1 } },
+      el('div.st-zeile', el('b', { text: unikat(id)?.name || d.name }), unikat(id) ? el('span.lila-t.klein', { text: S().einzigartig }) : null, sterne, el('span.r', symbol("ui", DISTRIKT_SYM[x.art] || "stern_voll", { px: 16 }), el('b', { text: ' +' + z1(x.wert * (FAK[x.art] || 1)) + (MIT_FAKTOR[x.art] ? ' /h' : '') + (x.art === 'glaube' ? ' ' + S().glaube : '') }))),
+      el('div.klein', { text: d.beschreibung }),
+    ));
+    const nb = el('div.klein', { style: { margin: '4px 0' } }, el('b', { text: S().nachbarschaft + ': ' }), Object.keys(quellen).length ? Object.entries(quellen).map(([t, w]) => `${t} +${z1(w)}`).join(', ') : S().keinNachbar,
+      x.stufe >= 2 ? el('span.gold-t', { text: ' · ' + S().stufenFaktor(DISTRIKT_REGELN.stufenFaktor[x.stufe]) }) : null);
+    const spez = el('div.st-zeile', { style: { flexWrap: 'wrap', gap: '6px' } }, el('span.klein', { text: S().ausrichtung + ':' }), ...d.spez.map((sp) => el('button.knopf.klein' + (x.spez === sp.id ? '.gold' : ''), {
+      tip: sp.text + (x.spez === sp.id ? '' : ' – ' + S().umstellenDauer(DISTRIKT_REGELN.spezUmstellenStd)),
+      onclick: async () => { if (x.spez === sp.id) return; if (!(await frageJaNein(S().umstellenTitel, S().umstellenFrage(sp.name, DISTRIKT_REGELN.spezUmstellenStd), S().umstellen))) return; const r = await befehl({ art: 'distrikt_spez', stadt: s.id, distrikt: id, spez: sp.id }); if (!r.ok) fehler(r.fehler); else ton('klick'); },
+    }, sp.name)));
+    const zustand = [];
+    if (x.spez_ab && x.spez_ab > jetzt) zustand.push(el('div.gold-t.klein', { text: S().umstellungLaeuft(dauerText(x.spez_ab - jetzt)) }));
+    if (x.pl_bis && x.pl_bis > jetzt) zustand.push(el('div.rot-t.klein', { text: S().gepluendert(dauerText(x.pl_bis - jetzt)) }), el('button.knopf.klein.gold', { onclick: async () => { const r = await befehl({ art: 'distrikt_reparieren', stadt: s.id, distrikt: id }); if (!r.ok) fehler(r.fehler); else toast(S().repariert, 'erfolg'); } }, symbol('ui', 'bau'), S().reparieren));
+    if (x.feld == null) zustand.push(el('div.klein', { text: S().ohneFeld }));
+    const weiter = naechste ? el('div.klein', { text: S().naechsteStufe(naechste) }) : d.stufen.length ? el('div.gruen-t.klein', { text: S().hoechsteStufe }) : null;
+    k.append(el('div.st-box', { style: { borderLeft: `4px solid ${d.farbe}` } }, kopf, nb, spez, weiter, ...zustand));
+  }
+  k.append(el('button.knopf.gold', { style: { marginTop: '8px' }, onclick: () => { offen.reiter = 'bauen'; offen.filter = 'distrikt'; zeichne(); } }, symbol('ui', 'bau'), S().distriktBauen));
+  // Tradition (einmalig): bestimmt den einzigartigen Distrikt des Volkes
+  const t = TRADITION[du()?.tradition];
+  if (t) k.append(el('p.klein', { text: S().traditionGewaehlt(t.name, t.unikat.name) }));
+  else k.append(el('div.st-box', el('h2', symbol('ui', 'krone'), S().traditionTitel), el('p.klein', { text: S().traditionText }),
+    el('div.st-liste', TRADITIONEN.map((tr) => el('div.eintrag', { role: 'button', onclick: async () => {
+      if (!(await frageJaNein(tr.name, S().traditionFrage(tr.unikat.name, DISTRIKT[tr.distrikt].name, tr.unikat.beschreibung), S().traditionJa))) return;
+      const r = await befehl({ art: 'tradition_waehlen', id: tr.id }); if (!r.ok) fehler(r.fehler); else { ton('gruendung'); toast(S().traditionGewaehlt(tr.name, tr.unikat.name), 'erfolg'); }
+    } }, bauSymbol('distrikt', tr.distrikt, 40), el('div', el('b', { text: tr.unikat.name }), el('div.klein', { text: `${tr.name} · ersetzt ${DISTRIKT[tr.distrikt].name}` }), el('div.klein', { text: tr.unikat.beschreibung })))))));
+}
+
 function gebaeude(s, k) {
   const l = (s.gebaeude || []).map((id) => GEB[id]).filter(Boolean);
   const wunderHier = Object.entries(Z.ansicht.wunder || {}).filter(([, w]) => w.stadt === s.id && w.fertig).map(([wid]) => WUNDER_NACH_ID[wid]).filter(Boolean);

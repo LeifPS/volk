@@ -64,7 +64,7 @@ export function init(cv) {
     if (e.target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
     aktivitaet();
     if (e.key === 'Escape') {
-      if (Z.zielmodus) { Z.zielmodus = null; overlay.reichweite = null; overlay.gueltig = null; neuZeichnen(); return; }
+      if (Z.zielmodus) { Z.zielmodus = null; overlay.reichweite = null; overlay.gueltig = null; overlay.beschriftung = null; neuZeichnen(); return; }
       if (fensterOffen()) { const f = oberstesFenster(); if (!f.o.modal) f.schliessen(); return; }
       waehle(null); return;
     }

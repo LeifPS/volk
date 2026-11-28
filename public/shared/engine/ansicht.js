@@ -1,7 +1,7 @@
 // Was ein Spieler sehen darf (Nebel des Krieges serverseitig), als kompakte Ansicht und als Delta zur letzten Ansicht.
 import { abstand } from '../hex.js';
 import { karte } from '../karte.js';
-import { EINHEIT, GEB, GEBAEUDE, EINHEITEN, WUNDER, WUNDER_NACH_ID, FORSCHUNG, VERBESSERUNG, ROHSTOFFE } from '../daten/index.js';
+import { EINHEIT, GEB, GEBAEUDE, EINHEITEN, WUNDER, WUNDER_NACH_ID, FORSCHUNG, VERBESSERUNG, ROHSTOFFE, DISTRIKT } from '../daten/index.js';
 import { gesamtWertung, wachstumsBedarf, grenzKosten, STD } from '../regeln.js';
 import { pruefe } from './spiel.js';
 import { bereichVon, istMilitaer } from './einheiten.js';
@@ -21,7 +21,7 @@ export const ansicht = {
       id: v.id, name: v.name, farbe: v.farbe, art: v.art, gold: rund(v.gold), lager: Object.fromEntries(Object.entries(v.lager || {}).map(([k, x]) => [k, rund(x)])), stand_um: v.stand_um,
       raten: { gold: rund(r.gold), einnahmen: rund(r.einnahmen), unterhaltEinheiten: rund(r.unterhalt.einheiten), unterhaltGebaeude: rund(r.unterhalt.gebaeude), handel: rund(r.handel), wissenschaft: rund(r.wissenschaft), kultur: rund(r.kultur), material: r.material, kapazitaet: r.kapazitaet, luxus: r.luxus, boni: r.boni },
       forschung: { aktiv: v.forschung.aktiv, fortschritt: v.forschung.fortschritt, fertig_um: this.forschungsZeit(v), schlange: v.forschung.schlange, erforscht: v.forschung.erforscht, teil: v.forschung.teil || {}, dauer_ms: v.forschung.aktiv ? Math.round(this.forschungsDauerMs(v, v.forschung.aktiv, r.wissenschaft)) : null },
-      zeitalter: v.zeitalter || 0, schutz_bis: v.schutz_bis, gegruendet: v.gegruendet, tutorial: v.tutorial, einstellungen: v.einstellungen || {},
+      zeitalter: v.zeitalter || 0, tradition: v.tradition || null, schutz_bis: v.schutz_bis, gegruendet: v.gegruendet, tutorial: v.tutorial, einstellungen: v.einstellungen || {},
       meldungen: (v.meldungen || []).slice(-80), gelesen_bis: v.gelesen_bis || 0, mangel_seit: v.mangel_seit || null, abkommen_bis: v.abkommen_bis || null,
       routen: this.aktiveRouten(vid).length, routenKapazitaet: this.routenKapazitaet(v), startfeld: v.startfeld, zuletzt_gesehen: v.zuletzt_gesehen_vorher || null,
       luxus_handel: v.luxus_handel || [], luxus_abgabe: v.luxus_abgabe || [], schonfrist_bis: v.schonfrist_bis || 0,
@@ -99,6 +99,11 @@ export const ansicht = {
       wachstum_um: this.wachstumsZeit(s), grenze_um: this.grenzZeit(s), warte_um: s.warte_um || null, bauplaetze: this.bauplaetze(s), mauer: this.mauerStufe(s), zeitalter: this.z.voelker[s.volk]?.zeitalter || 0,
       kueste: this.istKuestenstadt(s),
       grenzKandidaten: this.grenzKandidaten(s), grenzZiel: s.grenz_ziel ?? null,
+      distrikte: Object.fromEntries(Object.entries(s.distrikte || {}).map(([id, x]) => {
+        const e = this.distriktErtrag(s, id);
+        return [id, { feld: x.feld, spez: x.spez, spez_ab: x.spez_ab > this.t ? x.spez_ab : null, pl_bis: x.pl_bis > this.t ? x.pl_bis : null, stufe: e.stufe, art: e.art, wert: e.wert, quellen: e.nachbar.quellen.map((q) => ({ text: q.text, wert: q.wert, feld: q.feld })) }];
+      })),
+      distrikteMax: this.distriktMax(s),
     };
   },
 
@@ -159,6 +164,12 @@ export const ansicht = {
     const v = this.z.voelker[vid];
     pruefe(v && q && typeof q.art === 'string', 'Ungültige Anfrage.');
     if (q.art === 'rangliste') return this.rangliste();
+    if (q.art === 'distriktplaetze') {
+      const s = this.z.staedte[q.stadt];
+      pruefe(s && s.volk === vid, 'Das ist nicht deine Stadt.');
+      pruefe(typeof q.id === 'string' && DISTRIKT[q.id], 'Unbekannter Distrikt.');
+      return { felder: this.distriktPlaetze(s, q.id).map((i) => ({ feld: i, bonus: this.distriktNachbarschaft(s, q.id, i).roh })) };
+    }
     if (q.art === 'wunderplaetze') {
       const s = this.z.staedte[q.stadt];
       pruefe(s && s.volk === vid, 'Das ist nicht deine Stadt.');
@@ -172,7 +183,7 @@ export const ansicht = {
       const add = (art, d) => {
         const grund = this.bauHindernis(s, art, d.id);
         if (grund && grund.startsWith('Dafür fehlt die Forschung') && !q.alle) return;
-        if (grund && (grund.includes('steht hier schon') || grund.includes('bessere Stufe'))) return;
+        if (grund && (grund.includes('steht hier schon') || grund.includes('bessere Stufe') || grund.includes('hat die Stadt schon') || grund.includes('gehört in eine Kolonie') || grund.includes('gehört auf die Erde'))) return;
         const kosten = this.bauKosten(s, art, d.id);
         const k = this.kannBezahlen(v, kosten);
         l.push({ art, id: d.id, grund, kosten, fehlt: k.ok ? null : k.fehlt, dauer: this.bauDauerMs(s, art, d.id) });
@@ -180,6 +191,7 @@ export const ansicht = {
       for (const d of GEBAEUDE) if (d.id !== 'palast') add('gebaeude', d);
       for (const d of EINHEITEN) add('einheit', d);
       for (const d of WUNDER) add('wunder', d);
+      for (const d of this.distriktTypenFuer(s)) add('distrikt', d);
       return { stadt: s.id, liste: l };
     }
     if (q.art === 'kampfvorschau') {

@@ -46,13 +46,13 @@ const ROH = [
   ['tierzucht', 'Tierzucht', 'wirtschaft', 1, ['jagd', 'ackerbau'], ['r:pferde', 'v:weide'], 'Gezähmte Tiere geben Milch, Wolle und bald auch schnelle Pferde.'],
   ['bergbau', 'Bergbau', 'industrie', 1, ['stammesleben'], ['r:kupfer', 'r:zinn', 'v:mine'], 'Im Fels glänzen Kupfer und Zinn: der Grundstoff der Bronze.'],
   ['holzbearbeitung', 'Holzbearbeitung', 'industrie', 1, ['stammesleben'], ['v:holzfaellerlager', 'g:lager', 'b:lager=20'], 'Steinäxte fällen Bäume, und aus Stämmen werden Hütten.'],
-  ['ahnenkult', 'Ahnenkult', 'wissen', 1, ['stammesleben'], ['g:schrein', 'b:kultur_prozent=2'], 'Die Geister der Vorfahren wachen über das Dorf.'],
+  ['ahnenkult', 'Ahnenkult', 'wissen', 1, ['stammesleben'], ['d:heiligtum', 'g:schrein', 'b:kultur_prozent=2'], 'Die Geister der Vorfahren wachen über das Dorf.'],
   // Spalte 2
   ['steinmetzkunst', 'Steinmetzkunst', 'industrie', 2, ['bergbau'], ['v:steinbruch'], 'Mit Meißel und Keil wird roher Fels zu Bausteinen.'],
   ['bogenbau', 'Bogenbau', 'militaer', 2, ['jagd'], ['e:schleuderer'], 'Schleudern und erste Bögen treffen Beute und Feinde aus der Ferne.'],
   ['fischfang', 'Fischfang', 'see', 2, ['jagd', 'holzbearbeitung'], ['v:fischerboote', 'e:arbeitsboot'], 'Netze und Einbäume holen die Schätze des Wassers.'],
-  ['schrift', 'Schrift', 'wissen', 2, ['toepferei', 'ahnenkult'], ['g:bibliothek', 'b:wissenschaft_prozent=2'], 'Zeichen auf Ton bewahren Wissen über Generationen.'],
-  ['kriegerkodex', 'Kriegerkodex', 'militaer', 2, ['bergbau'], ['e:speertraeger', 'g:kaserne', 'o:krieg'], 'Ehre, Gehorsam und ein spitzer Speer: Das erste Heer entsteht.'],
+  ['schrift', 'Schrift', 'wissen', 2, ['toepferei', 'ahnenkult'], ['d:campus', 'g:bibliothek', 'b:wissenschaft_prozent=2'], 'Zeichen auf Ton bewahren Wissen über Generationen.'],
+  ['kriegerkodex', 'Kriegerkodex', 'militaer', 2, ['bergbau'], ['d:militaerlager', 'e:speertraeger', 'g:kaserne', 'o:krieg'], 'Ehre, Gehorsam und ein spitzer Speer: Das erste Heer entsteht.'],
   ['lehmbau', 'Lehmbau', 'wirtschaft', 2, ['toepferei'], ['v:lehmgrube', 'g:brunnen'], 'Lehm, Stroh und Wasser werden zu festen Wänden.'],
   // Spalte 3
   ['bronzeguss', 'Bronzeguss', 'militaer', 3, ['kriegerkodex'], ['g:bronzeschmiede', 'b:produktion_prozent=2'], 'Kupfer und Zinn schmelzen zu hartem, glänzendem Metall.'],
@@ -82,7 +82,7 @@ const ROH = [
   ['mathematik', 'Mathematik', 'wissen', 6, ['rechnen'], ['e:katapult', 'b:wissenschaft_prozent=2'], 'Winkel und Hebel: Mit Zahlen lassen sich Maschinen bauen.'],
   ['phalanx', 'Phalanx', 'militaer', 6, ['bronzeguss', 'stammesrat'], ['e:hoplit'], 'Schild an Schild steht eine Mauer aus Bronze.'],
   ['reitkunst', 'Reitkunst', 'militaer', 6, ['reiterei'], ['e:reiter'], 'Sattel und Zaumzeug machen Reiter zu Kriegern.'],
-  ['waehrung', 'Währung', 'wirtschaft', 6, ['tauschhandel', 'rechnen'], ['g:markt', 'b:gold_prozent=3'], 'Geprägte Münzen ersetzen Säcke voller Tauschwaren.'],
+  ['waehrung', 'Währung', 'wirtschaft', 6, ['tauschhandel', 'rechnen'], ['d:handelsplatz', 'g:markt', 'b:gold_prozent=3'], 'Geprägte Münzen ersetzen Säcke voller Tauschwaren.'],
   ['polytheismus', 'Polytheismus', 'wissen', 6, ['priestertum', 'monumentalbau'], ['g:tempel'], 'Für jeden Gott ein Tempel, für jedes Fest ein Opfer.'],
   ['trieren', 'Trierenbau', 'see', 6, ['segeln', 'bronzeguss'], ['e:trireme'], 'Drei Reihen Ruder und ein Bronzesporn: schnell und tödlich.'],
   ['baukunst', 'Baukunst', 'industrie', 6, ['monumentalbau', 'steinmetzkunst'], ['g:stadtmauer_stein', 'v:fort'], 'Behauene Quader fügen sich zu Mauern ohne Mörtel.'],
@@ -92,8 +92,8 @@ const ROH = [
   ['diplomatie', 'Diplomatie', 'staat', 7, ['stammesrat', 'waehrung'], ['o:frieden', 'o:offene_grenzen'], 'Gesandte sprechen, wo sonst Schwerter sprechen würden.'],
   ['kompositbogen', 'Kompositbogen', 'militaer', 7, ['bogenschiessen', 'phalanx'], ['e:kompositbogenschuetze'], 'Holz, Horn und Sehne: ein kleiner Bogen mit großer Kraft.'],
   ['elefantendressur', 'Elefantendressur', 'militaer', 7, ['reitkunst'], ['e:kriegselefant'], 'Ein Elefant im Panzer ist eine wandelnde Festung.'],
-  ['handwerk', 'Handwerk', 'industrie', 7, ['eisenverarbeitung', 'lehmbau'], ['g:werkstatt', 'g:ziegelei', 'b:produktion_prozent=2'], 'Meister und Lehrlinge fertigen Werkzeug für die ganze Stadt.'],
-  ['kuestenbau', 'Küstenbau', 'see', 7, ['trieren'], ['g:werft', 'g:leuchtturm', 'v:leuchtturm_feld'], 'Werften und Leuchtfeuer machen die Küste zur Heimat der Flotte.'],
+  ['handwerk', 'Handwerk', 'industrie', 7, ['eisenverarbeitung', 'lehmbau'], ['d:industriezone', 'g:werkstatt', 'g:ziegelei', 'b:produktion_prozent=2'], 'Meister und Lehrlinge fertigen Werkzeug für die ganze Stadt.'],
+  ['kuestenbau', 'Küstenbau', 'see', 7, ['trieren'], ['d:hafen', 'g:werft', 'g:leuchtturm', 'v:leuchtturm_feld'], 'Werften und Leuchtfeuer machen die Küste zur Heimat der Flotte.'],
   // Spalte 8
   ['ingenieurskunst', 'Ingenieurskunst', 'industrie', 8, ['strassenbau', 'mathematik'], ['g:aquaedukt', 'v:terrassenfeld'], 'Bögen tragen Wasser über Täler und Felder an Hänge.'],
   ['legionsdrill', 'Legionsdrill', 'militaer', 8, ['eisenverarbeitung', 'strassenbau'], ['e:legionaer', 'b:erfahrung_prozent=5'], 'Täglicher Drill macht aus Bauern Berufssoldaten.'],
@@ -105,7 +105,7 @@ const ROH = [
   // Spalte 9
   ['torsion', 'Torsionsgeschütze', 'militaer', 9, ['mathematik', 'ingenieurskunst'], ['e:ballista'], 'Gedrehte Seile speichern die Kraft für gewaltige Pfeile.'],
   ['erzguss', 'Erzguss', 'industrie', 9, ['seehandel', 'handwerk'], ['w:koloss'], 'Riesige Bronzefiguren entstehen in Gussformen aus Lehm.'],
-  ['heilkunst', 'Heilkunst', 'wissen', 9, ['kraeuterkunde', 'ingenieurskunst'], ['g:badehaus', 'b:heilung_prozent=10'], 'Ärzte lernen, wie der Körper funktioniert.'],
+  ['heilkunst', 'Heilkunst', 'wissen', 9, ['kraeuterkunde', 'ingenieurskunst'], ['d:stadtviertel', 'g:badehaus', 'b:heilung_prozent=10'], 'Ärzte lernen, wie der Körper funktioniert.'],
   ['mehrruderer', 'Mehrruderer', 'see', 9, ['seehandel', 'mathematik'], ['e:quinquereme'], 'Fünf Ruderer an jedem Riemen und Geschütze an Deck.'],
   ['rhetorik', 'Rhetorik', 'staat', 9, ['literatur', 'diplomatie'], ['o:karten_tausch', 'b:kultur_prozent=3'], 'Wer gut redet, gewinnt Verbündete und Wissen.'],
   ['republik', 'Republik', 'staat', 9, ['diplomatie', 'literatur'], ['o:tribut', 'b:gold_prozent=3'], 'Bürger wählen ihre Vertreter und zahlen gern ihre Steuern.'],
@@ -136,7 +136,7 @@ const ROH = [
   ['wundarznei', 'Wundarznei', 'wissen', 13, ['heilkunst', 'theologie'], ['g:heilhaus', 'e:feldscher', 'b:heilung_prozent=5'], 'Feldscher verbinden Wunden noch auf dem Schlachtfeld.'],
   ['gilden', 'Gilden', 'wirtschaft', 13, ['handelsstrassen', 'lagerwirtschaft'], ['v:handelshaus', 'b:produktion_prozent=3'], 'Handwerker und Kaufleute schließen sich zusammen.'],
   ['grubenbau', 'Grubenbau', 'industrie', 13, ['bergbau', 'mechanik'], ['v:tiefe_mine', 'v:grosser_steinbruch'], 'Tiefe Schächte, Pumpen und Haspeln holen mehr aus dem Berg.'],
-  ['schauspiel', 'Schauspiel', 'wissen', 13, ['rhetorik', 'theologie', 'brot_und_spiele'], ['g:theater', 'b:kultur_prozent=3'], 'Gaukler und Schauspieler ziehen von Stadt zu Stadt.'],
+  ['schauspiel', 'Schauspiel', 'wissen', 13, ['rhetorik', 'theologie', 'brot_und_spiele'], ['d:theaterplatz', 'g:theater', 'b:kultur_prozent=3'], 'Gaukler und Schauspieler ziehen von Stadt zu Stadt.'],
   ['hafenwesen', 'Hafenwesen', 'see', 13, ['kompass', 'lagerwirtschaft'], ['g:hafen'], 'Kaimauern, Kräne und Zollhäuser für die Handelsflotte.'],
   // Spalte 14
   ['ruestkammern', 'Rüstkammern', 'militaer', 14, ['ritterwesen', 'gilden'], ['g:waffenkammer'], 'Plattenrüstungen und Waffen für jede Garnison.'],
@@ -402,15 +402,15 @@ const ROH = [
   ['raumjaeger_technik', 'Raumjäger', 'luft', 57, ['orbitalbau', 'hyperschalltechnik'], ['e:raumjaeger'], 'Wendige Jäger kämpfen zwischen Erde und Mond.'],
   ['orbitale_solarkraft', 'Orbitale Solarkraft', 'industrie', 57, ['orbitalbau', 'energienetz_global'], ['g:orbitalkraftwerk'], 'Riesige Sonnensegel im All schicken Energie zur Erde.'],
   ['raumanzug_infanterie', 'Raumlandetruppen', 'militaer', 57, ['orbitalbau', 'plasmawaffen'], ['e:raumlandetruppe'], 'Soldaten in Raumanzügen landen dort, wo es keine Luft gibt.'],
-  ['mondlandung', 'Mondbasis', 'raumfahrt', 57, ['orbitalbau', 'raumfahrtmedizin'], ['e:kolonist', 'v:mondmine', 'v:kuppelfarm'], 'Die ersten Menschen bleiben auf dem Mond: Kolonisten gründen Kuppelstädte im All.'],
+  ['mondlandung', 'Mondbasis', 'raumfahrt', 57, ['orbitalbau', 'raumfahrtmedizin'], ['d:kuppelviertel', 'e:kolonist', 'v:mondmine', 'v:kuppelfarm'], 'Die ersten Menschen bleiben auf dem Mond: Kolonisten gründen Kuppelstädte im All.'],
   // Spalte 58
   ['helium3_abbau', 'Helium-3-Abbau', 'industrie', 58, ['mondlandung', 'kernfusion'], ['r:helium3', 'v:heliumextraktor'], 'Der Mondstaub enthält den saubersten Brennstoff der Fusion.'],
   ['orbitalabwehr_technik', 'Orbitalabwehr', 'militaer', 58, ['raumjaeger_technik', 'energieschilde'], ['g:orbitalabwehr', 'e:orbitalflak'], 'Geschütze, die bis in den Orbit reichen.'],
   ['orbitalbomber_technik', 'Orbitalbomber', 'luft', 58, ['raumjaeger_technik', 'hyperschallraketen'], ['e:orbitalbomber'], 'Bomber, die aus dem All angreifen.'],
-  ['asteroidenbergbau', 'Asteroidenbergbau', 'industrie', 58, ['mondlandung', 'leichtbau_titan'], ['v:asteroidenbohrer', 'b:produktion_prozent=3'], 'Ein einziger Felsbrocken im All enthält mehr Metall als ein ganzes Gebirge.'],
+  ['asteroidenbergbau', 'Asteroidenbergbau', 'industrie', 58, ['mondlandung', 'leichtbau_titan'], ['d:bergbaudistrikt', 'v:asteroidenbohrer', 'b:produktion_prozent=3'], 'Ein einziger Felsbrocken im All enthält mehr Metall als ein ganzes Gebirge.'],
   ['raumfrachter_technik', 'Raumfrachter', 'wirtschaft', 58, ['orbitalbau', 'drohnenlogistik'], ['e:raumfrachter', 'e:orbitalfaehre', 'b:handel_gold_prozent=10'], 'Frachter pendeln zwischen Erde, Mond und Stationen.'],
   // Spalte 59
-  ['marsmission', 'Marskolonie', 'raumfahrt', 59, ['mondlandung', 'raumfahrtmedizin'], ['v:marsmine', 'v:eisfoerderung', 'r:wassereis', 'b:sicht=1'], 'Der rote Planet wird zur zweiten Heimat.'],
+  ['marsmission', 'Marskolonie', 'raumfahrt', 59, ['mondlandung', 'raumfahrtmedizin'], ['d:forschungskuppel', 'v:marsmine', 'v:eisfoerderung', 'r:wassereis', 'b:sicht=1'], 'Der rote Planet wird zur zweiten Heimat.'],
   ['biokuppeln', 'Biokuppeln', 'wirtschaft', 59, ['mondlandung', 'vertikale_landwirtschaft'], ['g:biokuppel', 'b:nahrung_prozent=5'], 'Gärten unter Glas, auf der Erde wie im All.'],
   ['kinetische_waffen', 'Kinetische Orbitalwaffen', 'militaer', 59, ['orbitalabwehr_technik', 'schienenkanonen'], ['e:kinetischer_stab'], 'Ein Metallstab aus dem Orbit trifft mit der Wucht eines Meteoriten.'],
   ['schwerelosigkeitstaktik', 'Schwerelosigkeits-Taktik', 'militaer', 59, ['raumanzug_infanterie', 'gefechts_ki'], ['e:mondpanzer', 'b:erfahrung_prozent=10'], 'Kämpfen, wo oben und unten nichts mehr bedeuten.'],
@@ -460,7 +460,7 @@ const ROH = [
   ['zukunft_kultur', 'Zukunftstechnologie: Kultur', 'staat', 68, ['stellare_kultur', 'arche_technik', 'kuenstliche_sonne_technik'], ['b:kultur_prozent=2', 'b:zufriedenheit=1'], 'Kunst und Gemeinschaft für eine friedliche Welt. Beliebig oft erforschbar.'],
 ];
 
-const ART_KUERZEL = { e: 'einheit', g: 'gebaeude', w: 'wunder', v: 'verbesserung', r: 'rohstoff', o: 'option', b: 'bonus' };
+const ART_KUERZEL = { e: 'einheit', g: 'gebaeude', w: 'wunder', v: 'verbesserung', r: 'rohstoff', o: 'option', b: 'bonus', d: 'distrikt' };
 
 function zeitalterVonSpalte(spalte) {
   let z = 0;

@@ -35,6 +35,11 @@ export function baueDemo(zeitalter = 3, start = Date.now()) {
   for (const st of staedte) {
     st.bev = st === haupt ? 14 : 6 + (st.id % 5);
     for (let k = 0; k < 6 + st.bev; k++) s.grenzwachstum(st.id);
+    // Distrikte nach Einwohnerzahl (die Spezialgebäude stehen darin)
+    for (const did of ['campus', 'handelsplatz', 'industriezone', 'theaterplatz', 'heiligtum', 'hafen', 'militaerlager', 'stadtviertel']) {
+      if (s.distriktZahl(st) >= s.distriktMax(st) || s.bauHindernis(st, 'distrikt', did)) continue;
+      const f = s.distriktPlatzAutomatisch(st, did); if (f != null) s.distriktSetzen(st, did, f);
+    }
     let n = 0;
     for (const g of GEBAEUDE) { if (n > 12) break; if (!s.bauHindernis(st, 'gebaeude', g.id)) { if (g.ersetzt) delete st.gebaeude[g.ersetzt]; st.gebaeude[g.id] = 1; n++; } }
     s.autoBewirtschaften(st);

@@ -181,7 +181,7 @@ export class WeltServer {
   volkEntfernen(vid) {
     const s = this.spiel;
     for (const e of s.einheitenVon(vid)) s.einheitEntfernen(e.id);
-    for (const st of s.staedteVon(vid)) { for (const i of st.gebiet) s.setzeFeld(i, { s: null }); delete s.z.staedte[st.id]; s.markiere('s' + st.id); }
+    for (const st of s.staedteVon(vid)) { for (const i of st.gebiet) s.setzeFeld(i, { s: null, d: null, db: null }); delete s.z.staedte[st.id]; s.markiere('s' + st.id); }
     for (const [k] of Object.entries(s.z.diplomatie)) if (k.split('|').map(Number).includes(vid)) { delete s.z.diplomatie[k]; s.markiere('g'); }
     for (const [id, a] of Object.entries(s.z.angebote)) if (a.von === vid || a.an === vid || a.parteien?.includes(vid)) { delete s.z.angebote[id]; s.markiere('a' + id); }
     for (const [id, w] of Object.entries(s.z.wunder)) if (w.volk === vid) { delete s.z.wunder[id]; s.markiere('w' + id); }

@@ -17,6 +17,7 @@ import { start } from './start.js';
 import { weltraum } from './weltraum.js';
 import { naturwunder } from './naturwunder.js';
 import { wunderplatz } from './wunderplatz.js';
+import { distrikte } from './distrikte.js';
 import { ZUSTAND_VERSION, migriere } from './migration.js';
 
 export class SpielFehler extends Error {}
@@ -230,7 +231,7 @@ export const BEFEHLE = new Set([
   'forschen', 'forschung_schlange', 'feld_bewirtschaften', 'auto_bewirtschaften', 'grenzziel', 'aufloesen', 'aufruesten', 'befoerdern',
   'krieg_erklaeren', 'diplomatie_angebot', 'angebot_antwort', 'angebot_zurueckziehen', 'tausch_angebot', 'handelsroute',
   'stadtstaat_geschenk', 'pluendern', 'luftangriff', 'verlegen', 'atomschlag', 'stadt_angriff', 'stadt_umbenennen',
-  'meldungen_gelesen', 'tutorial', 'neuanfang', 'ping', 'einstellungen', 'tribut_fordern', 'ebene_wechseln',
+  'meldungen_gelesen', 'tutorial', 'neuanfang', 'ping', 'einstellungen', 'tribut_fordern', 'ebene_wechseln', 'distrikt_spez', 'distrikt_reparieren', 'tradition_waehlen',
 ]);
 
-Object.assign(Spiel.prototype, wirtschaft, bau, forschung, einheiten, kampf, diplomatie, akteure, ansicht, start, weltraum, naturwunder, wunderplatz);
+Object.assign(Spiel.prototype, wirtschaft, bau, forschung, einheiten, kampf, diplomatie, akteure, ansicht, start, weltraum, naturwunder, wunderplatz, distrikte);
