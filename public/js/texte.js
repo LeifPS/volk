@@ -220,6 +220,7 @@ T.lexikon = {
   kategorien: {
     regel: 'Regeln', einheit: 'Einheiten', gebaeude: 'Gebäude', wunder: 'Weltwunder', forschung: 'Forschungen', rohstoff: 'Rohstoffe',
     gelaende: 'Gelände', verbesserung: 'Verbesserungen', befoerderung: 'Beförderungen', zeitalter: 'Zeitalter', akteur: 'Völker und Wildnis',
+    civic: 'Civics', regierung: 'Regierungen', politikkarte: 'Politikkarten', distrikt: 'Distrikte', naturwunder: 'Naturwunder', religion: 'Religion',
   },
   kategorieText: {
     regel: 'Die Spielregeln, einfach erklärt.',
@@ -233,6 +234,12 @@ T.lexikon = {
     befoerderung: 'Was erfahrene Einheiten lernen.',
     zeitalter: 'Alle Zeitalter von der Antike bis in die ferne Zukunft.',
     akteur: 'KI-Völker, Stadtstaaten, Barbaren und Raubtiere.',
+    civic: 'Der Kulturbaum: Civics schalten Regierungen, Politikkarten und Boni frei.',
+    regierung: 'Staatsformen mit Plätzen für Politikkarten und einem Spezialeffekt.',
+    politikkarte: 'Karten, die du in die Plätze deiner Regierung legst.',
+    distrikt: 'Stadtviertel auf eigenen Feldern, in denen Spezialgebäude stehen.',
+    naturwunder: 'Einzigartige Orte der Natur mit besonderen Erträgen.',
+    religion: 'Pantheons, Religionen und Glaubenssätze.',
   },
   // Beschriftungen
   staerke: 'Kampfstärke', fern: 'Fernkampf', reichweite: 'Reichweite', tempo: 'Tempo', sicht: 'Sicht', lp: 'Lebenspunkte',
@@ -483,7 +490,7 @@ T.lexikon = {
       '• **Lange drücken** auf einen Knopf zeigt seine Erklärung. • Alle Knöpfe sind groß genug für Finger. Spiele am besten im Querformat.',
     ] },
     { id: 'tasten', titel: 'Tastenkürzel', sym: 'menue', absaetze: () => [
-      '• **Leertaste:** Nächste Aktion • **Esc:** Fenster schließen / Auswahl aufheben • **F1:** Forschung • **F2:** Reich und Städte • **F3:** Diplomatie • **F4:** Rangliste • **F5:** Lexikon • **H:** Was soll ich tun? • **N:** Meldungen • **+ / −:** zoomen • **Pfeiltasten oder W A S D:** Karte verschieben',
+      '• **Leertaste:** Nächste Aktion • **Esc:** Fenster schließen / Auswahl aufheben • **F1:** Forschung • **F2:** Reich und Städte • **F3:** Diplomatie • **F4:** Rangliste • **F5:** Lexikon • **F6:** Kulturbaum • **F7:** Regierung • **F8:** Religion • **E:** Erde / All • **H:** Was soll ich tun? • **N:** Meldungen • **+ / −:** zoomen • **Pfeiltasten oder W A S D:** Karte verschieben',
     ] },
   ],
   startRegeln: ['ziel', 'zeit', 'bedienung_maus', 'bedienung_tablet', 'kampf', 'offline'],
@@ -496,7 +503,7 @@ T.hilfe = {
   tutorial: 'Tutorial neu starten', lexikon: 'Lexikon', tasten: 'Tastenkürzel', tastenTitel: 'Tastenkürzel und Bedienung',
   tastenListe: [
     ['Leertaste', 'Nächste Aktion (Einheit oder Stadt, die einen Befehl braucht)'], ['Esc', 'Fenster schließen / Auswahl aufheben'],
-    ['F1', 'Forschung'], ['F2', 'Reich und Städte'], ['F3', 'Diplomatie und Handel'], ['F4', 'Rangliste'], ['F5', 'Lexikon'],
+    ['F1', 'Forschung'], ['F2', 'Reich und Städte'], ['F3', 'Diplomatie und Handel'], ['F4', 'Rangliste'], ['F5', 'Lexikon'], ['F6', 'Kulturbaum'], ['F7', 'Regierung und Politikkarten'], ['F8', 'Religion'], ['E', 'Erde / All umschalten'],
     ['H', 'Was soll ich tun?'], ['N', 'Meldungen'], ['+ / −', 'Zoomen'], ['Pfeile / W A S D', 'Karte verschieben'],
   ],
   mausListe: [
@@ -509,6 +516,10 @@ T.hilfe = {
   t: {
     gruenden: { titel: 'Gründe deine erste Stadt', text: 'Wähle deinen Siedler und drücke unten „Stadt gründen“. Ein Platz auf Grasland oder Ebene, nahe an Wasser, ist ideal.', knopf: 'Zum Siedler' },
     neuanfang: { titel: 'Neuanfang', text: 'Du hast keine Stadt und keinen Siedler mehr. In den Einstellungen kannst du neu anfangen – mit neuen Starteinheiten und 24 Stunden Schutz.', knopf: 'Einstellungen' },
+    civic: { titel: 'Wähle eine Civic', text: 'Der Kulturbaum steht still. Wähle eine Civic: Sie bringt Regierungen, Politikkarten und Boni.', knopf: 'Kulturbaum öffnen' },
+    karten: { titel: 'Kostenloser Kartentausch', text: 'Du kannst deine Politikkarten gerade kostenlos tauschen. Prüfe, ob neue Karten besser passen.', knopf: 'Regierung öffnen' },
+    pantheon: { titel: 'Wähle ein Pantheon', text: 'Du hast genug Glaube für ein Pantheon. Jedes gibt es nur einmal in der Welt – wer zuerst wählt, hat die Auswahl.', knopf: 'Religion öffnen' },
+    abkommen: (n) => ({ titel: `Handelsabkommen mit ${n}?`, text: 'Eure Beziehung ist gut. Ein Handelsabkommen bringt mehr Gold auf gemeinsamen Routen und eine Route mehr.', knopf: 'Diplomatie' }),
     forschung: { titel: 'Starte eine Forschung', text: 'Gerade forscht dein Volk an nichts. Das ist verschenkte Zeit! Wähle im Forschungsbaum etwas aus.', knopf: 'Forschung wählen' },
     bau: (n, name) => ({ titel: n > 1 ? `${n} Städte ohne Bauauftrag` : `${name} hat keinen Bauauftrag`, text: 'Eine Stadt ohne Auftrag verschenkt Zeit. Am Anfang sind Krieger, Arbeiter, Siedler und ein Kornspeicher gute Wahl.', knopf: 'Bauauftrag wählen' }),
     gold: (rate) => ({ titel: 'Dein Einkommen ist negativ', text: `Du verlierst ${rate} Gold pro Stunde. Löse unnötige Einheiten auf, baue Märkte oder richte Handelsrouten ein.`, knopf: 'Einkommen ansehen' }),
@@ -805,3 +816,40 @@ T.diplo.bz = {
   nochNicht: (t) => `Aufheben geht in ${t}.`, gruendeEmbargo: 'Solange ein Embargo gilt, gibt es kein Handelsabkommen.',
 };
 T.gesandter = { knopf: 'Botschaft einrichten', fertig: 'Botschaft eingerichtet: Die Beziehung wird besser.', tip: (n) => `Richtet in ${n} eine Botschaft ein (der Gesandte wird verbraucht).`, hinweis: 'Ziehe den Gesandten in oder neben eine Stadt eines anderen Volkes.' };
+
+// ---------- Lexikon: Beschriftungen und Regeln für den Ausbau (Volk 3) ----------
+T.lexikon.neu = {
+  inspiration: 'Inspiration', eurekaWirkung: 'Wer das schafft, bekommt 40 % der Kosten geschenkt.', kulturpunkte: 'Kulturpunkte',
+  schaltetFrei: 'Schaltet frei', bonus: 'Bonus', plaetze: 'Kartenplätze', spezial: 'Besonderheit', freiDurch: 'Freigeschaltet durch', veraltet: 'Veraltet durch',
+  wirkung: 'Wirkung', gelaende: 'Gelände', imAll: 'Im All', aufDerErde: 'Auf der Erde',
+  kartenArten: { militaer: 'Militär', wirtschaft: 'Wirtschaft', diplomatie: 'Diplomatie', joker: 'Joker' },
+  religionArten: { pantheon: 'Pantheon', religion: 'Religion', gruender: 'Gründer-Satz', anhaenger: 'Anhänger-Satz', verehrung: 'Verehrungs-Satz', reformer: 'Reformer-Satz' },
+  distriktRegel: 'Ein Distrikt belegt ein eigenes Feld in deinem Gebiet. Seine Nachbarn (Berge, Flüsse, andere Distrikte, Wunder) geben einen Bonus. Spezialgebäude stehen immer in ihrem Distrikt. Siehe [[regel:distrikte]].',
+  religionRegel: 'Glaube sammelst du über das Heiligtum. Damit wählst du ein Pantheon, gründest eine Religion und kaufst Missionare und Apostel. Siehe [[regel:religion]].',
+};
+T.lexikon.regeln.push(
+  { id: 'kulturbaum', titel: 'Kulturbaum, Regierung und Politikkarten', sym: 'kultur', absaetze: () => [
+    'Neben dem Forschungsbaum gibt es den **Kulturbaum** (F6). Er wird mit der Kultur deiner Städte bezahlt: Je mehr Kultur pro Stunde, desto schneller werden [[kat:civic|Civics]] fertig.',
+    'Civics schalten [[kat:regierung|Regierungen]], [[kat:politikkarte|Politikkarten]] und Boni frei. Im Regierungsfenster (F7) wählst du eine Regierung und legst Karten in ihre Plätze (Militär, Wirtschaft, Diplomatie, Joker). Nach jeder abgeschlossenen Civic ist der nächste Kartentausch kostenlos, sonst kostet er etwas Gold.',
+    'Nach einem Regierungswechsel wirkt die neue Regierung einige Stunden lang nur halb.',
+  ] },
+  { id: 'eurekas', titel: 'Eurekas und Inspirationen', sym: 'eureka', absaetze: () => [
+    'Jede Forschung hat eine **Eureka** und jede Civic eine **Inspiration**: eine Aufgabe, die du durch ganz normales Spielen erfüllst, zum Beispiel „Baue 2 Minen“ oder „Gründe eine Küstenstadt“.',
+    'Ist sie erfüllt, kostet die Forschung oder Civic **40 % weniger**. Läuft sie gerade, springt der Fortschritt sofort; sonst wird es gemerkt. Im Baum steht die Aufgabe unter jedem Knoten, erfüllte leuchten magenta.',
+  ] },
+  { id: 'religion', titel: 'Religion', sym: 'religion', absaetze: () => [
+    '**Glaube** kommt aus dem Distrikt Heiligtum. Mit Glaube wählst du zuerst ein [[kat:religion|Pantheon]] (kleiner Dauerbonus, jedes nur einmal in der Welt).',
+    'Danach kannst du in einer Stadt mit Heiligtum eine **Religion gründen** und ihr zwei Glaubenssätze geben, später zwei weitere. Religionen breiten sich von selbst in Nachbarstädte aus; mit [[einheit:missionar|Missionaren]] und [[einheit:apostel|Aposteln]] hilfst du nach. Apostel führen Glaubenskämpfe und können fremde Lehren aus deinen Städten vertreiben.',
+    'Es gibt nur eine begrenzte Zahl Religionen in der Welt. Wer zu lange wartet, geht leer aus.',
+  ] },
+  { id: 'weltraum', titel: 'Das All', sym: 'stern_voll', absaetze: () => [
+    'Ab dem Weltraumzeitalter gibt es eine zweite Karte: das **All** mit Mond, Mars, Eismond und Asteroiden. Umschalten kannst du an der Minikarte oder mit der Taste E.',
+    'Raumtaugliche Einheiten starten in einer Stadt mit Raumhafen und landen im Erdorbit. [[einheit:kolonist|Kolonisten]] gründen Kolonien auf Mond, Mars und Eismond, die eigene Verbesserungen und Rohstoffe haben. KI-Völker und Barbaren bleiben auf der Erde.',
+  ] },
+  { id: 'beziehungen', titel: 'Beziehungen, Handelsabkommen und Embargo', sym: 'diplomatie', absaetze: () => [
+    'Zwischen zwei Völkern gibt es einen **Beziehungswert** von -100 bis +100. Handelsrouten, offene Grenzen, Bündnisse, Handelsabkommen, Botschaften und gemeinsame Feinde verbessern ihn; Krieg, Embargos, Eroberungen und Tribute verschlechtern ihn. Mit der Zeit verblasst alles zur Mitte.',
+    'Ein **Handelsabkommen** bringt auf Routen zwischen euch 25 % mehr Gold und jeder Seite eine Handelsroute mehr. Ein **Embargo** beendet allen Handel mit einem Volk (mindestens 6 Stunden).',
+    'Ein [[einheit:gesandter|Gesandter]] reist auch ohne offene Grenzen zu einer fremden Stadt und richtet dort eine **Botschaft** ein: bessere Beziehung und dauerhafte Sicht auf die Stadt.',
+    'KI-Völker richten sich nach der Beziehung: Sie nehmen Angebote erst ab einer bestimmten Stufe an, schlagen bei guter Beziehung selbst Verträge vor und verhängen bei schlechter ein Embargo oder erklären irgendwann Krieg.',
+  ] },
+);

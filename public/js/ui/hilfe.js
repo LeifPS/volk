@@ -55,6 +55,14 @@ export function tippsSammeln() {
   }
   // Keine Forschung
   if (!d.forschung?.aktiv) add(95, ['ui', 'forschung'], H.t.forschung, () => { alleFensterZu(); F.forschung(); }, true);
+  // Kulturbaum: keine Civic gewählt, freier Kartentausch nicht genutzt
+  if (d.civics && !d.civics.aktiv && staedte.length) add(80, ['ui', 'kultur'], H.t.civic, () => { alleFensterZu(); F.kultur(); });
+  if (d.freier_tausch && staedte.length) add(55, ['ui', 'krone'], H.t.karten, () => { alleFensterZu(); F.regierung(); });
+  // Religion: Pantheon bezahlbar, aber noch keins
+  if (!d.pantheon && (d.glaube || 0) >= 60) add(60, ['ui', 'religion'], H.t.pantheon, () => { alleFensterZu(); F.religion(); });
+  // Gute Beziehung ohne Handelsabkommen (Hinweis, eher niedrig)
+  const freund = Object.entries(Z.ansicht?.diplomatie || {}).find(([, x]) => (x.beziehung || 0) >= 20 && !x.handelsabkommen && !x.krieg);
+  if (freund) add(30, ['ui', 'handel'], H.t.abkommen(volk(+freund[0])?.name || '?'), () => { alleFensterZu(); F.diplomatie(+freund[0]); });
   // Städte ohne Bauauftrag
   const ohneBau = staedte.filter((s) => !(s.bau || []).length && !(s.schlange || []).length);
   if (ohneBau.length) add(90, ['stadt', 'stadt', { farbe, zeitalter: d.zeitalter || 0, groesse: 1 }], H.t.bau(ohneBau.length, ohneBau[0].name), () => zuStadt(ohneBau[0], 'bauen'), true);

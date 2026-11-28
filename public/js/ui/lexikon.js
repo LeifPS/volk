@@ -8,13 +8,26 @@ import {
   GELAENDE, GELAENDE_ID, BEFOERDERUNGEN, BEFOERDERUNG, BAUM, baumVon, ZEITALTER, KI_VOELKER, STADTSTAATEN, BARBARENLAGER, FREIGESCHALTET_DURCH, NACHFOLGER,
 } from '../../shared/daten/index.js';
 import { FLUSS } from '../../shared/daten/gelaende.js';
+import { CIVICS, CIVIC, REGIERUNGEN, REGIERUNG, POLITIKKARTEN, POLITIKKARTE } from '../../shared/daten/civics.js';
+import { DISTRIKTE } from '../../shared/daten/distrikte.js';
+import { NATURWUNDER, NATURWUNDER_NACH_ID } from '../../shared/daten/naturwunder.js';
+import { PANTHEONS, RELIGIONEN, GLAUBENSSAETZE } from '../../shared/daten/religion.js';
 import { LAGER_NAMEN } from '../../shared/daten/rohstoffe.js';
 import * as R from '../../shared/regeln.js';
 import * as F from './fenster.js';
 
 const L = T.lexikon;
-const REIHENFOLGE = ['regel', 'einheit', 'gebaeude', 'wunder', 'forschung', 'rohstoff', 'gelaende', 'verbesserung', 'befoerderung', 'zeitalter', 'akteur'];
-const KAT_SYM = { regel: ['ui', 'lexikon'], einheit: ['einheit', 'krieger'], gebaeude: ['gebaeude', 'bibliothek'], wunder: ['ui', 'wunder'], forschung: ['ui', 'forschung'], rohstoff: ['rohstoff', 'eisen'], gelaende: ['deko', 'wald'], verbesserung: ['verbesserung', 'farm'], befoerderung: ['ui', 'befoerderung'], zeitalter: ['ui', 'zeitalter'], akteur: ['ui', 'diplomatie'] };
+const REIHENFOLGE = ['regel', 'einheit', 'gebaeude', 'distrikt', 'wunder', 'naturwunder', 'forschung', 'civic', 'regierung', 'politikkarte', 'religion', 'rohstoff', 'gelaende', 'verbesserung', 'befoerderung', 'zeitalter', 'akteur'];
+const DISTRIKT = Object.fromEntries(DISTRIKTE.map((d) => [d.id, d]));
+/** Religion: ein Eintrag je Pantheon (p:), Religion (r:) und Glaubenssatz (g:). */
+const RELIGION_EINTRAG = Object.fromEntries([
+  ...PANTHEONS.map((x) => ['p:' + x.id, { ...x, art: 'pantheon' }]),
+  ...RELIGIONEN.map((x) => ['r:' + x.id, { ...x, art: 'religion' }]),
+  ...GLAUBENSSAETZE.map((x) => ['g:' + x.id, { ...x, art: 'satz' }]),
+]);
+/** Welche Civic schaltet eine Regierung oder Politikkarte frei? */
+function civicFuer(art, id) { return CIVICS.find((c) => c.freischaltet.some((x) => x.art === art && x.id === id))?.id; }
+const KAT_SYM = { civic: ['ui', 'kultur'], regierung: ['ui', 'krone'], politikkarte: ['ui', 'karte'], distrikt: ['distrikt', 'campus'], naturwunder: ['naturwunder', NATURWUNDER[0].id], religion: ['ui', 'religion'], regel: ['ui', 'lexikon'], einheit: ['einheit', 'krieger'], gebaeude: ['gebaeude', 'bibliothek'], wunder: ['ui', 'wunder'], forschung: ['ui', 'forschung'], rohstoff: ['rohstoff', 'eisen'], gelaende: ['deko', 'wald'], verbesserung: ['verbesserung', 'farm'], befoerderung: ['ui', 'befoerderung'], zeitalter: ['ui', 'zeitalter'], akteur: ['ui', 'diplomatie'] };
 
 const CSS = `
 .lex-fenster > .inhalt { padding: 0 !important; overflow: hidden !important; display: flex; }
@@ -97,6 +110,12 @@ function bild(art, id, px) {
     case 'befoerderung': return symbol('ui', 'befoerderung', { px });
     case 'zeitalter': { const i = ZEITALTER.findIndex((z) => z.id === id); return symbol('stadt', 'stadt', { zeitalter: Math.max(0, i), groesse: 2, farbe: farbe(), px }); }
     case 'akteur': return akteurBild(id, px);
+    case 'civic': return symbol('ui', 'kultur', { px });
+    case 'regierung': return symbol('ui', 'krone', { px });
+    case 'politikkarte': return symbol('ui', 'karte', { px });
+    case 'distrikt': return symbol('distrikt', id, { px, farbe: farbe() });
+    case 'naturwunder': return symbol('naturwunder', id, { px });
+    case 'religion': return symbol('ui', RELIGION_EINTRAG[id]?.art === 'satz' ? 'glaube' : 'religion', { px });
     case 'regel': { const r = L.regeln.find((x) => x.id === id); const s = r?.sym || 'lexikon'; return Array.isArray(s) ? symbol(s[0], s[1], { px }) : symbol('ui', s, { px }); }
     case 'kat': { const [k, i] = KAT_SYM[id] || ['ui', 'lexikon']; return symbol(k, i, { px, farbe: farbe() }); }
   }
@@ -123,6 +142,12 @@ function name(art, id) {
     case 'befoerderung': return BEFOERDERUNG[id]?.name;
     case 'zeitalter': return ZEITALTER.find((z) => z.id === id)?.name;
     case 'akteur': return akteurDaten(id)?.name;
+    case 'civic': return CIVIC[id]?.name;
+    case 'regierung': return REGIERUNG[id]?.name;
+    case 'politikkarte': return POLITIKKARTE[id]?.name;
+    case 'distrikt': return DISTRIKT[id]?.name;
+    case 'naturwunder': return NATURWUNDER_NACH_ID[id]?.name;
+    case 'religion': return RELIGION_EINTRAG[id]?.name;
     case 'regel': return L.regeln.find((r) => r.id === id)?.titel;
     case 'kat': return L.kategorien[id];
   }
@@ -230,6 +255,12 @@ function eintraege(kat) {
     case 'verbesserung': return VERBESSERUNGEN.map((v) => ({ id: v.id, name: v.name, gruppe: v.schicht === 'weg' ? 'Wege' : v.verteidigung || v.sicht ? 'Militär' : 'Felder', kurz: v.beschreibung, text: v.beschreibung }));
     case 'befoerderung': return BEFOERDERUNGEN.map((b) => ({ id: b.id, name: b.name, gruppe: (BAUM[b.baum]?.name || b.baum) + ' · Stufe ' + ['I', 'II', 'III', 'IV'][b.stufe - 1], kurz: b.beschreibung, text: b.beschreibung }));
     case 'zeitalter': return ZEITALTER.map((z) => ({ id: z.id, name: z.name, kurz: z.beschreibung, text: z.beschreibung }));
+    case 'civic': return CIVICS.map((c) => ({ id: c.id, name: c.name, gruppe: zName(c.zeitalter), kurz: c.eureka ? L.neu.inspiration + ': ' + c.eureka.text : '', text: c.beschreibung || '' }));
+    case 'regierung': return REGIERUNGEN.map((g) => ({ id: g.id, name: g.name, kurz: g.beschreibung || '', text: g.beschreibung || '' }));
+    case 'politikkarte': return POLITIKKARTEN.map((k) => ({ id: k.id, name: k.name, gruppe: L.neu.kartenArten[k.kategorie] || k.kategorie, kurz: k.text || '', text: k.text || '' }));
+    case 'distrikt': return DISTRIKTE.map((d) => ({ id: d.id, name: d.name, gruppe: d.ebene === 1 ? L.neu.imAll : L.neu.aufDerErde, kurz: d.kurz || '', text: d.beschreibung || '' }));
+    case 'naturwunder': return NATURWUNDER.map((n) => ({ id: n.id, name: n.name, kurz: n.effekt?.text || n.beschreibung || '', text: n.beschreibung || '' }));
+    case 'religion': return Object.entries(RELIGION_EINTRAG).map(([id, x]) => ({ id, name: x.name, gruppe: L.neu.religionArten[x.art === 'satz' ? x.kategorie : x.art], kurz: x.text || '', text: x.text || '' }));
     case 'akteur': return [
       ...KI_VOELKER.map((x) => ({ id: x.id, name: x.name, gruppe: L.ki, kurz: L.persoenlichkeiten[x.persoenlichkeit] + ' · ' + x.herrscher, text: x.beschreibung })),
       ...STADTSTAATEN.map((x) => ({ id: x.id, name: x.name, gruppe: L.stadtstaaten, kurz: L.schwerpunkte[x.schwerpunkt], text: x.beschreibung })),
@@ -295,6 +326,27 @@ function detail(art, id) {
     case 'zeitalter': return zeitalterDetail(id);
     case 'akteur': return akteurDetail(id);
     case 'regel': return regelDetail(id);
+    case 'civic': { const c = CIVIC[id]; if (!c) break; return el('div', kopf('civic', id, c.name, `${zName(c.zeitalter)} · ${L.kategorien.civic}`, c.beschreibung),
+      el('div.lex-werte', wert('kultur', zahl(c.kosten), L.neu.kulturpunkte)),
+      c.eureka ? abschnitt(L.neu.inspiration, el('p.lex-absatz', { text: c.eureka.text + '. ' + L.neu.eurekaWirkung })) : null,
+      abschnitt(L.voraussetzungen || 'Voraussetzungen', c.voraussetzungen.length ? chips(c.voraussetzungen.map((x) => chip('civic', x))) : el('div', { text: L.freiStart })),
+      abschnitt(L.neu.schaltetFrei, chips(c.freischaltet.map((x) => x.art === 'regierung' ? chip('regierung', x.id) : x.art === 'politikkarte' ? chip('politikkarte', x.id) : el('span.lex-chip', { text: L.neu.bonus }))))); }
+    case 'regierung': { const g = REGIERUNG[id]; if (!g) break; const c = civicFuer('regierung', id); return el('div', kopf('regierung', id, g.name, L.kategorien.regierung, g.beschreibung),
+      abschnitt(L.neu.plaetze, el('p.lex-absatz', { text: Object.entries(g.plaetze || {}).filter(([, n]) => n).map(([k, n]) => `${n} × ${L.neu.kartenArten[k] || k}`).join(', ') })),
+      g.spezial?.text ? abschnitt(L.neu.spezial, el('p.lex-absatz', { text: g.spezial.text })) : null,
+      c ? abschnitt(L.neu.freiDurch, chips([chip('civic', c)])) : null); }
+    case 'politikkarte': { const k = POLITIKKARTE[id]; if (!k) break; const c = civicFuer('politikkarte', id); return el('div', kopf('politikkarte', id, k.name, `${L.kategorien.politikkarte} · ${L.neu.kartenArten[k.kategorie] || k.kategorie}`, k.text),
+      c ? abschnitt(L.neu.freiDurch, chips([chip('civic', c)])) : null,
+      k.veraltet_durch ? abschnitt(L.neu.veraltet, chips([chip('civic', k.veraltet_durch)])) : null); }
+    case 'distrikt': { const d = DISTRIKT[id]; if (!d) break; const f = FREIGESCHALTET_DURCH['distrikt:' + id]; return el('div', kopf('distrikt', id, d.name, `${L.kategorien.distrikt} · ${d.ebene === 1 ? L.neu.imAll : L.neu.aufDerErde}`, d.beschreibung),
+      d.kurz ? el('p.lex-absatz', { text: d.kurz }) : null,
+      f ? abschnitt(L.neu.freiDurch, chips([chip('forschung', f)])) : null,
+      el('p.lex-absatz', markup(L.neu.distriktRegel))); }
+    case 'naturwunder': { const n = NATURWUNDER_NACH_ID[id]; if (!n) break; return el('div', kopf('naturwunder', id, n.name, L.kategorien.naturwunder, n.beschreibung),
+      n.effekt?.text ? abschnitt(L.neu.wirkung, el('p.lex-absatz', { text: n.effekt.text })) : null,
+      abschnitt(L.neu.gelaende, chips((n.gelaende ? [].concat(n.gelaende) : []).map((g) => chip('gelaende', g))))); }
+    case 'religion': { const x = RELIGION_EINTRAG[id]; if (!x) break; return el('div', kopf('religion', id, x.name, L.neu.religionArten[x.art === 'satz' ? x.kategorie : x.art], x.text || ''),
+      el('p.lex-absatz', markup(L.neu.religionRegel))); }
   }
   return el('p', { text: L.keineTreffer });
 }
@@ -389,6 +441,7 @@ function forschungDetail(f) {
     el('div.lex-werte', wert('zeit', dauerText(grund), L.dauer), jetzt ? wert('wissenschaft', dauerText(jetzt), L.dauerJetzt) : null),
     f.schluessel ? el('p.gold-t', { text: '★ ' + L.schluessel }) : null,
     f.wiederholbar ? el('p.blau-t', { text: L.wiederholbar }) : null,
+    f.eureka ? abschnitt(T.baum.eurekaTitel, el('p.lex-absatz', { text: f.eureka.text + '. ' + L.neu.eurekaWirkung })) : null,
     abschnitt(L.schaltetFrei, f.freischaltet.length ? chips(f.freischaltet.map(freischaltungChip)) : null),
     abschnitt(L.voraussetzungen, f.voraussetzungen.length ? chips(f.voraussetzungen.map((v) => chip('forschung', v))) : el('div', { text: L.freiStart })),
     abschnitt(L.nachfolger, (NACHFOLGER[f.id] || []).length ? chips(NACHFOLGER[f.id].map((v) => chip('forschung', v))) : null),

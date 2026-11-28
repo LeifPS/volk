@@ -12,12 +12,50 @@ Echtzeit-Multiplayer-Aufbaustrategie im Pixelart-Stil, für ein paar Freunde und
 | `src/` | Worker (`worker.js`), Durable Object `Welt` (`welt.js`), testbare Server-Logik (`server.js`), Konten (`konten.js`) |
 | `public/` | Statische Dateien: `index.html`, `style.css`, Client in `js/`, Schriften |
 | `public/shared/` | Gemeinsamer Code für Client und Server: Hex-Geometrie, Zufall, Karte, Regeln/Formeln, Wegsuche, Uhr `jetzt()` |
-| `public/shared/daten/` | Alle Spielinhalte als Daten (Forschungen, Einheiten, Gebäude, Wunder, Rohstoffe, Gelände, Verbesserungen, Beförderungen, Akteure). Format: `DATENFORMAT.md` |
+| `public/shared/daten/` | Alle Spielinhalte als Daten (siehe "Wo liegt was"). Format: `DATENFORMAT.md` |
 | `public/shared/engine/` | Die Spiel-Engine (läuft im Durable Object, in den Tests und im Demo-Modus) |
 | `public/js/grafik/` | Pixel-Sprites, alle im Code gezeichnet |
 | `tests/` | `npm test` (Node-Test-Runner) |
 | `tools/` | Balance-Simulation, Admin-Skript, Sprite-Galerie, Screenshots, Hub-Bilder, Browser-Tests |
 | `hub-eintrag/` | Fertiges Paket für den Leif Game Hub (siehe `hub-eintrag/ANLEITUNG.md`) |
+
+## Wo liegt was
+
+Alles ist im Code gezeichnet bzw. als Daten beschrieben; IDs sind überall die Schlüssel.
+
+**Spielinhalte (Daten)** in `public/shared/daten/`:
+
+| Datei | Inhalt |
+|---|---|
+| `zeitalter.js` | 11 Zeitalter mit Name, Farbe, Stil-Schlüssel und Satz für die Zeitalter-Meldung |
+| `forschung.js` | 331 Forschungen (Spalte, Voraussetzungen, Freischaltungen als Kurzform `e:`/`g:`/`w:`/`v:`/`d:`/`r:`/`o:`/`b:`) |
+| `civics.js` | 120 Civics, 8 Regierungen, 60 Politikkarten, Kosten je Spalte |
+| `eurekas.js` | eine Eureka-Bedingung je Forschung und Civic (in `index.js` als Feld `eureka` angehängt) |
+| `einheiten.js`, `gebaeude.js`, `wunder.js`, `verbesserungen.js`, `rohstoffe.js`, `gelaende.js`, `befoerderungen.js` | Einheiten, Gebäude, Weltwunder (mit Bauplatz-Regeln), Geländeverbesserungen, Rohstoffe, Gelände, Beförderungen |
+| `distrikte.js` | Distrikte, Nachbarschaft, Gebäude je Distrikt, Traditionen mit einzigartigen Distrikten |
+| `naturwunder.js`, `religion.js`, `diplomatie.js`, `akteure.js` | Naturwunder; Pantheons, Religionen, Glaubenssätze; Beziehungswerte, Handelsabkommen, Embargo, Gesandter; KI-Völker, Stadtstaaten, Barbaren |
+| `index.js` | sammelt alles und baut Nachschlage-Tabellen (`EINHEIT`, `FORSCHUNG`, `FREIGESCHALTET_DURCH` …) |
+
+Karte: `public/shared/karte.js` (Erde, deterministisch, Hash festgeschrieben) und `public/shared/weltraumkarte.js` (Weltraum-Ebene); Ebenen-Geometrie in `public/shared/hex.js`.
+
+**Engine** in `public/shared/engine/` (ein Mixin je Bereich): `spiel.js` (Ereignisschleife, Befehle), `wirtschaft.js`, `bau.js`, `forschung.js`, `civics.js`, `eurekas.js`, `einheiten.js`, `kampf.js`, `diplomatie.js`, `beziehungen.js`, `religion.js`, `distrikte.js`, `naturwunder.js`, `wunderplatz.js`, `weltraum.js`, `akteure.js` (KI, Barbaren, Tiere), `ansicht.js` (was ein Spieler sieht), `migration.js` (Versionsschritte für die Live-Welt), `pruefung.js` (Konsistenzprüfung).
+
+**Grafik** in `public/js/grafik/`:
+
+| Datei | Inhalt |
+|---|---|
+| `sprites.js`, `pixel.js` | Register, Cache, Pinsel (Rechtecke, Linien, Umriss, Spielerfarbe) |
+| `sprites/einheiten_land.js`, `einheiten_see_luft.js`, `einheiten_zukunft_land.js`, `einheiten_zukunft_luft_see.js` | Einheiten (eine Zeichenfunktion je ID) |
+| `sprites/gebaeude.js`, `gebaeude_zukunft.js`, `wunder.js`, `wunder_zukunft.js`, `distrikte.js`, `naturwunder.js` | Gebäude-Symbole, Weltwunder, Distrikte, Naturwunder |
+| `sprites/staedte.js`, `kolonie.js` | Städte je Zeitalter-Stil (holz … stern) und Größe, Kolonien im All |
+| `sprites/verbesserungen.js`, `rohstoffe.js`, `deko.js`, `tiere.js`, `religion.js`, `ui.js`, `forschung.js` | Verbesserungen, Rohstoffe, Gelände-Deko, Tiere, Missionar/Apostel/Gesandter, UI-Symbole, Zweig-Symbole |
+| `einheiten_symbole.js` | Bannersymbole: ein 13×13-Pixelmuster je Einheit |
+
+**Karte zeichnen** in `public/js/karte/`: `render.js` (Hauptschleife, Einheiten-Banner, Kampf-Effekte), `gelaende.js` (Gelände-Chunks, Sterne, Planet), `wege.js` (Straßen bis Magnetbahn), `animation.js` (alle Animationen auf einem Takt, Einstellung Effekte), `nachbearbeitung.js` (optionaler WebGL-Shader: Farbwelt je Zeitalter, Leuchten, Vignette), `ebene.js` (Erde/All).
+
+**Zeitalter-Stile:** Städte über den Stil-Schlüssel aus `zeitalter.js` in `sprites/staedte.js`; Farbwelten je Zeitalter in `karte/nachbearbeitung.js` (`FARBWELTEN`); Musik je Zeitalter in `public/js/audio.js`.
+
+**Oberfläche** in `public/js/ui/`: `hud.js` (Leiste, Einheiten-Aktionen, Minikarte), `stadt.js`, `forschungsbaum.js` (Forschungs- und Kulturbaum), `regierung.js`, `religion.js`, `diplomatie.js`, `reich.js`, `lexikon.js`, `hilfe.js`, `einstellungen.js`; alle Texte in `public/js/texte.js`.
 
 Wichtige Dokumente: `ENTSCHEIDUNGEN.md` (alle Entscheidungen und die Lastabschätzung), `ABNAHME.md` (was wie getestet ist), `FORTSCHRITT.md`.
 
@@ -65,4 +103,4 @@ ADMIN_TOKEN=... node tools/admin.mjs loeschen <benutzername>
 2. Optional: `npx wrangler secret put ADMIN_TOKEN`.
 3. Hub-Eintrag: siehe `hub-eintrag/ANLEITUNG.md`.
 
-Spätere Änderungen an der Durable-Object-Klasse brauchen neue Migrations-Tags in `wrangler.jsonc`; die Klasse `Welt` nie umbenennen. Der Spielzustand hat ein Feld `version` für spätere Datenmigrationen.
+Spätere Änderungen an der Durable-Object-Klasse brauchen neue Migrations-Tags in `wrangler.jsonc`; die Klasse `Welt` nie umbenennen. Der Spielzustand hat ein Feld `version`: Jede Änderung am Format bekommt einen Schritt in `public/shared/engine/migration.js` und einen Test mit dem echten Altstand (`tests/daten/altstand-v1.json`). Die Live-Welt wird beim ersten Laden nach dem Deploy migriert.
