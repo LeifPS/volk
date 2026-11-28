@@ -19,6 +19,7 @@ import { naturwunder } from './naturwunder.js';
 import { wunderplatz } from './wunderplatz.js';
 import { distrikte } from './distrikte.js';
 import { civics } from './civics.js';
+import { religion } from './religion.js';
 import { ZUSTAND_VERSION, migriere } from './migration.js';
 
 export class SpielFehler extends Error {}
@@ -193,6 +194,7 @@ export class Spiel {
     if (g.barbaren_um) k(g.barbaren_um, 'barbaren', () => this.barbarenZug(), () => { g.barbaren_um = this.t + STD; });
     if (g.natur_um) k(g.natur_um, 'natur', () => this.naturZug(), () => { g.natur_um = this.t + 6 * STD; });
     if (g.jahreszeit_um) k(g.jahreszeit_um, 'jahreszeit', () => this.jahreszeitWechsel(), () => { g.jahreszeit_um = this.t + STD; });
+    if (g.religion_um) k(g.religion_um, 'religion', () => this.religionTakt(), () => { g.religion_um = this.t + STD; });
     if (g.diplo_um) k(g.diplo_um, 'diplo', () => this.diplomatiePruefung(), () => { g.diplo_um = this.t + STD; });
     if (g.ablaeufe && g.ablaeufe.length) k(Math.min(...g.ablaeufe.map((a) => a.t)), 'ablauf', () => this.ablaufFaellig(), () => { g.ablaeufe = []; });
     for (const ev of g.ereignisse || []) k(ev.aktiv ? ev.ende : ev.start, 'natur' + ev.id, () => this.naturSchritt(ev.id), () => { g.ereignisse = g.ereignisse.filter((x) => x !== ev); });
@@ -233,7 +235,7 @@ export const BEFEHLE = new Set([
   'forschen', 'forschung_schlange', 'feld_bewirtschaften', 'auto_bewirtschaften', 'grenzziel', 'aufloesen', 'aufruesten', 'befoerdern',
   'krieg_erklaeren', 'diplomatie_angebot', 'angebot_antwort', 'angebot_zurueckziehen', 'tausch_angebot', 'handelsroute',
   'stadtstaat_geschenk', 'pluendern', 'luftangriff', 'verlegen', 'atomschlag', 'stadt_angriff', 'stadt_umbenennen',
-  'meldungen_gelesen', 'tutorial', 'neuanfang', 'ping', 'einstellungen', 'tribut_fordern', 'ebene_wechseln', 'distrikt_spez', 'distrikt_reparieren', 'tradition_waehlen', 'civic', 'civic_schlange', 'regierung', 'karten',
+  'meldungen_gelesen', 'tutorial', 'neuanfang', 'ping', 'einstellungen', 'tribut_fordern', 'ebene_wechseln', 'distrikt_spez', 'distrikt_reparieren', 'tradition_waehlen', 'civic', 'civic_schlange', 'regierung', 'karten', 'pantheon', 'religion_gruenden', 'religion_verstaerken', 'missionieren', 'glaubenskampf', 'inquisition',
 ]);
 
-Object.assign(Spiel.prototype, wirtschaft, bau, forschung, einheiten, kampf, diplomatie, akteure, ansicht, start, weltraum, naturwunder, wunderplatz, distrikte, civics);
+Object.assign(Spiel.prototype, wirtschaft, bau, forschung, einheiten, kampf, diplomatie, akteure, ansicht, start, weltraum, naturwunder, wunderplatz, distrikte, civics, religion);

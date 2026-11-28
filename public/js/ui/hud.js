@@ -3,9 +3,9 @@ import { el, symbol, toast, fehler, zahl, vorzeichen, dauerText, uhrzeit, balken
 import { T } from '../texte.js';
 import { Z, an, du, volk, einheit, stadt, feldInfo, eigeneEinheiten, eigeneStaedte, aktuellesFeld, aktuelleHp, aktuellesGold, aktuellesLager, forschungsFortschritt, serverJetzt, stadtAuf, einheitenAuf, besitzerVon, erkundet } from '../kern/zustand.js';
 import { befehl, frage } from '../kern/netz.js';
-import { EINHEIT, GEB, FORSCHUNG, FREIGESCHALTET_DURCH, VERBESSERUNG, BEFOERDERUNG, BEFOERDERUNGEN, BAUM, ROHSTOFF, CIVIC } from '../../shared/daten/index.js';
+import { EINHEIT, GEB, FORSCHUNG, FREIGESCHALTET_DURCH, VERBESSERUNG, BEFOERDERUNG, BEFOERDERUNGEN, BAUM, ROHSTOFF, CIVIC, RELIGION } from '../../shared/daten/index.js';
 import { GELAENDE } from '../../shared/daten/gelaende.js';
-import { LAGER_NAMEN } from '../../shared/daten/rohstoffe.js';
+import { LAGERGUETER, LAGER_NAMEN } from '../../shared/daten/rohstoffe.js';
 import { ZEITALTER } from '../../shared/daten/zeitalter.js';
 import { karte } from '../../shared/karte.js';
 import { WIRTSCHAFT_TEMPO } from '../../shared/regeln.js';
@@ -31,6 +31,7 @@ export function aufbauen() {
     knopf('forschung', T.menue.forschung, () => fenster_.forschung()),
     knopf('kultur', T.menue.kultur, () => fenster_.kultur()),
     knopf('krone', T.menue.regierung, () => fenster_.regierung()),
+    knopf('religion', T.menue.religion, () => fenster_.religion()),
     knopf('stadt', T.menue.staedte, () => fenster_.reich()),
     knopf('diplomatie', T.menue.diplomatie, () => fenster_.diplomatie()),
     knopf('rangliste', T.menue.rangliste, () => fenster_.rangliste()),
@@ -46,7 +47,8 @@ export function aufbauen() {
   aktionenEl = el('div#aktionen');
   miniCv = el('canvas', { width: BREITE, height: HOEHE });
   ebenenKnopf = el('button#ebenenknopf.knopf.klein', { onclick: () => ebeneUmschalten(), tip: T.ebene.tip, 'aria-label': T.ebene.tip });
-  miniEl = el('div#minikarte.pix', miniCv, ebenenKnopf);
+  linsenKnopf = el('button#linsenknopf.knopf.klein', { onclick: () => { overlay.linse = overlay.linse === 'religion' ? null : 'religion'; linsenKnopf.classList.toggle('gold', overlay.linse === 'religion'); neuZeichnen(); ton('klick'); }, tip: T.linseTip, 'aria-label': T.linseTip }, symbol('ui', 'religion', { px: 16 }));
+  miniEl = el('div#minikarte.pix', miniCv, ebenenKnopf, linsenKnopf);
   beiEbenenwechsel(() => { minikarteZeichnen(); ebenenKnopfZeichnen(); });
   naechsteEl = el('button#naechste.knopf.gold', { onclick: naechsteAktion, tip: T.naechsteTip }, symbol('ui', 'pfeil_rechts'), T.naechste);
   document.body.append(leiste, forschungsEl, kulturEl, auswahlEl, aktionenEl, miniEl, naechsteEl, el('div#meldungsleiste'));
@@ -74,12 +76,13 @@ function leisteZeichnen() {
   teile.push(res('gold', zahl(aktuellesGold()), r.gold, () => einkommenTip(), 'gold-t', () => einkommenFenster()));
   teile.push(res('wissenschaft', zahl(r.wissenschaft, 0), null, T.wissenschaftTip, 'blau-t', () => fenster_.forschung()));
   teile.push(res('kultur', zahl(r.kultur, 0) + '/h', null, T.kulturTip, 'lila-t'));
+  if (d.glaube || r.glaube) { const g = (d.glaube || 0) + (r.glaube || 0) * Math.max(0, serverJetzt() - (d.stand_um || serverJetzt())) / 3600000; teile.push(res('glaube', zahl(Math.floor(g)), r.glaube || null, T.glaubeTip, 'gold-t', () => fenster_.religion())); }
   const staedte = eigeneStaedte();
   if (staedte.length) {
     const z = Math.round(staedte.reduce((a, s) => a + (s.raten?.zufriedenheit || 0), 0) / staedte.length);
     teile.push(res(z >= 0 ? 'zufriedenheit' : 'unzufrieden', String(z), null, 'Durchschnittliche Zufriedenheit deiner Städte. Luxusgüter, Tempel und Theater heben sie. Unter 0 wachsen Städte langsamer.', z >= 0 ? 'gruen-t' : 'rot-t', () => fenster_.reich()));
   }
-  for (const gut of ['holz', 'stein', 'marmor', 'lehm', 'salz', 'kupfer', 'zinn', 'eisen', 'pferde', 'salpeter', 'kohle', 'oel', 'aluminium', 'uran', 'elefanten']) {
+  for (const gut of LAGERGUETER) {
     const menge = aktuellesLager(gut), rate = r.material[gut] || 0;
     if (!menge && !rate && !['holz', 'stein'].includes(gut)) continue;
     teile.push(res(gut, zahl(Math.floor(menge)), rate ? rate : null, T.lagerTip(LAGER_NAMEN[gut], r.kapazitaet[gut]), menge >= r.kapazitaet[gut] - 0.5 ? 'gold-t' : ''));
@@ -243,6 +246,12 @@ function einheitAktionen(e) {
     if (ebeneVon(f) === 0 && st && st.feld === f && st.volk === Z.volk) k.push(aktKnopf('stern_voll', T.ebene.starten, () => ausfuehren({ art: 'ebene_wechseln', einheit: e.id }).then((r) => { if (r) { ton('gruendung'); springe(r.feld); } }), { gold: true, tip: T.ebene.startenTip }));
     if (ebeneVon(f) === 1 && GELAENDE[karte().gelaende[f]]?.id === 'erdorbit') k.push(aktKnopf('pfeil_links', T.ebene.landen, () => ausfuehren({ art: 'ebene_wechseln', einheit: e.id }).then((r) => { if (r) { ton('gruendung'); springe(r.feld); } }), { gold: true, tip: T.ebene.landenTip }));
   }
+  if (d.faehigkeiten?.includes('missionieren') && e.religion) {
+    k.push(el('div.klein', { text: (RELIGION[e.religion]?.name || '') + ' · ' + T.religion.ladungen(e.ladungen || 0) }));
+    k.push(aktKnopf('religion', T.religion.missionieren, () => ausfuehren({ art: 'missionieren', einheit: e.id }, null), { gold: true, tip: T.religion.missionierenTip }));
+    if (d.faehigkeiten.includes('glaubenskampf')) k.push(aktKnopf('angriff', T.religion.glaubenskampf, () => zielmodus('glaubenskampf', e), { tip: T.religion.glaubenskampfTip }));
+    if (d.faehigkeiten.includes('inquisition')) k.push(aktKnopf('kreuz', T.religion.inquisition, () => ausfuehren({ art: 'inquisition', einheit: e.id }), { tip: T.religion.inquisitionTip }));
+  }
   if (d.faehigkeiten?.includes('gruenden')) k.push(aktKnopf('gruenden', B.gruenden, async () => { const r = await ausfuehren({ art: 'stadt_gruenden', einheit: e.id }); if (r) { ton('gruendung'); waehle({ art: 'stadt', id: r.stadt }); fenster_.tutorialEreignis('stadt_gegruendet'); } }, { gold: true, tip: BT.gruenden }));
   if (d.faehigkeiten?.includes('arbeiten') || d.faehigkeiten?.includes('see_arbeiten')) {
     k.push(aktKnopf('arbeiten', B.arbeiten, () => verbesserungWaehlen(e), { tip: BT.arbeiten }));
@@ -396,7 +405,7 @@ export async function wunderPlatzWaehlen(s, id, extra = {}) {
 
 function zielmodus(art, obj) {
   Z.zielmodus = { art, id: obj.id };
-  const texte = { handel: 'Wähle die Zielstadt der Handelsroute (Linksklick auf eine Stadt).', luftangriff: 'Wähle das Ziel des Luftangriffs.', verlegen: 'Wähle die Stadt (oder den Träger), in die das Flugzeug verlegt wird.', atomschlag: 'Wähle das Ziel. Achtung: Wirkung im Umkreis von 2 Feldern!', stadt_angriff: 'Wähle die feindliche Einheit, die beschossen werden soll.' };
+  const texte = { glaubenskampf: 'Wähle die religiöse Einheit, gegen die dein Apostel antritt.', handel: 'Wähle die Zielstadt der Handelsroute (Linksklick auf eine Stadt).', luftangriff: 'Wähle das Ziel des Luftangriffs.', verlegen: 'Wähle die Stadt (oder den Träger), in die das Flugzeug verlegt wird.', atomschlag: 'Wähle das Ziel. Achtung: Wirkung im Umkreis von 2 Feldern!', stadt_angriff: 'Wähle die feindliche Einheit, die beschossen werden soll.' };
   toast(texte[art] + ' Esc bricht ab.', 'info', { symbol: 'reichweite' });
   if (art === 'luftangriff' || art === 'atomschlag') { const e = einheit(obj.id); overlay.reichweite = umkreis(aktuellesFeld(e), EINHEIT[e.typ].reichweite || 6); }
   if (art === 'stadt_angriff') overlay.reichweite = umkreis(obj.feld, obj.reichweite || 2);
@@ -418,6 +427,7 @@ export async function zielGewaehlt(feld) {
     return true;
   }
   if (zm.art === 'handel') { const s = stadtAuf(feld); if (!s) { fehler('Dort ist keine Stadt.'); return true; } const r = await ausfuehren({ art: 'handelsroute', einheit: zm.id, stadt: s.id }); if (r) toast(`Die Karawane macht sich auf den Weg nach ${s.name}. Ankunft ${uhrzeit(r.ankunft)}.`, 'erfolg'); return true; }
+  if (zm.art === 'glaubenskampf') { const ziel = einheitenAuf(feld).find((x) => x.religion && x.volk !== undefined); if (!ziel) { fehler('Dort steht keine religiöse Einheit.'); return true; } const r = await ausfuehren({ art: 'glaubenskampf', einheit: zm.id, ziel: ziel.id }); if (r) toast(r.sieg ? 'Glaubenskampf gewonnen!' : 'Glaubenskampf verloren.', r.sieg ? 'erfolg' : 'warnung'); return true; }
   if (zm.art === 'luftangriff') { await ausfuehren({ art: 'luftangriff', einheit: zm.id, ziel: feld }); return true; }
   if (zm.art === 'atomschlag') { if (await frageJaNein('Atomschlag', 'Wirklich eine Atomwaffe einsetzen? Alles im Umkreis von 2 Feldern wird schwer beschädigt.', 'Einsetzen')) await ausfuehren({ art: 'atomschlag', einheit: zm.id, ziel: feld }); return true; }
   if (zm.art === 'verlegen') { const s = stadtAuf(feld); const tr = einheitenAuf(feld).find((x) => x.volk === Z.volk && EINHEIT[x.typ]?.faehigkeiten?.includes('traeger')); await ausfuehren({ art: 'verlegen', einheit: zm.id, stadt: s?.id, traeger: tr?.id }, 'Das Flugzeug wird verlegt.'); return true; }
@@ -502,7 +512,7 @@ export function meldungsListe() {
 }
 
 // ---------- Ebenen (Erde / Weltraum) ----------
-let ebenenKnopf = null;
+let ebenenKnopf = null, linsenKnopf = null;
 /** Hat das eigene Volk Zugang zum All (Raumhafen erforscht oder schon etwas dort)? Erst dann erscheint der Umschalter. */
 function weltraumBekannt() {
   const a = Z.ansicht; if (!a) return false;

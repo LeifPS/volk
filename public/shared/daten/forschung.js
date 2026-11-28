@@ -83,7 +83,7 @@ const ROH = [
   ['phalanx', 'Phalanx', 'militaer', 6, ['bronzeguss', 'stammesrat'], ['e:hoplit'], 'Schild an Schild steht eine Mauer aus Bronze.'],
   ['reitkunst', 'Reitkunst', 'militaer', 6, ['reiterei'], ['e:reiter'], 'Sattel und Zaumzeug machen Reiter zu Kriegern.'],
   ['waehrung', 'Währung', 'wirtschaft', 6, ['tauschhandel', 'rechnen'], ['d:handelsplatz', 'g:markt', 'b:gold_prozent=3'], 'Geprägte Münzen ersetzen Säcke voller Tauschwaren.'],
-  ['polytheismus', 'Polytheismus', 'wissen', 6, ['priestertum', 'monumentalbau'], ['g:tempel'], 'Für jeden Gott ein Tempel, für jedes Fest ein Opfer.'],
+  ['polytheismus', 'Polytheismus', 'wissen', 6, ['priestertum', 'monumentalbau'], ['e:missionar', 'g:tempel'], 'Für jeden Gott ein Tempel, für jedes Fest ein Opfer.'],
   ['trieren', 'Trierenbau', 'see', 6, ['segeln', 'bronzeguss'], ['e:trireme'], 'Drei Reihen Ruder und ein Bronzesporn: schnell und tödlich.'],
   ['baukunst', 'Baukunst', 'industrie', 6, ['monumentalbau', 'steinmetzkunst'], ['g:stadtmauer_stein', 'v:fort'], 'Behauene Quader fügen sich zu Mauern ohne Mörtel.'],
   // Spalte 7
@@ -118,7 +118,7 @@ const ROH = [
   // ======================= MITTELALTER (Spalten 11-16) =======================
   // Spalte 11
   ['feudalismus', 'Feudalismus', 'staat', 11, ['heerwesen', 'stadtplanung'], ['e:pikenier', 'b:produktion_prozent=2'], 'Land gegen Treue: Lehnsherren rufen ihre Bauern zu den Piken.'],
-  ['theologie', 'Theologie', 'wissen', 11, ['polytheismus', 'rhetorik'], ['g:kathedrale', 'b:zufriedenheit=1'], 'Gelehrte Mönche schreiben über Glauben und Welt.'],
+  ['theologie', 'Theologie', 'wissen', 11, ['polytheismus', 'rhetorik'], ['e:apostel', 'g:kathedrale', 'b:zufriedenheit=1'], 'Gelehrte Mönche schreiben über Glauben und Welt.'],
   ['bewaesserung', 'Bewässerung', 'wirtschaft', 11, ['ingenieurskunst', 'stadtplanung'], ['v:bewaesserte_farm', 'v:wassermuehle', 'b:nahrung_prozent=3'], 'Gräben und Wehre bringen Wasser auf jedes Feld.'],
   ['stahlschmieden', 'Stahlschmieden', 'militaer', 11, ['eisenverarbeitung', 'heerwesen'], ['e:langschwertkaempfer'], 'Gefaltetes Eisen wird zu Stahl, hart und biegsam zugleich.'],
   ['kompass', 'Kompass', 'see', 11, ['kartografie'], ['e:kogge'], 'Eine Nadel zeigt nach Norden, auch wenn keine Sterne leuchten.'],

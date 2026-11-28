@@ -3,7 +3,7 @@ import { el as basisEl, symbol, fenster, frageJaNein, toast, fehler, zahl, vorze
 import { T } from '../texte.js';
 import { Z, an, du, stadt as stadtVon, feldInfo, eigeneStaedte, aktuellesGold, aktuellesLager, serverJetzt, erkundet } from '../kern/zustand.js';
 import { befehl, frage } from '../kern/netz.js';
-import { EINHEIT, GEB, WUNDER_NACH_ID, VERBESSERUNG, ROHSTOFFE, GELAENDE, ZEITALTER, DISTRIKT, DISTRIKT_REGELN, TRADITION, TRADITIONEN } from '../../shared/daten/index.js';
+import { EINHEIT, GEB, WUNDER_NACH_ID, VERBESSERUNG, ROHSTOFFE, GELAENDE, ZEITALTER, DISTRIKT, DISTRIKT_REGELN, TRADITION, TRADITIONEN, RELIGION } from '../../shared/daten/index.js';
 import { LAGER_NAMEN } from '../../shared/daten/rohstoffe.js';
 import { karte } from '../../shared/karte.js';
 import { abstand, umkreis, xVon, yVon } from '../../shared/hex.js';
@@ -378,7 +378,13 @@ function uebersicht(s, k) {
   if ((s.schlange || []).length) bauKurz.append(el('div.klein', { text: S().inSchlange(s.schlange.length) }));
   bauKurz.append(el('button.knopf.gold', { style: { marginTop: '6px' }, onclick: () => { offen.reiter = 'bauen'; zeichne(); } }, symbol('ui', 'bau'), S().zumBauen));
 
-  k.append(el('div.st-raster', ertragBox, wachstum, grenze, zufBox, bauKurz, vert, unterhalt));
+  // Religion: Anteile der Religionen in der Stadt (Mehrheit ab 50 %)
+  const gl = Object.entries(s.glauben || {}).sort((x, y) => y[1] - x[1]);
+  const relBox = box('religion', S().religion,
+    ...(gl.length ? gl.map(([rid, x]) => el('div.st-zeile', el('span', { style: { display: 'inline-block', width: '10px', height: '10px', background: RELIGION[rid]?.farbe || '#888', marginRight: '6px' } }), el('span', { text: RELIGION[rid]?.name || rid }), el('span.r', { text: Math.round(x * 100) + ' %' + (s.mehrheit === rid ? ' ★' : '') })))
+      : [el('div.klein', { text: S().keineReligion })]),
+    el('div.klein', { text: s.mehrheit ? S().mehrheitText(RELIGION[s.mehrheit]?.name) : S().keineMehrheit }));
+  k.append(el('div.st-raster', ertragBox, wachstum, grenze, zufBox, relBox, bauKurz, vert, unterhalt));
 }
 
 // ---------- Bauen ----------

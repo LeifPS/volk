@@ -27,6 +27,7 @@ export function baueDemo(zeitalter = 3, start = Date.now()) {
   // Kulturbaum passend zum Zeitalter, Regierung und Karten wie "Alle zuweisen"
   for (const c of CIVICS) if (c.zeitalter < zeitalter || (c.zeitalter === zeitalter && c.spalte % 2 === 0)) v.civics.erforscht[c.id] = 1;
   s.kiPolitik(v); v.freier_tausch = true;
+  { const c = CIVICS.find((x) => s.civicMoeglich(v, x.id)); if (c) { s.civicWechseln(v, c.id); v.civics.punkte = c.kosten * 0.35; } }
   // Hauptstadt und weitere Städte
   const siedler = s.einheitenVon(v.id).find((e) => e.typ === 'siedler');
   const haupt = s.stadtGruenden(v.id, siedler.feld, 'Erzhausen');
@@ -69,6 +70,14 @@ export function baueDemo(zeitalter = 3, start = Date.now()) {
     if (d.faehigkeiten?.includes('arbeiten')) e.modus = 'auto_arbeit';
   }
   for (const st of staedte) s.erkunde(v.id, st.feld, 10);
+  // Religion (ab Klassik): Pantheon, Religion in der Hauptstadt (mit Heiligtum), Anhänger in einigen Städten
+  if (zeitalter >= 1) {
+    if (!haupt.distrikte?.heiligtum) { const f = s.distriktPlatzAutomatisch(haupt, 'heiligtum', false); if (f != null) s.distriktSetzen(haupt, 'heiligtum', f); }
+    v.glaube = 2000; v.pantheon = 'erntegoettin';
+    s.befehl_religion_gruenden(v, { stadt: haupt.id, religion: 'sonnenweg', gruender: 'pilgerfahrt', anhaenger: 'chorgesang' });
+    staedte.forEach((st, k) => { if (st !== haupt && k % 2 === 1) st.glauben = { sonnenweg: 0.6, quellenlehre: 0.2 }; });
+    v.glaube = 340;
+  }
   // Weltwunder: eines fertig neben der Hauptstadt, eines als Baustelle in der zweiten Stadt
   const fertigW = zeitalter >= 1 ? 'pyramiden' : null;
   const platzMitAbstand = (st, wid) => s.wunderPlaetze(st, wid).sort((x, y) => Math.abs(abstand(x, st.feld) - 2) - Math.abs(abstand(y, st.feld) - 2))[0] ?? s.wunderPlatzAutomatisch(st, wid);

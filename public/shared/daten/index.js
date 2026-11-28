@@ -23,6 +23,7 @@ export * from './akteure.js';
 export * from './distrikte.js';
 export * from './naturwunder.js';
 export * from './civics.js';
+export * from './religion.js';
 
 const nachId = (liste) => Object.assign(Object.create(null), Object.fromEntries(liste.map((x) => [x.id, x])));
 

@@ -5,7 +5,7 @@ import { idxE, ebeneVon, nachbar, feldMitte, umkreis, abstand, STAUCHUNG } from 
 import { EB, aktiveEbene, setzeEbene, beiEbenenwechsel } from './ebene.js';
 import { GELAENDE } from '../../shared/daten/gelaende.js';
 import { ROHSTOFFE } from '../../shared/daten/rohstoffe.js';
-import { EINHEIT, VERBESSERUNG } from '../../shared/daten/index.js';
+import { EINHEIT, VERBESSERUNG, RELIGION, RELIGION_REGELN } from '../../shared/daten/index.js';
 import { hash01 } from '../../shared/zufall.js';
 import { sprite, hatSprite } from '../grafik/sprites.js';
 import { zeichneWege } from './wege.js';
@@ -18,7 +18,7 @@ let cv, ctx, dpr = 1, schmutzig = true, letzterFrame = 0;
 let sichtbar = new Set();
 let sichtVersion = -1;
 const effekte = [];            // Kampf-Effekte
-export const overlay = { pfad: null, ziele: null, reichweite: null, gueltig: null, beschriftung: null, hover: -1, markierung: null };
+export const overlay = { pfad: null, ziele: null, reichweite: null, gueltig: null, beschriftung: null, hover: -1, markierung: null, linse: null };
 export const optionen = { tagnacht: true, wetter: true };
 
 export function init(canvas) {
@@ -165,7 +165,8 @@ function zeichne(t) {
   for (const nw of a.welt?.naturwunder || []) for (const i of nw.felder) nwAuf.set(i, nw);
   // 2) Wege (unter allem), pixelgenau mit Kurven
   zeichneWege(ctx, b, weltZuSchirm);
-  // 3) Grenzen
+  // 3) Grenzen (und Kartenansicht "Religion")
+  if (overlay.linse === 'religion') zeichneReligionsLinse(b, s);
   zeichneGrenzen(b, s);
   // 4) zeilenweise: Verbesserungen, Deko, Rohstoffe, Städte, Einheiten
   for (let z = b.z0; z <= b.z1; z++) {
@@ -306,6 +307,28 @@ for (let r = 0; r < 6; r++) {
 function eckenRichtig() {
   // Richtungen: 0 O, 1 NO, 2 NW, 3 W, 4 SW, 5 SO  (Spitze oben: Kanten bei 0°, 60°, 120°, ...)
 }
+/** Kartenansicht Religion: jedes Stadtgebiet in der Farbe seiner Mehrheitsreligion (ohne Mehrheit grau gerastert). */
+function zeichneReligionsLinse(b, s) {
+  const a = Z.ansicht;
+  const farbeVon = new Map();
+  for (const st of Object.values(a.staedte)) {
+    let best = null, ba = 0;
+    for (const [rid, x] of Object.entries(st.glauben || {})) if (x > ba) { ba = x; best = rid; }
+    farbeVon.set(st.id, ba >= RELIGION_REGELN.mehrheit ? RELIGION[best]?.farbe : null);
+  }
+  for (let z = b.z0; z <= b.z1; z++) for (let sp = b.s0; sp <= b.s1; sp++) {
+    const i = idxE(aktiveEbene(), sp, z);
+    const f = a.felder[i];
+    if (!f || !f.s || !erkundet(i)) continue;
+    const farbe = farbeVon.get(f.s);
+    const [mx, my] = feldMitte(i, R);
+    ctx.fillStyle = farbe || 'rgba(120,120,140,0.25)';
+    ctx.globalAlpha = farbe ? 0.42 : 1;
+    hexPfad(mx, my, s, 0.98); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
 function zeichneGrenzen(b, s) {
   const a = Z.ansicht;
   for (let z = b.z0; z <= b.z1; z++) for (let sp = b.s0; sp <= b.s1; sp++) {

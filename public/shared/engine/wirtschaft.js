@@ -5,6 +5,7 @@ import { GELAENDE } from '../daten/gelaende.js';
 import { ROHSTOFFE, LAGERGUETER, LAGER_NAMEN } from '../daten/rohstoffe.js';
 import { GEB, WUNDER_NACH_ID, FORSCHUNG, ROHSTOFF, VERBESSERUNG, STADTSTAATEN } from '../daten/index.js';
 import { NATURWUNDER_NACH_ID } from '../daten/naturwunder.js';
+import { RELIGION_REGELN as RR } from '../daten/religion.js';
 import {
   STD, MIN, ERTRAG_RATE as F, WIRTSCHAFT_TEMPO, GOLD_FAKTOR, WISSEN_JE_EINWOHNER, NAHRUNG_PRO_EINWOHNER, BAUSTOFFE, STRATEGISCH, LAGER_BASIS_BAU, LAGER_BASIS_STRATEGISCH,
   STADT_RADIUS_ARBEIT, STADT_RADIUS_GRENZE_MAX, wachstumsBedarf, grenzKosten, zufriedenheitsFaktor, stadtUnzufriedenheit,
@@ -41,8 +42,9 @@ export const wirtschaft = {
       if (e >= STADTSTAAT.freund) for (const [k, x] of Object.entries(def.bonus || {})) if (k in b) b[k] += x;
       if (ss.verbuendet === v.id) for (const [k, x] of Object.entries(def.buendnis_bonus || {})) if (k in b) b[k] += x;
     }
-    // Regierung, Politikkarten und Civic-Boni
+    // Regierung, Politikkarten und Civic-Boni, Pantheon und Religion
     this.politikBoni(v, b);
+    this.religionBoni(v, b);
     // Jahreszeit
     const jz = this.z.global.jahreszeit || 0;
     if (jz === 1) b.nahrung_prozent += 5; else if (jz === 3) b.nahrung_prozent -= 5; else if (jz === 2) b.gold_prozent += 5;
@@ -126,11 +128,12 @@ export const wirtschaft = {
     const b = this.boni(v);
     const lux = this.luxusBestand(v);
     const luxAnzahl = Object.keys(lux).length;
-    const erg = { gold: 0, einnahmen: 0, wissenschaft: 0, kultur: 0, material: {}, kapazitaet: {}, staedte: {}, unterhalt: { einheiten: 0, gebaeude: 0 }, handel: 0, luxus: lux, boni: b, aufschluesselung: [] };
+    const erg = { gold: 0, glaube: 0, einnahmen: 0, wissenschaft: 0, kultur: 0, material: {}, kapazitaet: {}, staedte: {}, unterhalt: { einheiten: 0, gebaeude: 0 }, handel: 0, luxus: lux, boni: b, aufschluesselung: [] };
     for (const s of staedte) {
       const sr = this.stadtRaten(s, v, b, luxAnzahl, staedte.length);
       erg.staedte[s.id] = sr;
       erg.einnahmen += sr.g; erg.wissenschaft += sr.w; erg.kultur += sr.k;
+      erg.glaube += (sr.glaube || 0) * (1 + (b.glaube_prozent || 0) / 100) * RR.glaubeFaktor;
       for (const [m, x] of Object.entries(sr.material)) erg.material[m] = (erg.material[m] || 0) + x;
       erg.unterhalt.gebaeude += sr.gebaeudeUnterhalt;
     }
@@ -214,6 +217,7 @@ export const wirtschaft = {
       r.gebaeudeUnterhalt += d.unterhalt || 0;
     }
     for (const wk of this.distriktWirkungen(s)) wirkungen.push(wk);
+    for (const wk of this.religionStadtWirkungen(s)) wirkungen.push(wk);
     r.distrikte = {};
     r.k += Object.keys(s.distrikte || {}).length * (b.kultur_je_distrikt || 0);
     for (const id of Object.keys(s.distrikte || {})) {
@@ -284,6 +288,7 @@ export const wirtschaft = {
     // Gold friert bei 0 ein
     v.gold = Math.max(0, (v.gold || 0) + r.gold * h);
     v.kultur_gesamt = (v.kultur_gesamt || 0) + r.kultur * h;
+    if (r.glaube) v.glaube = (v.glaube || 0) + r.glaube * h * (v.offline_faktor ?? 1);
     if (v.civics?.aktiv) v.civics.punkte = (v.civics.punkte || 0) + this.kulturPunkteRate(vid) * h;
     v.lager = v.lager || {};
     for (const gut of LAGERGUETER) {
@@ -509,7 +514,7 @@ export const wirtschaft = {
     const fehlt = {};
     for (const [gut, x] of Object.entries(kosten || {})) {
       if (gut === 'zeit' || !x) continue;
-      const hat = gut === 'gold' ? v.gold : (v.lager?.[gut] || 0);
+      const hat = gut === 'gold' ? v.gold : gut === 'glaube' ? (v.glaube || 0) : (v.lager?.[gut] || 0);
       if (hat + 1e-6 < x) fehlt[gut] = Math.ceil(x - hat);
     }
     return { ok: Object.keys(fehlt).length === 0, fehlt };
@@ -527,7 +532,7 @@ export const wirtschaft = {
     const bezahlt = {};
     for (const [gut, x] of Object.entries(kosten || {})) {
       if (gut === 'zeit' || !x) continue;
-      if (gut === 'gold') v.gold -= x; else v.lager[gut] -= x;
+      if (gut === 'gold') v.gold -= x; else if (gut === 'glaube') v.glaube -= x; else v.lager[gut] -= x;
       bezahlt[gut] = x;
     }
     this.markiere('v' + v.id);
@@ -539,7 +544,7 @@ export const wirtschaft = {
     this.aendern(v.id);
     for (const [gut, x] of Object.entries(bezahlt)) {
       const y = Math.floor(x * anteil);
-      if (gut === 'gold') v.gold += y; else v.lager[gut] = (v.lager[gut] || 0) + y;
+      if (gut === 'gold') v.gold += y; else if (gut === 'glaube') v.glaube = (v.glaube || 0) + y; else v.lager[gut] = (v.lager[gut] || 0) + y;
     }
     this.markiere('v' + v.id);
   },

@@ -6,6 +6,7 @@ const lade = (pfad) => import(pfad);
 export async function forschung(id) { (await lade('./forschungsbaum.js')).oeffneForschung(id); }
 export async function kultur(id) { (await lade('./forschungsbaum.js')).oeffneKultur(id); }
 export async function regierung(reiter) { (await lade('./regierung.js')).oeffneRegierung(reiter); }
+export async function religion() { (await lade('./religion.js')).oeffneReligion(); }
 export async function stadt(id, reiter) { (await lade('./stadt.js')).oeffneStadt(id, reiter); }
 export async function reich() { (await lade('./reich.js')).oeffneReich(); }
 export async function diplomatie(volkId) { (await lade('./diplomatie.js')).oeffneDiplomatie(volkId); }

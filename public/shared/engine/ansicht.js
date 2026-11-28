@@ -19,9 +19,9 @@ export const ansicht = {
     const a = { t: this.t, du: null, voelker: {}, diplomatie: {}, staedte: {}, einheiten: {}, felder: {}, lager: {}, wunder: {}, angebote: {}, welt: {} };
     a.du = {
       id: v.id, name: v.name, farbe: v.farbe, art: v.art, gold: rund(v.gold), lager: Object.fromEntries(Object.entries(v.lager || {}).map(([k, x]) => [k, rund(x)])), stand_um: v.stand_um,
-      raten: { gold: rund(r.gold), einnahmen: rund(r.einnahmen), unterhaltEinheiten: rund(r.unterhalt.einheiten), unterhaltGebaeude: rund(r.unterhalt.gebaeude), handel: rund(r.handel), wissenschaft: rund(r.wissenschaft), kultur: rund(r.kultur), material: r.material, kapazitaet: r.kapazitaet, luxus: r.luxus, boni: r.boni },
+      raten: { gold: rund(r.gold), glaube: rund(r.glaube || 0), einnahmen: rund(r.einnahmen), unterhaltEinheiten: rund(r.unterhalt.einheiten), unterhaltGebaeude: rund(r.unterhalt.gebaeude), handel: rund(r.handel), wissenschaft: rund(r.wissenschaft), kultur: rund(r.kultur), material: r.material, kapazitaet: r.kapazitaet, luxus: r.luxus, boni: r.boni },
       forschung: { aktiv: v.forschung.aktiv, fortschritt: v.forschung.fortschritt, fertig_um: this.forschungsZeit(v), schlange: v.forschung.schlange, erforscht: v.forschung.erforscht, teil: v.forschung.teil || {}, dauer_ms: v.forschung.aktiv ? Math.round(this.forschungsDauerMs(v, v.forschung.aktiv, r.wissenschaft)) : null },
-      zeitalter: v.zeitalter || 0, tradition: v.tradition || null,
+      zeitalter: v.zeitalter || 0, tradition: v.tradition || null, glaube: rund(v.glaube || 0), pantheon: v.pantheon || null,
       civics: v.civics ? { aktiv: v.civics.aktiv, punkte: rund(v.civics.punkte || 0), erforscht: v.civics.erforscht, schlange: v.civics.schlange, teil: v.civics.teil || {}, fertig_um: this.civicZeit(v), rate: rund(this.kulturPunkteRate(v.id)) } : null,
       regierung: v.regierung || null, karten: v.karten || null, freier_tausch: !!v.freier_tausch, schutz_bis: v.schutz_bis, gegruendet: v.gegruendet, tutorial: v.tutorial, einstellungen: v.einstellungen || {},
       meldungen: (v.meldungen || []).slice(-80), gelesen_bis: v.gelesen_bis || 0, mangel_seit: v.mangel_seit || null, abkommen_bis: v.abkommen_bis || null,
@@ -42,7 +42,7 @@ export const ansicht = {
       if (s.volk === vid) a.staedte[s.id] = this.stadtAnsicht(s, r);
       else if (erk(s.feld)) {
         const sichtbar = sicht.has(s.feld);
-        a.staedte[s.id] = { id: s.id, volk: s.volk, name: s.name, feld: s.feld, bev: s.bev, hauptstadt: !!s.hauptstadt, mauer: this.mauerStufe(s), zeitalter: this.z.voelker[s.volk]?.zeitalter || 0, hp: sichtbar ? Math.round(this.stadtHp(s)) : null, maxhp: this.stadtMaxHp(s), zerstoert_bis: s.zerstoert_bis || 0, staerke: sichtbar ? this.stadtStaerke(s).wert : null, bau_wunder: (s.bau || []).filter((b) => b.art === 'wunder' && !b.geheim).map((b) => b.id) };
+        a.staedte[s.id] = { id: s.id, volk: s.volk, name: s.name, feld: s.feld, bev: s.bev, hauptstadt: !!s.hauptstadt, mauer: this.mauerStufe(s), zeitalter: this.z.voelker[s.volk]?.zeitalter || 0, hp: sichtbar ? Math.round(this.stadtHp(s)) : null, maxhp: this.stadtMaxHp(s), zerstoert_bis: s.zerstoert_bis || 0, staerke: sichtbar ? this.stadtStaerke(s).wert : null, bau_wunder: (s.bau || []).filter((b) => b.art === 'wunder' && !b.geheim).map((b) => b.id), glauben: s.glauben || {} };
       }
     }
     // Einheiten
@@ -80,6 +80,8 @@ export const ansicht = {
     a.welt.ereignisse = (this.z.global.ereignisse || []).filter((ev) => erk(ev.mitte)).map((ev) => ({ id: ev.id, typ: ev.typ, mitte: ev.mitte, start: ev.start, ende: ev.ende, aktiv: ev.aktiv }));
     a.welt.tribute = (this.z.global.tribute || []).filter((t) => t.von === vid || t.an === vid);
     a.welt.karte = karte().hash;
+    a.welt.religionen = this.z.global.religionen || {};
+    a.welt.pantheons = Object.fromEntries(this.alleVoelker().filter((x) => x.pantheon).map((x) => [x.id, x.pantheon]));
     // Naturwunder, von denen das Volk mindestens ein Feld erkundet hat
     a.welt.naturwunder = (this.z.global.naturwunder || []).filter((nw) => nw.felder.some((i) => erk(i))).map((nw) => ({ id: nw.id, felder: nw.felder, entdeckt_von: nw.entdeckt_von ?? null }));
     return a;
@@ -105,7 +107,7 @@ export const ansicht = {
         const e = this.distriktErtrag(s, id);
         return [id, { feld: x.feld, spez: x.spez, spez_ab: x.spez_ab > this.t ? x.spez_ab : null, pl_bis: x.pl_bis > this.t ? x.pl_bis : null, stufe: e.stufe, art: e.art, wert: e.wert, quellen: e.nachbar.quellen.map((q) => ({ text: q.text, wert: q.wert, feld: q.feld })) }];
       })),
-      distrikteMax: this.distriktMax(s),
+      distrikteMax: this.distriktMax(s), glauben: s.glauben || {}, mehrheit: this.mehrheit(s),
     };
   },
 
@@ -115,6 +117,7 @@ export const ansicht = {
     if (e.pfad?.length) x.pfad = eigen ? e.pfad : e.pfad.filter((p) => sicht.has(p.f)).slice(0, 4);
     if (e.befoerderungen?.length) x.bef = e.befoerderungen;
     if (e.in) x.in = e.in;
+    if (e.religion) { x.religion = e.religion; x.ladungen = e.ladungen || 0; }
     if (e.flug_bis && e.flug_bis > this.t) x.flug_bis = e.flug_bis; // Start oder Landung läuft noch
     if (eigen) {
       x.ep = e.ep || 0; x.ep_max = this.epBenoetigt(e); x.stufe = this.einheitStufe(e); x.baum = this.befoerderungsBaum(e); x.abkling_bis = e.abkling_bis || 0; x.arbeit = e.arbeit || null; x.route = e.route || null; x.angriff = e.angriff ?? null;

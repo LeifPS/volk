@@ -27,6 +27,7 @@ export const akteure = {
   // ---------- KI ----------
   kiDenken(vid) {
     this.kiTradition?.(this.z.voelker[vid]);
+    { const kv = this.z.voelker[vid]; if (kv && (kv.art === 'ki' || kv.ki?.bot)) this.kiReligion(kv); }
     { const kv = this.z.voelker[vid]; if (kv && (kv.art === 'ki' || kv.ki?.bot) && !kv.civics?.aktiv) this.kiPolitik(kv); }
     const v = this.z.voelker[vid];
     const ki = v.ki;
