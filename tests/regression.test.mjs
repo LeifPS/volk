@@ -38,6 +38,7 @@ test('Waffenruhe gilt in beide Richtungen: offline gegangener Angreifer greift n
   A.v.schutz_bis = B.v.schutz_bis = 0;
   // Barbaren stören den Test sonst (es gibt jetzt viele Lager): entfernen
   for (const e of s.einheitenVon(s.barbarenVolk().id)) delete s.z.einheiten[e.id];
+  s.positionenNeu(); s.listenNeu();
   s.z.lager = {}; s.z.global.barbaren_um = 0;
   s.verbindung(A.v.id, true); s.verbindung(B.v.id, true);
   Object.assign(s.diplo(A.v.id, B.v.id), { krieg: true, seit: s.t, letzter_kampf: s.t });

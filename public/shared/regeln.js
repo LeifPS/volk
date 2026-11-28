@@ -6,7 +6,7 @@ export const MIN = 60 * 1000, STD = 60 * MIN, TAG = 24 * STD;
 // Alle Stellschrauben für das Tempo stehen hier. Grunddauern in den Daten bleiben unverändert und werden nur geteilt.
 /** Grundkurve des Tempos je Zeitalter (0 = Antike ... 6 = Atomzeit, 7 bis 10 = KI, Fusion, Weltraum, Sterne): Dauer = Grunddauer / Faktor.
  *  Daraus werden Produktion und Forschung abgeleitet. Die ersten sieben Werte sind seit dem Tempo-Update fest; die neuen Zeitalter haben eigene. */
-export const ZEIT_TEMPO = [10, 8, 6, 5, 4, 3, 2.5, 1.3, 1.15, 1.0, 0.9];
+export const ZEIT_TEMPO = [10, 8, 6, 5, 4, 3, 2.5, 1.1, 1.0, 0.9, 0.8]; // Stufe 13: neue Zeitalter etwas langsamer (vorher 1.3, 1.15, 1.0, 0.9), weil Eurekas und Civics beschleunigen
 export function zeitTempo(zeitalter) { return ZEIT_TEMPO[Math.max(0, Math.min(ZEIT_TEMPO.length - 1, Math.floor(zeitalter || 0)))]; }
 /** Produktion (Bauen, Ausbilden, Verbessern) dauert so viel länger als die Grundkurve (Leifs Wunsch 2026-11-17: doppelt so lange). */
 export const PRODUKTION_LANGSAMER = 2;

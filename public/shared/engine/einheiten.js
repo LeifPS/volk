@@ -63,6 +63,7 @@ export const einheiten = {
     }
     if (o.ki) e.ki = o.ki;
     this.z.einheiten[id] = e;
+    this.listenNeu();
     this.markiere('e' + id);
     this.positionenNeu();
     if (v && v.art !== 'tiere') { this.aendern(vid); this.erkunde(vid, ziel, this.sichtweite(e)); }
@@ -102,6 +103,7 @@ export const einheiten = {
     // verladene Einheiten gehen mit unter
     for (const x of this.alleEinheiten()) if (x.in === id) { if (o.ladungRetten) { x.in = null; x.feld = e.feld; } else { delete this.z.einheiten[x.id]; this.markiere('e' + x.id); } }
     delete this.z.einheiten[id];
+    this.listenNeu();
     this.markiere('e' + id);
     this.positionenNeu();
     if (v && v.art !== 'tiere') delete this._raten[e.volk];
@@ -317,7 +319,8 @@ export const einheiten = {
     e.pfad.shift();
     for (const x of this.alleEinheiten()) if (x.in === e.id) { x.feld = e.feld; this.markiere('e' + x.id); }
     if (tausch) { tausch.feld = vorher; this.hpAbrechnen(tausch); this.markiere('e' + tausch.id); }
-    this.positionenNeu();
+    this.positionVerschieben(e, vorher);
+    if (tausch) this.positionVerschieben(tausch, st.f);
     this.markiere('e' + eid);
     this.erkunde(e.volk, e.feld, this.sichtweite(e));
     // Beiwerk unterwegs
@@ -504,6 +507,7 @@ export const einheiten = {
     const s = { id, volk: vid, name, feld, gegruendet: this.t, bev: 1, nahrung: 0, kultur: 0, grenz_k: 0, gebaeude: {}, bau: [], schlange: [], arbeit: [], gebiet: [], manuell: false, hp: null, hp_um: this.t };
     if (erste || !this.staedteVon(vid).some((x) => x.gebaeude.palast)) { s.gebaeude.palast = 1; s.hauptstadt = true; }
     this.z.staedte[id] = s;
+    this.listenNeu();
     for (const i of umkreis(feld, 1)) if (!this.z.felder[i]?.s) this.feldUebernehmen(s, i);
     if (!s.gebiet.includes(feld)) this.feldUebernehmen(s, feld);
     s.hp = this.stadtMaxHp(s);

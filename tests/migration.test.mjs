@@ -130,3 +130,28 @@ test('Migration bis 6 mit dem echten Altstand: Diplomatie-Einträge haben Bezieh
   }
   assert.deepEqual(zustandPruefen(srv.spiel), []);
 });
+
+test('Last sparen: Alarme sichern gebündelt; ein Neustart aus dem letzten gesicherten Stand rechnet dasselbe nach', async () => {
+  const { sp, so, srv } = altServer();
+  const r = await srv.http('/api/anmelden', 'POST', { name: 'anna', passwort: 'passwort1' }, 'ip-test');
+  const ws = so.neu(srv.verbindungPruefen(r.token)); srv.verbunden(ws);
+  let schreib = 0; const alt = sp.schreibe; sp.schreibe = (z) => { schreib++; alt(z); };
+  const ende = uhr.jetzt() + 2 * STD;
+  let alarme = 0;
+  for (;;) { const n = srv.naechsterAlarmSpielzeit(); if (n == null || n > ende) break; uhr.setze(Math.max(uhr.jetzt(), n)); srv.alarm(); alarme++; }
+  assert.ok(alarme > 20, 'genug Alarme: ' + alarme);
+  assert.ok(schreib <= 2 * 60 / 5 + 2, `höchstens alle 5 Minuten gesichert (${schreib} Schreibvorgänge bei ${alarme} Alarmen)`);
+  // Neustart aus dem Speicher (ohne letzte Sicherung) und bis zur selben Zeit nachrechnen
+  const zeit = srv.spiel.t;
+  const srv2 = new WeltServer(speicherAttrappe(sp.m), { __eigeneUhr: true }, socketAttrappe());
+  srv2.spiel.verarbeite(zeit);
+  const kern = (s) => ({
+    einheiten: Object.values(s.z.einheiten).map((e) => [e.id, e.typ, e.feld]).sort((a, b) => a[0] - b[0]),
+    staedte: Object.values(s.z.staedte).map((x) => [x.id, x.bev, Object.keys(x.gebaeude || {}).length, (x.bau || []).map((b) => b.id).join()]).sort((a, b) => a[0] - b[0]),
+    forschung: Object.values(s.z.voelker).map((v) => [v.id, v.forschung?.aktiv, Object.keys(v.forschung?.erforscht || {}).length]),
+  });
+  assert.deepEqual(kern(srv2.spiel), kern(srv.spiel));
+  // Ohne Verbindung kommt der Alarm frühestens nach 30 Minuten
+  so.weg(ws); srv.getrennt(ws);
+  assert.ok(srv.naechsterAlarmSpielzeit() >= uhr.jetzt() + 30 * 60e3 - 1);
+});

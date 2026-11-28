@@ -24,6 +24,8 @@ import { eurekas } from './eurekas.js';
 import { beziehungen } from './beziehungen.js';
 import { ZUSTAND_VERSION, migriere } from './migration.js';
 
+const LEER = Object.freeze([]);
+
 export class SpielFehler extends Error {}
 /** Wirft einen verständlichen Fehler für den Spieler, wenn die Bedingung nicht erfüllt ist. */
 export function pruefe(bedingung, text) { if (!bedingung) throw new SpielFehler(text); }
@@ -94,8 +96,11 @@ export class Spiel {
   stadt(id) { return this.z.staedte[id]; }
   einheit(id) { return this.z.einheiten[id]; }
   alleVoelker() { return Object.values(this.z.voelker); }
-  alleStaedte() { return Object.values(this.z.staedte); }
-  alleEinheiten() { return Object.values(this.z.einheiten); }
+  // Listen aller Städte und Einheiten werden gecacht (sie werden sehr oft gebraucht). Ungültig bei Anlegen/Entfernen
+  // (einheitErzeugen, einheitEntfernen, Stadtgründung) und mit positionenNeu(); die Rückgabe nie verändern.
+  alleStaedte() { if (this._staedteL?.q !== this.z.staedte) this._staedteL = { q: this.z.staedte, l: Object.values(this.z.staedte) }; return this._staedteL.l; }
+  alleEinheiten() { if (this._einheitenL?.q !== this.z.einheiten) this._einheitenL = { q: this.z.einheiten, l: Object.values(this.z.einheiten) }; return this._einheitenL.l; }
+  listenNeu() { this._staedteL = null; this._einheitenL = null; }
   staedteVon(vid) { return this.alleStaedte().filter((s) => s.volk === vid); }
   einheitenVon(vid) { return this.alleEinheiten().filter((e) => e.volk === vid); }
 
@@ -112,15 +117,24 @@ export class Spiel {
   besitzer(i) { const s = this.feldStadt(i); return s ? this.z.staedte[s]?.volk : undefined; }
 
   positionenNeu() { this._pos = null; this._stadtPos = null; }
+  /** Eine Einheit ist von Feld `alt` nach e.feld gezogen: Positionsindex gezielt nachführen statt neu bauen. */
+  positionVerschieben(e, alt) {
+    if (!this._pos || e.in || alt === e.feld) return;
+    const l = this._pos.get(alt);
+    if (l) { const n = l.filter((u) => u !== e); if (n.length) this._pos.set(alt, n); else this._pos.delete(alt); }
+    const z = this._pos.get(e.feld);
+    this._pos.set(e.feld, z ? [...z, e] : [e]);
+  }
   einheitenAuf(i) {
     if (!this._pos) {
       this._pos = new Map();
       for (const e of this.alleEinheiten()) {
         if (e.in) continue; // verladen (Transport/Träger)
-        const l = this._pos.get(e.feld); if (l) l.push(e.id); else this._pos.set(e.feld, [e.id]);
+        const l = this._pos.get(e.feld); if (l) l.push(e); else this._pos.set(e.feld, [e]);
       }
     }
-    return (this._pos.get(i) || []).map((id) => this.z.einheiten[id]).filter(Boolean);
+    // Die Liste ist gecacht und darf nicht verändert werden (positionenNeu macht sie bei jeder Bewegung/Entfernung ungültig).
+    return this._pos.get(i) || LEER;
   }
   stadtAuf(i) {
     if (!this._stadtPos) { this._stadtPos = new Map(); for (const s of this.alleStaedte()) this._stadtPos.set(s.feld, s.id); }
@@ -170,40 +184,75 @@ export class Spiel {
     if (typeof console !== 'undefined') console.warn('[Volk]', text);
   }
 
-  /** Das zeitlich nächste fällige Ereignis (oder null). */
+  /**
+   * Das zeitlich nächste fällige Ereignis (oder null): { t, schluessel, f, notbremse }.
+   * Verglichen werden nur Zeit, Art und Objekt; die Funktionen entstehen erst für den Gewinner (läuft sehr oft, spart Speicher).
+   */
   naechstesEreignis() {
-    let best = null;
-    const k = (t, schluessel, f, notbremse) => { if (t != null && Number.isFinite(t) && (!best || t < best.t)) best = { t, schluessel, f, notbremse }; };
+    let bt = Infinity, ba = null, bx = null;
+    const k = (t, art, x) => { if (t != null && t < bt && Number.isFinite(t)) { bt = t; ba = art; bx = x; } };
     for (const e of this.alleEinheiten()) {
-      if (e.pfad && e.pfad.length) k(e.pfad[0].t, 'schritt' + e.id, () => this.schritt(e.id), () => { e.pfad = []; });
-      if (e.arbeit) k(e.arbeit.fertig_um, 'arbeit' + e.id, () => this.arbeitFertig(e.id), () => { e.arbeit = null; });
-      if (e.umruestung) k(e.umruestung.fertig_um, 'umruest' + e.id, () => this.umruestungFertig(e.id), () => { delete e.umruestung; });
-      if (e.einsatz) k(e.einsatz.zurueck_um, 'einsatz' + e.id, () => this.einsatzZurueck(e.id), () => { e.einsatz = null; });
+      if (e.pfad && e.pfad.length) k(e.pfad[0].t, 'schritt', e);
+      if (e.arbeit) k(e.arbeit.fertig_um, 'arbeit', e);
+      if (e.umruestung) k(e.umruestung.fertig_um, 'umruest', e);
+      if (e.einsatz) k(e.einsatz.zurueck_um, 'einsatz', e);
     }
     for (const s of this.alleStaedte()) {
-      for (const b of s.bau || []) k(b.fertig_um, 'bau' + s.id, () => this.bauFertig(s.id), () => { s.bau = []; });
-      if (s.warte_um) k(s.warte_um, 'warte' + s.id, () => { s.warte_um = null; this.bauSchlangeWeiter(s.id); });
-      k(this.wachstumsZeit(s), 'wachs' + s.id, () => this.wachstum(s.id), () => { s.nahrung = 0; });
-      k(this.grenzZeit(s), 'grenze' + s.id, () => this.grenzwachstum(s.id), () => { s.kultur = 0; });
+      for (const b of s.bau || []) k(b.fertig_um, 'bau', s);
+      if (s.warte_um) k(s.warte_um, 'warte', s);
+      k(this.wachstumsZeit(s), 'wachs', s);
+      k(this.grenzZeit(s), 'grenze', s);
     }
     for (const v of this.alleVoelker()) {
-      k(this.forschungsZeit(v), 'forsch' + v.id, () => this.forschungFertig(v.id), () => { v.forschung.aktiv = null; });
-      k(this.civicZeit(v), 'civic' + v.id, () => this.civicFertig(v.id), () => { v.civics.aktiv = null; });
-      if (v.offline_ende) k(v.offline_ende, 'offende' + v.id, () => { this.aendern(v.id); v.offline_faktor = 0; v.offline_ende = null; delete this._raten[v.id]; }, () => { v.offline_ende = null; });
-      k(this.goldNullZeit(v), 'goldnull' + v.id, () => this.goldNull(v.id));
-      if (v.mangel_um) k(v.mangel_um, 'mangel' + v.id, () => this.mangelSchritt(v.id), () => { v.mangel_um = null; });
-      if (v.abkommen_bis) k(v.abkommen_bis, 'abk' + v.id, () => { this.aendern(v.id); v.abkommen_bis = null; this.markiere('v' + v.id); this.meldung(v.id, 'Das Forschungsabkommen ist ausgelaufen.'); });
-      if (v.ki && v.ki.denken_um) k(v.ki.denken_um, 'ki' + v.id, () => this.kiDenken(v.id), () => { v.ki.denken_um = this.t + STD; });
+      k(this.forschungsZeit(v), 'forsch', v);
+      k(this.civicZeit(v), 'civic', v);
+      if (v.offline_ende) k(v.offline_ende, 'offende', v);
+      k(this.goldNullZeit(v), 'goldnull', v);
+      if (v.mangel_um) k(v.mangel_um, 'mangel', v);
+      if (v.abkommen_bis) k(v.abkommen_bis, 'abk', v);
+      if (v.ki && v.ki.denken_um) k(v.ki.denken_um, 'ki', v);
     }
     const g = this.z.global;
-    if (g.barbaren_um) k(g.barbaren_um, 'barbaren', () => this.barbarenZug(), () => { g.barbaren_um = this.t + STD; });
-    if (g.natur_um) k(g.natur_um, 'natur', () => this.naturZug(), () => { g.natur_um = this.t + 6 * STD; });
-    if (g.jahreszeit_um) k(g.jahreszeit_um, 'jahreszeit', () => this.jahreszeitWechsel(), () => { g.jahreszeit_um = this.t + STD; });
-    if (g.religion_um) k(g.religion_um, 'religion', () => this.religionTakt(), () => { g.religion_um = this.t + STD; });
-    if (g.diplo_um) k(g.diplo_um, 'diplo', () => this.diplomatiePruefung(), () => { g.diplo_um = this.t + STD; });
-    if (g.ablaeufe && g.ablaeufe.length) k(Math.min(...g.ablaeufe.map((a) => a.t)), 'ablauf', () => this.ablaufFaellig(), () => { g.ablaeufe = []; });
-    for (const ev of g.ereignisse || []) k(ev.aktiv ? ev.ende : ev.start, 'natur' + ev.id, () => this.naturSchritt(ev.id), () => { g.ereignisse = g.ereignisse.filter((x) => x !== ev); });
-    return best;
+    if (g.barbaren_um) k(g.barbaren_um, 'barbaren', null);
+    if (g.natur_um) k(g.natur_um, 'natur', null);
+    if (g.jahreszeit_um) k(g.jahreszeit_um, 'jahreszeit', null);
+    if (g.religion_um) k(g.religion_um, 'religion', null);
+    if (g.diplo_um) k(g.diplo_um, 'diplo', null);
+    if (g.ablaeufe && g.ablaeufe.length) { let m = Infinity; for (const a of g.ablaeufe) if (a.t < m) m = a.t; k(m, 'ablauf', null); }
+    for (const ev of g.ereignisse || []) k(ev.aktiv ? ev.ende : ev.start, 'naturev', ev);
+    if (ba == null) return null;
+    return this.ereignisBauen(bt, ba, bx);
+  }
+
+  /** Baut Schlüssel, Aktion und Notbremse für ein Ereignis der Art `art` am Objekt `x`. */
+  ereignisBauen(t, art, x) {
+    const g = this.z.global, id = x?.id;
+    const E = (schluessel, f, notbremse) => ({ t, schluessel, f, notbremse });
+    switch (art) {
+      case 'schritt': return E('schritt' + id, () => this.schritt(id), () => { x.pfad = []; });
+      case 'arbeit': return E('arbeit' + id, () => this.arbeitFertig(id), () => { x.arbeit = null; });
+      case 'umruest': return E('umruest' + id, () => this.umruestungFertig(id), () => { delete x.umruestung; });
+      case 'einsatz': return E('einsatz' + id, () => this.einsatzZurueck(id), () => { x.einsatz = null; });
+      case 'bau': return E('bau' + id, () => this.bauFertig(id), () => { x.bau = []; });
+      case 'warte': return E('warte' + id, () => { x.warte_um = null; this.bauSchlangeWeiter(id); });
+      case 'wachs': return E('wachs' + id, () => this.wachstum(id), () => { x.nahrung = 0; });
+      case 'grenze': return E('grenze' + id, () => this.grenzwachstum(id), () => { x.kultur = 0; });
+      case 'forsch': return E('forsch' + id, () => this.forschungFertig(id), () => { x.forschung.aktiv = null; });
+      case 'civic': return E('civic' + id, () => this.civicFertig(id), () => { x.civics.aktiv = null; });
+      case 'offende': return E('offende' + id, () => { this.aendern(id); x.offline_faktor = 0; x.offline_ende = null; delete this._raten[id]; }, () => { x.offline_ende = null; });
+      case 'goldnull': return E('goldnull' + id, () => this.goldNull(id));
+      case 'mangel': return E('mangel' + id, () => this.mangelSchritt(id), () => { x.mangel_um = null; });
+      case 'abk': return E('abk' + id, () => { this.aendern(id); x.abkommen_bis = null; this.markiere('v' + id); this.meldung(id, 'Das Forschungsabkommen ist ausgelaufen.'); });
+      case 'ki': return E('ki' + id, () => this.kiDenken(id), () => { x.ki.denken_um = this.t + STD; });
+      case 'barbaren': return E('barbaren', () => this.barbarenZug(), () => { g.barbaren_um = this.t + STD; });
+      case 'natur': return E('natur', () => this.naturZug(), () => { g.natur_um = this.t + 6 * STD; });
+      case 'jahreszeit': return E('jahreszeit', () => this.jahreszeitWechsel(), () => { g.jahreszeit_um = this.t + STD; });
+      case 'religion': return E('religion', () => this.religionTakt(), () => { g.religion_um = this.t + STD; });
+      case 'diplo': return E('diplo', () => this.diplomatiePruefung(), () => { g.diplo_um = this.t + STD; });
+      case 'ablauf': return E('ablauf', () => this.ablaufFaellig(), () => { g.ablaeufe = []; });
+      case 'naturev': return E('natur' + id, () => this.naturSchritt(id), () => { g.ereignisse = g.ereignisse.filter((y) => y !== x); });
+    }
+    return null;
   }
 
   /** Zeitpunkt des nächsten Ereignisses für den Alarm (oder null). */

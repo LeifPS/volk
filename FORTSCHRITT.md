@@ -21,13 +21,13 @@ Kernregel: Die Live-Welt muss nach jedem Schritt weiterlaufen (Migration, Karte 
 | 11 | Animationen (gemeinsamer Takt, Einstellung Effekte Voll/Reduziert/Aus) | fertig |
 | 11b | Handel und Diplomatie (Beziehungswert, Handelsabkommen, Embargo, Gesandter und Botschaften, KI-Reaktionen, Migration 5→6). Die übrigen Tiefensysteme aus 5b entfallen auf Wunsch von Leif | fertig |
 | 12 | Grafik-Politur (Handy-Leiste, Farbwelten je Zeitalter, WebGL-Nachbearbeitung mit Rückfall, Sprite-Cache begrenzt, Leistungsmessung) | fertig |
-| 13 | Balancing, Last | offen |
+| 13 | Balancing und Last (Engine ~40 % schneller, Schreiblast -70 %, Kulturbaum früh billiger, neue Zeitalter etwas langsamer) | fertig |
 | 14 | Doku | offen |
 
 ## Hinweise für die nächsten Stufen
 - Jede Änderung am Spielzustand braucht einen Schritt in `migration.js` (ZUSTAND_VERSION erhöhen) und einen Test in `tests/migration.test.mjs`.
 - Bei Protokoll-/Datenänderungen `SPIEL_VERSION` in `public/shared/version.js` erhöhen (Clients laden dann neu).
-- **Last:** Die Mehrspieler-Simulation misst auf dem Stand von main ~10 700 Alarme und ~55 600 geschriebene Zeilen pro Tag (Free-Limit 100 000). Seit Leifs Tempo-Update (×5) deutlich mehr als in ENTSCHEIDUNGEN dokumentiert. In Stufe 13 senken (Schreib-Bündelung) und neu messen.
+- **Last (Stufe 13 gemessen):** ~10 800 Alarme und ~17 000 geschriebene Zeilen pro Tag bei 4 Spielern (vorher ~57 000 Zeilen). Free-Limit: 100 000 Zeilen und 100 000 Anfragen pro Tag.
 - Die Mehrspieler-Simulation dauert ~12 min: im Hintergrund laufen lassen.
 - Stufe 4 (Weltraum-Ebene): Konzept = Feldnummern ab ANZAHL (23040) sind die Weltraumkarte 64x40; hex.js rechnet je Ebene; Nebel wird verlängert (unb64 füllt auf). Titan/Helium-3 kommen aus Weltraum-Verbesserungen.
 

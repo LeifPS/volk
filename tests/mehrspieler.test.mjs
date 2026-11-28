@@ -37,7 +37,7 @@ test('Mehrspieler-Simulation: 4 Spieler (Bots) + KI + Stadtstaaten + Barbaren ü
     // Alarme so wie das Durable Object: immer zum nächsten Ereignis
     const ende = uhr.jetzt() + STD;
     for (;;) {
-      const n = srv.spiel.naechsteZeit();
+      const n = srv.naechsterAlarmSpielzeit();
       if (n == null || n > ende) break;
       uhr.setze(Math.max(uhr.jetzt(), n)); srv.alarm(); alarme++;
       if (alarme > 400000) break;
@@ -57,5 +57,5 @@ test('Mehrspieler-Simulation: 4 Spieler (Bots) + KI + Stadtstaaten + Barbaren ü
   const anfragenProTag = alarme / tage + nachrichten / 20 / tage;
   console.log(`Last: ${Math.round(alarme / tage)} Alarme/Tag, ${Math.round(zeilenProTag)} geschriebene Zeilen/Tag, ${Math.round(anfragenProTag)} Anfragen/Tag (ohne echte Klicks), ${sp.m.size} Zeilen gesamt`);
   assert.ok(anfragenProTag < 20000, 'zu viele Anfragen: ' + anfragenProTag);
-  assert.ok(zeilenProTag < 60000, 'zu viele Schreibzeilen: ' + zeilenProTag);
+  assert.ok(zeilenProTag < 30000, 'zu viele Schreibzeilen: ' + zeilenProTag); // Stufe 13: gebündeltes Sichern, gemessen ~17 000
 });

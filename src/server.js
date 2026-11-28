@@ -7,6 +7,14 @@ import { Konten } from './konten.js';
 import { SPIEL_VERSION } from '../public/shared/version.js';
 export const VERSION = SPIEL_VERSION;
 const EIMER_STAEDTE = 32, EIMER_EINHEITEN = 32, EIMER_FELDER = 64;
+/**
+ * Last sparen (Free-Plan): Reine Alarm-Läufe (ohne Spielerbefehl) sichern höchstens alle SICHERUNG_MS Spielzeit.
+ * Geht ein ungesicherter Stand verloren (Neustart des Durable Objects), rechnet die Engine ihn aus dem letzten Stand
+ * deterministisch nach: Zwischen zwei Sicherungen gab es nur Ereignisse, keine Eingaben. Befehle sichern immer sofort.
+ * Ist niemand verbunden, braucht es keinen Alarm je Ereignis (der nächste Zugriff holt alles nach): Dann kommt er
+ * frühestens nach RUHE_ALARM_MS, damit die Welt trotzdem regelmäßig gesichert wird.
+ */
+export const SICHERUNG_MS = 5 * 60e3, RUHE_ALARM_MS = 30 * 60e3;
 
 /** Zerlegt den Zustand in Speicherzeilen. */
 function zeilenFuer(spiel, schluessel) {
@@ -83,6 +91,7 @@ export class WeltServer {
   echtzeitVon(t) { const u = this.uhr; return u.echt ? t : Math.round(u.anker_real + (t - u.anker_spiel) / u.faktor); }
 
   speichern() {
+    this.letzteSicherung = jetzt();
     const z = zeilenFuer(this.spiel, this.spiel.schmutzig);
     this.spiel.schmutzig.clear();
     for (const [k, v] of this.konten.aenderungen()) z.set(k, v);
@@ -90,16 +99,25 @@ export class WeltServer {
     return z.size;
   }
 
+  /** Spielzeit des nächsten Alarms oder null: nächstes Ereignis, ohne Verbindungen frühestens nach RUHE_ALARM_MS. */
+  naechsterAlarmSpielzeit() {
+    const t = this.spiel.naechsteZeit();
+    if (t == null) return null;
+    if (!this.sockets.alle().length) return Math.max(t, jetzt() + RUHE_ALARM_MS);
+    return t;
+  }
   /** Nächster Alarm (Echtzeit in ms) oder null. */
   naechsterAlarm() {
-    const t = this.spiel.naechsteZeit();
+    const t = this.naechsterAlarmSpielzeit();
     if (t == null) return null;
     return Math.max(Date.now() + 1000, this.echtzeitVon(t));
   }
 
   alarm() {
     this.spiel.verarbeite(jetzt());
-    this.nachAenderung();
+    // Sichern gebündelt (siehe SICHERUNG_MS); ohne Verbindungen kommt ohnehin nur alle 30 Minuten ein Alarm
+    if (jetzt() - (this.letzteSicherung || 0) >= SICHERUNG_MS || !this.sockets.alle().length) this.speichern();
+    this.senden();
   }
 
   /** Nach jeder Verarbeitung: speichern und Deltas an alle verbundenen Spieler. */
@@ -182,6 +200,7 @@ export class WeltServer {
     const s = this.spiel;
     for (const e of s.einheitenVon(vid)) s.einheitEntfernen(e.id);
     for (const st of s.staedteVon(vid)) { for (const i of st.gebiet) s.setzeFeld(i, { s: null, d: null, db: null }); delete s.z.staedte[st.id]; s.markiere('s' + st.id); }
+    s.listenNeu();
     for (const [k] of Object.entries(s.z.diplomatie)) if (k.split('|').map(Number).includes(vid)) { delete s.z.diplomatie[k]; s.markiere('g'); }
     for (const [id, a] of Object.entries(s.z.angebote)) if (a.von === vid || a.an === vid || a.parteien?.includes(vid)) { delete s.z.angebote[id]; s.markiere('a' + id); }
     for (const [id, w] of Object.entries(s.z.wunder)) if (w.volk === vid) { delete s.z.wunder[id]; s.markiere('w' + id); }

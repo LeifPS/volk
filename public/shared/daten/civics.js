@@ -12,12 +12,15 @@ export const CIVIC_SPALTEN_ZEITALTER = [0, 4, 8, 12, 16, 20, 24, 28, 31, 34, 37]
 
 /** Kosten in Kulturpunkten je Spalte (Länge 40). */
 export const CIVIC_KOSTEN_JE_SPALTE = [
-  40, 55, 75, 100, // Antike
-  130, 170, 215, 270, // Klassik
-  335, 410, 495, 590, // Mittelalter
-  700, 820, 950, 1090, // Renaissance
-  1240, 1400, 1580, 1780, // Industrie
-  2000, 2230, 2470, 2700, // Moderne
+  // Stufe 13 (Balance): frühe Zeitalter billiger, weil die Forschung dort sehr schnell ist und der Kulturbaum sonst
+  // mehr als ein Zeitalter zurückliegt (vorher: Antike 40-100, Klassik 130-270, Mittelalter 335-590, Renaissance 700-1090,
+  // Industrie 1240-1780, Moderne 2000-2700).
+  25, 35, 45, 60, // Antike
+  80, 105, 135, 170, // Klassik
+  215, 265, 320, 385, // Mittelalter
+  470, 560, 650, 750, // Renaissance
+  880, 1000, 1140, 1290, // Industrie
+  1650, 1850, 2060, 2280, // Moderne
   2900, 3050, 3200, 3400, // Atomzeit
   3650, 3950, 4300, // KI-Zeitalter
   4700, 5100, 5550, // Fusionszeitalter
